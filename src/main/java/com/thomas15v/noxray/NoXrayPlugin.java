@@ -27,7 +27,6 @@ public class NoXrayPlugin {
     private Game game;
 
     private static NoXrayPlugin instance;
-    private static Direction[] directions = new Direction[]{Direction.DOWN, Direction.UP, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH};
 
     public static NoXrayPlugin getInstance(){
         return instance;
@@ -43,7 +42,7 @@ public class NoXrayPlugin {
         event.getTransactions().forEach(NoXrayPlugin::updateBlocks);
     }
     public static boolean hideBlock(Vector3i vector3i, BlockState blockState, World world){
-        if (blockState.getType() == BlockTypes.AIR || blockState.getType().getProperty(MatterProperty.class).get().getValue() == MatterProperty.Matter.LIQUID) {
+        if (blockState.getType() == BlockTypes.AIR || blockState.getType() == BlockTypes.STONE || blockState.getType().getProperty(MatterProperty.class).get().getValue() == MatterProperty.Matter.LIQUID) {
             return false;
         }
         Optional<HardnessProperty> hardnessProperty = blockState.getProperty(HardnessProperty.class);
@@ -63,7 +62,7 @@ public class NoXrayPlugin {
 
     public static void updateBlocks(Transaction<BlockSnapshot> transaction){
         Location<World> location = transaction.getOriginal().getLocation().get();
-        for (Direction direction : directions) {
+        for (Direction direction : Direction.values()) {
             updateBlock(location.getBlockRelative(direction));
         }
     }
