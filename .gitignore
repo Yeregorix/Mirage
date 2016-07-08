@@ -64,6 +64,5 @@ gradle-app.setting
 .gradle/
 .idea/
 classes/
-gradle/
 out/
 run/
