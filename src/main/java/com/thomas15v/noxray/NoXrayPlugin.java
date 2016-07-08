@@ -41,6 +41,7 @@ public class NoXrayPlugin {
     public void onBlockUpdate(ChangeBlockEvent.Break event){
         event.getTransactions().forEach(NoXrayPlugin::updateBlocks);
     }
+
     public static boolean hideBlock(Vector3i vector3i, BlockState blockState, World world){
         if (blockState.getType() == BlockTypes.AIR || blockState.getType() == BlockTypes.STONE || blockState.getType().getProperty(MatterProperty.class).get().getValue() == MatterProperty.Matter.LIQUID) {
             return false;
@@ -63,7 +64,9 @@ public class NoXrayPlugin {
     public static void updateBlocks(Transaction<BlockSnapshot> transaction){
         Location<World> location = transaction.getOriginal().getLocation().get();
         for (Direction direction : Direction.values()) {
-            updateBlock(location.getBlockRelative(direction));
+            if (!direction.isSecondaryOrdinal()) {
+                updateBlock(location.getBlockRelative(direction));
+            }
         }
     }
 

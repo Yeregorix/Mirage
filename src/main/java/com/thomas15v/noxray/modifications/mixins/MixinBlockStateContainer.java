@@ -35,7 +35,7 @@ public abstract class MixinBlockStateContainer implements InternalBlockStateCont
 
     private BitArray modifiedStorage;
 
-        @Override
+    @Override
     public void updateModified(Chunk chunk)
     {
         int blockx = chunk.xPosition * 16;
