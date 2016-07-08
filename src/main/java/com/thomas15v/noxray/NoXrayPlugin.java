@@ -53,13 +53,12 @@ public class NoXrayPlugin {
         if (hardnessProperty.get().getValue() < 3.0F){
             return false;
         }
-        return false;
-        /*return  checkBlock(world.getBlock(vector3i.add(1,0,0)))     &&
+        return  checkBlock(world.getBlock(vector3i.add(1,0,0)))     &&
                 checkBlock(world.getBlock(vector3i.add(-1,0,0)))    &&
                 checkBlock(world.getBlock(vector3i.add(0,1,0)))     &&
                 checkBlock(world.getBlock(vector3i.add(0,-1,0)))    &&
                 checkBlock(world.getBlock(vector3i.add(0,0,1)))     &&
-                checkBlock(world.getBlock(vector3i.add(0,0,-1)));*/
+                checkBlock(world.getBlock(vector3i.add(0,0,-1)));
     }
 
     public static void updateBlocks(Transaction<BlockSnapshot> transaction){
