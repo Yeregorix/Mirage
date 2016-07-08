@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.5.7",
+  "package": "com.thomas15v.noxray.modifications.mixins",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "plugin": "com.thomas15v.noxray.modifications.MixinPlugin",
+  "server": [
+    "MixinPacketChunkData",
+    "MixinBitArray",
+    "MixinBlockStateContainer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

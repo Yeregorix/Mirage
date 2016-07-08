@@ -1,0 +1,87 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        maven {
+            name = 'forge'
+            url = 'http://files.minecraftforge.net/maven'
+        }
+        maven {
+            name = 'sponge'
+            url = 'http://repo.spongepowered.org/maven'
+        }
+        maven {
+            name = 'gradle'
+            url = 'https://plugins.gradle.org/m2/'
+        }
+    }
+
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.4-SNAPSHOT'
+        classpath "gradle.plugin.com.qixalite:SpongeStart:1.5"
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.tweaker-server'
+apply plugin: 'org.spongepowered.mixin'
+apply plugin: "com.qixalite.spongestart"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+spongestart{
+    eula true
+}
+
+minecraft {
+    version = '1.10.2'
+    mappings = 'snapshot_20160628'
+
+    runDir = 'run'
+    tweakClass = 'org.spongepowered.asm.launch.MixinTweaker'
+
+    makeObfSourceJar = false
+}
+
+sourceSets {
+    main {
+        refMap = "mixins.noxray.refmap.json"
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'MixinConfigs': 'mixins.noxray.json',
+        )
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://repo.spongepowered.org/maven/'
+    }
+}
+
+dependencies{
+    compile 'org.spongepowered:spongeapi:5.0.0-SNAPSHOT'
+    compile('org.spongepowered:mixin:0.5.11-SNAPSHOT') {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
+}
+
+task updatePlugin <<{
+    copy {
+        from 'build/libs/NoXray.jar'
+        into spongestart.forgeServerFolder + "/mods"
+    }
+    copy {
+        from 'build/libs/NoXray.jar'
+        into spongestart.vanillaServerFolder + "/mods"
+    }
+}
+updatePlugin.dependsOn build
+
+reobf.jar.mappingType = 'SEARGE'
