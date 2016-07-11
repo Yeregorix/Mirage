@@ -4,7 +4,7 @@
   "package": "com.thomas15v.noxray.modifications.mixins",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "plugin": "com.thomas15v.noxray.modifications.MixinPlugin",
+  "refmap": "mixins.noxray.refmap.json",
   "server": [
     "MixinPacketChunkData",
     "MixinBitArray",
