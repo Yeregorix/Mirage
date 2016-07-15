@@ -7,8 +7,13 @@
   "refmap": "mixins.noxray.refmap.json",
   "server": [
     "MixinPacketChunkData",
+    "MixinBlockStateContainer",
+    "MixinExtendedBlockStorage",
     "MixinBitArray",
-    "MixinBlockStateContainer"
+    "MixinPlayerChunkMapEntry",
+    "MixinChunk",
+    "MixinChunkProviderServer",
+    "MixinWorld"
   ],
   "injectors": {
     "defaultRequire": 1
