@@ -8,6 +8,7 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.world.World;
 
 @Plugin(id = "noxray", name = "NoXray", version = "0.3", authors = "thomas15v")
 public class NoXrayPlugin {
@@ -29,7 +30,6 @@ public class NoXrayPlugin {
         instance = this;
         game.getEventManager().registerListeners(this, new PlayerEventListener());
     }
-
 
     public BlockModifier getBlockModifier() {
         return blockModifier;

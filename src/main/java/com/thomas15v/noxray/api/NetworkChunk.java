@@ -1,9 +1,16 @@
 package com.thomas15v.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.base.Objects;
+import com.thomas15v.noxray.Direction;
 import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Chunk;
+
+import javax.annotation.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represent a chunk viewed for the network (akka online players)
@@ -23,9 +30,14 @@ public class NetworkChunk {
     }
 
     public BlockState get(int x, int y, int z){
-        return (BlockState) getBlockContainerFor(y).get(y & 15, y & 15, z & 15);
+        NetworkBlockContainer blockContainer = getBlockContainerFor(y);
+        if (blockContainer == null) {
+            return null;
+        }
+        return (BlockState) blockContainer.get(x, y & 15 , z);
     }
 
+    @Nullable
     private NetworkBlockContainer getBlockContainerFor(int y){
         return blockStateContainers[y >> 4];
     }
@@ -35,27 +47,42 @@ public class NetworkChunk {
     }
 
     public void set(int x, int y, int z, BlockState blockState){
-        getBlockContainerFor(y).set(x,y,z, (IBlockState) blockState);
-    }
-
-    public void obfuscateInnerBlocks(){
-        for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
-            if (blockStateContainer != null){
-                blockStateContainer.obfuscateInnerBlocks(this);
-            }
+        NetworkBlockContainer blockContainer = getBlockContainerFor(y);
+        if (blockContainer != null) {
+            blockContainer.set(x,y & 15,z, (IBlockState) blockState);
         }
     }
 
-    public void ObfuscateOutSideBlocks(NetworkChunk... networkChunks){
+    /**
+     * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
+     */
+    public void obfuscateBlocks(){
         for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
             if (blockStateContainer != null){
-                blockStateContainer.ObfuscateOutSideBlocks(this, networkChunks);
+                blockStateContainer.obfuscateBlocks(this);
             }
         }
-        //chunk.addScheduledUpdate();
     }
 
     public Vector3i getLocation(){
         return chunk.getPosition();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NetworkChunk that = (NetworkChunk) o;
+        return Objects.equal(blockStateContainers, that.blockStateContainers) &&
+                Objects.equal(chunk, that.chunk);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(blockStateContainers, chunk);
+    }
+
+    public NetworkBlockContainer[] getBlockStateContainers() {
+        return blockStateContainers;
     }
 }

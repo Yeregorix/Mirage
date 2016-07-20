@@ -1,6 +1,5 @@
 package com.thomas15v.noxray.event;
 
-import com.thomas15v.noxray.NoXrayPlugin;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;

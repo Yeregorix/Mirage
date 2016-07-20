@@ -2,7 +2,6 @@ package com.thomas15v.noxray.modifications.mixins;
 
 import com.thomas15v.noxray.modifications.internal.InternalMixinServerProvider;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import org.spongepowered.asm.mixin.Mixin;

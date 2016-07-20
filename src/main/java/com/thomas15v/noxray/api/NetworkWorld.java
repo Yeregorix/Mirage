@@ -17,8 +17,8 @@ public class NetworkWorld {
     private BlockModifier modifier;
 
     public synchronized void addChunk(NetworkChunk chunk){
-        networkChunkMap.put(chunk.getLocation(), chunk);
-
+        Vector3i location = chunk.getLocation();
+        networkChunkMap.put(location, chunk);
     }
 
     @Nullable
@@ -29,6 +29,4 @@ public class NetworkWorld {
     private Collection<NetworkChunk> getChunks(){
         return networkChunkMap.values();
     }
-
-
 }

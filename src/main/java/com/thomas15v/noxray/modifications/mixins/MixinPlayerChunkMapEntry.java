@@ -1,14 +1,9 @@
 package com.thomas15v.noxray.modifications.mixins;
 
-import com.thomas15v.noxray.modifications.internal.InternalPacketChunkData;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraft.network.Packet;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
+@Deprecated
 @Mixin(PlayerChunkMapEntry.class)
 public class MixinPlayerChunkMapEntry {
 

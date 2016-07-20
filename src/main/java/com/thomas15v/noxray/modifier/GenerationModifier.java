@@ -21,7 +21,7 @@ import java.util.function.Predicate;
  */
 public class GenerationModifier implements BlockModifier {
 
-    private static final List<BlockType> COMMON_BLOCKS = Arrays.asList(BlockTypes.AIR, BlockTypes.STONE, BlockTypes.NETHERRACK, BlockTypes.END_STONE);
+    private static final List<BlockType> COMMON_BLOCKS = Arrays.asList(BlockTypes.AIR, BlockTypes.STONE, BlockTypes.NETHERRACK, BlockTypes.END_STONE, BlockTypes.BEDROCK);
     private static final Predicate<BlockState> FILTER = blockState -> {
         if (COMMON_BLOCKS.contains(blockState.getType()) || blockState.getType().getProperty(MatterProperty.class).get().getValue() == MatterProperty.Matter.LIQUID) {
             return false;
@@ -37,7 +37,16 @@ public class GenerationModifier implements BlockModifier {
 
     @Override
     public BlockState handleBlock(BlockState original, Vector3i location, List<BlockState> surroundingBlocks) {
+        for (BlockState surroundingBlock : surroundingBlocks) {
+            if (original.getType() == BlockTypes.DIAMOND_BLOCK){
+                System.out.println(surroundingBlocks + " " + location);
+            }
+            if (surroundingBlock.getType().equals(BlockTypes.AIR)) {
+                return original;
+            }
+        }
         return BlockTypes.REDSTONE_BLOCK.getDefaultState();
+
     }
 
     @Override

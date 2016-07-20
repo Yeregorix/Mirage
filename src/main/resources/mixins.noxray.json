@@ -10,9 +10,7 @@
     "MixinBlockStateContainer",
     "MixinExtendedBlockStorage",
     "MixinBitArray",
-    "MixinPlayerChunkMapEntry",
     "MixinChunk",
-    "MixinChunkProviderServer",
     "MixinWorld"
   ],
   "injectors": {

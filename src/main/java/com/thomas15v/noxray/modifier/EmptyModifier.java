@@ -4,7 +4,6 @@ import com.flowpowered.math.vector.Vector3i;
 import com.thomas15v.noxray.api.BlockModifier;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.world.Location;
 
 import java.util.List;
 import java.util.function.Predicate;

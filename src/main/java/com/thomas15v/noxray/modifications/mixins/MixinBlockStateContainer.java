@@ -5,7 +5,6 @@ import com.thomas15v.noxray.modifications.internal.InternalBlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.BlockStateContainer;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IBlockStatePalette;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,28 +23,6 @@ public abstract class MixinBlockStateContainer implements InternalBlockStateCont
     protected static IBlockState AIR_BLOCK_STATE;
 
     private NetworkBlockContainer modifiedStorage = new NetworkBlockContainer(REGISTRY_BASED_PALETTE, AIR_BLOCK_STATE);
-
-    public void updateModified(Chunk chunk)
-    {
-        /*try {
-            int blockx = chunk.xPosition * 16;
-            int blockz = chunk.zPosition * 16;
-            int blocky = getY();
-            BitArray data = ((InternalBitArray) storage).copy();
-            for (int x = 0; x < 16; x++) {
-                for (int y = 0; y < 16; y++) {
-                    for (int z = 0; z < 16; z++) {
-                        if(NoXrayPlugin.getInstance().hideBlock(new Vector3i(x + blockx, blocky + y, z + blockz ), (BlockState) get(x,y,z), (World) chunk.getWorld())){
-                            setBitarray(x,y,z, Blocks.REDSTONE_BLOCK.getDefaultState(), data);
-                        }
-                    }
-                }
-            }
-            modifiedStorage = data;
-        }catch (Exception e){
-            e.printStackTrace();
-        }*/
-    }
 
     @Override
     public void writeModified(PacketBuffer buf) {

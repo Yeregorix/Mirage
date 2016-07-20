@@ -4,7 +4,6 @@ import com.flowpowered.math.vector.Vector3i;
 import com.thomas15v.noxray.NoXrayPlugin;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.BitArray;
 import net.minecraft.util.math.MathHelper;
@@ -13,7 +12,8 @@ import net.minecraft.world.chunk.BlockStatePaletteLinear;
 import net.minecraft.world.chunk.BlockStatePaletteResizer;
 import net.minecraft.world.chunk.IBlockStatePalette;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.util.Direction;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,59 +114,96 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
         return iblockstate == null ? AIR_BLOCK_STATE : iblockstate;
     }
 
-    /**
-     * Obfuscates the blocks that are inside a chunk. Blocks on the chunkbored are not getting obfuscated here since we don't wanna trigger a chunkread.
-     * @param chunk
-     */
-    public void obfuscateInnerBlocks(NetworkChunk chunk) {
-        final long startTime = System.currentTimeMillis();
+    public void obfuscateBlocks(NetworkChunk chunk) {
         BlockModifier blockModifier = NoXrayPlugin.getInstance().getBlockModifier();
         Predicate<BlockState> filter = blockModifier.getFilter();
+        int maxY =  16 + this.y;
+        for (int y = this.y; y < maxY; y++) {
+            for (int z = 0; z < 15; z++) {
+                for (int x = 0; x < 15; x++) {
+                    obfuscateBlock(filter, x,y,z,chunk, blockModifier);
+                }
+            }
+        }
+    }
 
-        for (int y = 0; y < 16; y++) {
-            for (int z = 1; z < 15; z++) {
-                for (int x = 1; x < 15; x++) {
-                    BlockState blockState = (BlockState) get(x,y,z);
-                    if (blockState == AIR_BLOCK_STATE || blockState == Blocks.BEDROCK || !filter.test(blockState)) {
-                        continue;
-                    }
-                    Vector3i vector3i = new Vector3i(x,y,z);
-                    IBlockState response = (IBlockState) blockModifier.handleBlock(blockState, vector3i, null /*getSurrounding(vector3i, chunk)*/);
-                    if (response != blockState) {
-                        set(x, y, z, response);
+    /*public void obfuscateOutSideBlocks(NetworkChunk targetChunk, NetworkChunk sideChunk, Direction direction) {
+        BlockModifier blockModifier = NoXrayPlugin.getInstance().getBlockModifier();
+        Predicate<BlockState> filter = blockModifier.getFilter();
+        int maxY =  16 + this.y;
+        for (int y = this.y; y < maxY; y++) {
+            for (int xz = 1; xz < 15; xz++) {
+                int x = direction.getX() != 0 ? direction.getX() > 0 ? 15 : 0 : xz;
+                int z = direction.getZ() != 0 ? direction.getZ() > 0 ? 15 : 0 : xz;
+                obfuscateOutSideBlock(filter, x, y, z,direction, targetChunk, sideChunk,blockModifier);
+                for (NetworkBlockContainer blockContainer : sideChunk.getBlockStateContainers()) {
+                    if (blockContainer != null) {
+                        blockContainer.obfuscateOutSideBlock(filter, (x + direction.getX()) & 15, y,
+                                (z + direction.getZ()) & 15 + direction.getZ(), direction, targetChunk, sideChunk, blockModifier);
                     }
                 }
             }
         }
-        final long time = System.currentTimeMillis() - startTime;
-        if (time > 5){
-            System.out.println(time);
+    }*/
+
+    private void obfuscateBlock(Predicate<BlockState> filter, int x, int y, int z, NetworkChunk chunk, BlockModifier blockModifier){
+        BlockState blockState = chunk.get(x, y, z);
+        if (filter.test(blockState)) {
+            Vector3i vector3i = new Vector3i(x, y, z);
+            BlockState response = blockModifier.handleBlock(blockState, vector3i, getSurrounding(vector3i, chunk));
+            if (response != blockState) {
+                chunk.set(x, y, z, response);
+            }
         }
     }
 
-    public List<BlockState> getSurrounding(Vector3i vector3i, NetworkChunk networkChunk){
-        List<BlockState> blockStates = new ArrayList<>();
-        try {
-            blockStates.add(networkChunk.get(vector3i.add(1,0,0)));
-            blockStates.add(networkChunk.get(vector3i.sub(1,0,0)));
-            if (vector3i.getY() != 256){
-                blockStates.add(networkChunk.get(vector3i.add(0,1,0)));
+    /*private void obfuscateOutSideBlock(Predicate<BlockState> filter, int x, int y, int z, Direction direction,  NetworkChunk targetChunk,NetworkChunk sideChunk, BlockModifier blockModifier){
+        BlockState blockState = targetChunk.get(x, y, z);
+        if (filter.test(blockState)) {
+            Vector3i targetLocation = new Vector3i(x, y, z);
+            List<BlockState> blockStates = getSurrounding(targetLocation, targetChunk);
+            Vector3i moduloLocation = Util.moduloVector(direction.getRelative(targetLocation), 16);
+            BlockState sideState = sideChunk.get(moduloLocation);
+            if (sideState == null) {
+                System.out.println(blockState + " " + direction + " " + moduloLocation + " " + targetLocation + blockStates);
             }
-            if (vector3i.getY() != 0){
-                blockStates.add(networkChunk.get(vector3i.sub(0,1,0)));
+            blockStates.add(sideState);
+            BlockState response = blockModifier.handleBlock(blockState, targetLocation, blockStates);
+            if (response != blockState) {
+                targetChunk.set(x, y, z, response);
             }
-            blockStates.add(networkChunk.get(vector3i.add(0,0,1)));
-            blockStates.add(networkChunk.get(vector3i.sub(0,0,1)));
-        }catch (IllegalArgumentException e){
-            System.out.println(vector3i);
-            e.printStackTrace();
-            System.exit(-1);
         }
+    }*/
 
+    //public void obfuscateCorners(NetworkChunk networkChunk, )
+
+    private final static org.spongepowered.api.util.Direction[] directions = new org.spongepowered.api.util.Direction[]{org.spongepowered.api.util.Direction.EAST,
+            org.spongepowered.api.util.Direction.NORTH, org.spongepowered.api.util.Direction.SOUTH, org.spongepowered.api.util.Direction.WEST};
+
+    public List<BlockState> getSurrounding(Vector3i vector3i, Location<World> location){
+        List<BlockState> blockStates = new ArrayList<BlockState>(){
+            @Override
+            public boolean add(BlockState blockState) {
+                if(blockState != null) {
+                    return super.add(blockState);
+                }
+                return false;
+            }
+        };
+
+        if (vector3i.getY() != 256){
+            blockStates.add(location.getRelative(org.spongepowered.api.util.Direction.UP).getBlock());
+        }
+        if (vector3i.getY() != 0){
+            blockStates.add(location.getRelative(org.spongepowered.api.util.Direction.DOWN).getBlock());
+        }
+        for (org.spongepowered.api.util.Direction direction : directions) {
+                blockStates.add(location.getRelative(direction));
+        }
+        if (blockStates.size() < 5){
+            System.out.println("WARNING FAULTY CODE: " + blockStates + " " + vector3i);
+        }
         return blockStates;
     }
 
-    public void ObfuscateOutSideBlocks(NetworkChunk networkChunk, NetworkChunk[] networkChunks) {
-
-    }
 }
