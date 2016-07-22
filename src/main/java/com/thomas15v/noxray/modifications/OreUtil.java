@@ -1,10 +1,8 @@
 package com.thomas15v.noxray.modifications;
 
-import com.thomas15v.noxray.NoXrayPlugin;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockOre;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -18,6 +16,7 @@ public class OreUtil {
 
     static {
         addOre(BlockTypes.REDSTONE_ORE);
+        addOre(BlockTypes.MONSTER_EGG);
         //other ores are covered by BlockOre class
     }
 
