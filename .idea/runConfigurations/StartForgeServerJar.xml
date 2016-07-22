@@ -5,6 +5,7 @@
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run/forge" />
     <option name="ALTERNATIVE_JRE_PATH" />
     <envs />
+    <module name="NoXray" />
     <method>
       <option name="Gradle.BeforeRunTask" enabled="true" tasks="updatePlugin" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
     </method>

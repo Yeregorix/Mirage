@@ -29,7 +29,7 @@ public class GenerationModifier implements BlockModifier {
                 return original;
             }
         }
-        return BlockTypes.REDSTONE_BLOCK.getDefaultState();
+        return BlockTypes.STONE.getDefaultState();
 
     }
 

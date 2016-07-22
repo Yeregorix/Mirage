@@ -30,7 +30,6 @@ public class MixinChunk implements InternalChunk {
     @Override
     public void obFuscate(){
         if (networkChunk == null) {
-            final long startTime = System.currentTimeMillis();
             if (worldObj.getWorldType().getWorldTypeID() != -1 && worldObj.getWorldType().getWorldTypeID() != 1 && networkChunk == null) {
                 NetworkBlockContainer[] blockContainers = new NetworkBlockContainer[storageArrays.length];
                 for (int i = 0; i < storageArrays.length; i++) {
@@ -41,10 +40,6 @@ public class MixinChunk implements InternalChunk {
                 networkChunk = new NetworkChunk(blockContainers, (org.spongepowered.api.world.Chunk) this);
                 ((InternalWorld) worldObj).getNetworkWorld().addChunk(networkChunk);
                 networkChunk.obfuscate();
-            }
-            final long time = System.currentTimeMillis() - startTime;
-            if (time > 5){
-                System.out.println(time);
             }
         }
     }
