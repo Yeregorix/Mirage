@@ -2,15 +2,13 @@ package com.thomas15v.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
-import com.thomas15v.noxray.Direction;
 import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Represent a chunk viewed for the network (akka online players)
@@ -42,11 +40,11 @@ public class NetworkChunk {
         return blockStateContainers[y >> 4];
     }
 
-    public void set(Vector3i vector3i, BlockState blockState){
-        set(vector3i.getX(), vector3i.getY(), vector3i.getZ(), blockState);
+    public void set(Location<World> vector3i, BlockState blockState){
+        set(vector3i.getBlockX() & 15, vector3i.getBlockY(), vector3i.getBlockZ() & 15, blockState);
     }
 
-    public void set(int x, int y, int z, BlockState blockState){
+    private void set(int x, int y, int z, BlockState blockState){
         NetworkBlockContainer blockContainer = getBlockContainerFor(y);
         if (blockContainer != null) {
             blockContainer.set(x,y & 15,z, (IBlockState) blockState);
@@ -56,10 +54,10 @@ public class NetworkChunk {
     /**
      * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
      */
-    public void obfuscateBlocks(){
+    public void obfuscate(){
         for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
             if (blockStateContainer != null){
-                blockStateContainer.obfuscateBlocks(this);
+                blockStateContainer.obfuscate(this);
             }
         }
     }
@@ -84,5 +82,9 @@ public class NetworkChunk {
 
     public NetworkBlockContainer[] getBlockStateContainers() {
         return blockStateContainers;
+    }
+
+    public World getWorld(){
+        return chunk.getWorld();
     }
 }

@@ -1,6 +1,7 @@
 package com.thomas15v.noxray.modifications.mixins;
 
 import com.thomas15v.noxray.modifications.internal.InternalBlockStateContainer;
+import com.thomas15v.noxray.modifications.internal.InternalChunk;
 import com.thomas15v.noxray.modifications.internal.InternalPacketChunkData;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.PacketBuffer;
@@ -9,7 +10,9 @@ import net.minecraft.world.chunk.BlockStateContainer;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SPacketChunkData.class)
 public class MixinPacketChunkData implements InternalPacketChunkData {
@@ -23,6 +26,7 @@ public class MixinPacketChunkData implements InternalPacketChunkData {
 
     @Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
     public int caclulateModifiedSize(BlockStateContainer blockStateContainer, Chunk chunk, boolean p_189556_2_, int p_189556_3_){
+        ((InternalChunk) chunk).obFuscate();
         InternalBlockStateContainer container = (InternalBlockStateContainer) blockStateContainer;
         return container.modifiedSize();
     }

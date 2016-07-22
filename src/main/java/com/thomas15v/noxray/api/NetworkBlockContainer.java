@@ -12,6 +12,7 @@ import net.minecraft.world.chunk.BlockStatePaletteLinear;
 import net.minecraft.world.chunk.BlockStatePaletteResizer;
 import net.minecraft.world.chunk.IBlockStatePalette;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -28,7 +29,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
     private IBlockStatePalette REGISTRY_BASED_PALETTE;
     private IBlockState AIR_BLOCK_STATE;
 
-    private int y;
+    private int y = -1;
 
     public NetworkBlockContainer(IBlockStatePalette REGISTRY_BASED_PALETTE, IBlockState AIR_BLOCK_STATE){
 
@@ -63,15 +64,23 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 
     @Override
     public int onResize(int size, IBlockState state) {
+        BitArray bitarray = this.storage;
+        IBlockStatePalette iblockstatepalette = this.palette;
         setBits(size);
+        for (int i = 0; i < bitarray.size(); ++i)
+        {
+            IBlockState iblockstate = iblockstatepalette.getBlockState(bitarray.getAt(i));
+
+            if (iblockstate != null)
+            {
+                this.set(i, iblockstate);
+            }
+        }
         return palette.idFor(state);
     }
 
     public void set(int index, IBlockState state)
     {
-        /*int y = (index >> 8) + this.y;
-        int z = ((index ^ (y << 8)) >> 4) + 16 * chunkZ;
-        int x = index ^ ((y << 8) + (z << 4)) + 16 * chunkX;*/
         int i = palette.idFor(state);
         storage.setAt(index, i);
     }
@@ -114,73 +123,35 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
         return iblockstate == null ? AIR_BLOCK_STATE : iblockstate;
     }
 
-    public void obfuscateBlocks(NetworkChunk chunk) {
+    public void obfuscate(NetworkChunk chunk) {
         BlockModifier blockModifier = NoXrayPlugin.getInstance().getBlockModifier();
         Predicate<BlockState> filter = blockModifier.getFilter();
-        int maxY =  16 + this.y;
-        for (int y = this.y; y < maxY; y++) {
-            for (int z = 0; z < 15; z++) {
-                for (int x = 0; x < 15; x++) {
-                    obfuscateBlock(filter, x,y,z,chunk, blockModifier);
+        for (int y = 0; y < 16; y++) {
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    obfuscateBlock(filter,
+                            chunk.getWorld().getLocation(x + chunk.getLocation().getX() * 16, y + this.y , z + chunk.getLocation().getZ() * 16),
+                            chunk,
+                            blockModifier);
                 }
             }
         }
     }
 
-    /*public void obfuscateOutSideBlocks(NetworkChunk targetChunk, NetworkChunk sideChunk, Direction direction) {
-        BlockModifier blockModifier = NoXrayPlugin.getInstance().getBlockModifier();
-        Predicate<BlockState> filter = blockModifier.getFilter();
-        int maxY =  16 + this.y;
-        for (int y = this.y; y < maxY; y++) {
-            for (int xz = 1; xz < 15; xz++) {
-                int x = direction.getX() != 0 ? direction.getX() > 0 ? 15 : 0 : xz;
-                int z = direction.getZ() != 0 ? direction.getZ() > 0 ? 15 : 0 : xz;
-                obfuscateOutSideBlock(filter, x, y, z,direction, targetChunk, sideChunk,blockModifier);
-                for (NetworkBlockContainer blockContainer : sideChunk.getBlockStateContainers()) {
-                    if (blockContainer != null) {
-                        blockContainer.obfuscateOutSideBlock(filter, (x + direction.getX()) & 15, y,
-                                (z + direction.getZ()) & 15 + direction.getZ(), direction, targetChunk, sideChunk, blockModifier);
-                    }
-                }
-            }
-        }
-    }*/
-
-    private void obfuscateBlock(Predicate<BlockState> filter, int x, int y, int z, NetworkChunk chunk, BlockModifier blockModifier){
-        BlockState blockState = chunk.get(x, y, z);
+    private void obfuscateBlock(Predicate<BlockState> filter, Location<World> location, NetworkChunk chunk, BlockModifier blockModifier){
+        BlockState blockState = location.getBlock();
         if (filter.test(blockState)) {
-            Vector3i vector3i = new Vector3i(x, y, z);
-            BlockState response = blockModifier.handleBlock(blockState, vector3i, getSurrounding(vector3i, chunk));
+            BlockState response = blockModifier.handleBlock(blockState, location, getSurrounding(location));
             if (response != blockState) {
-                chunk.set(x, y, z, response);
+                chunk.set(location, response);
             }
         }
     }
 
-    /*private void obfuscateOutSideBlock(Predicate<BlockState> filter, int x, int y, int z, Direction direction,  NetworkChunk targetChunk,NetworkChunk sideChunk, BlockModifier blockModifier){
-        BlockState blockState = targetChunk.get(x, y, z);
-        if (filter.test(blockState)) {
-            Vector3i targetLocation = new Vector3i(x, y, z);
-            List<BlockState> blockStates = getSurrounding(targetLocation, targetChunk);
-            Vector3i moduloLocation = Util.moduloVector(direction.getRelative(targetLocation), 16);
-            BlockState sideState = sideChunk.get(moduloLocation);
-            if (sideState == null) {
-                System.out.println(blockState + " " + direction + " " + moduloLocation + " " + targetLocation + blockStates);
-            }
-            blockStates.add(sideState);
-            BlockState response = blockModifier.handleBlock(blockState, targetLocation, blockStates);
-            if (response != blockState) {
-                targetChunk.set(x, y, z, response);
-            }
-        }
-    }*/
+    private final static Direction[] directions = new Direction[]{Direction.EAST,
+            Direction.NORTH, Direction.SOUTH, Direction.WEST};
 
-    //public void obfuscateCorners(NetworkChunk networkChunk, )
-
-    private final static org.spongepowered.api.util.Direction[] directions = new org.spongepowered.api.util.Direction[]{org.spongepowered.api.util.Direction.EAST,
-            org.spongepowered.api.util.Direction.NORTH, org.spongepowered.api.util.Direction.SOUTH, org.spongepowered.api.util.Direction.WEST};
-
-    public List<BlockState> getSurrounding(Vector3i vector3i, Location<World> location){
+    public List<BlockState> getSurrounding(Location<World> location){
         List<BlockState> blockStates = new ArrayList<BlockState>(){
             @Override
             public boolean add(BlockState blockState) {
@@ -191,17 +162,17 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
             }
         };
 
-        if (vector3i.getY() != 256){
-            blockStates.add(location.getRelative(org.spongepowered.api.util.Direction.UP).getBlock());
+        if (location.getY() != 256){
+            blockStates.add(location.getRelative(Direction.UP).getBlock());
         }
-        if (vector3i.getY() != 0){
-            blockStates.add(location.getRelative(org.spongepowered.api.util.Direction.DOWN).getBlock());
+        if (location.getY() != 0){
+            blockStates.add(location.getRelative(Direction.DOWN).getBlock());
         }
-        for (org.spongepowered.api.util.Direction direction : directions) {
-                blockStates.add(location.getRelative(direction));
+        for (Direction direction : directions) {
+                blockStates.add(location.getRelative(direction).getBlock());
         }
         if (blockStates.size() < 5){
-            System.out.println("WARNING FAULTY CODE: " + blockStates + " " + vector3i);
+            System.out.println("WARNING FAULTY CODE: " + blockStates + " " + location);
         }
         return blockStates;
     }
