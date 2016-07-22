@@ -5,8 +5,6 @@ import com.thomas15v.noxray.modifications.OreUtil;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.data.property.block.HardnessProperty;
-import org.spongepowered.api.data.property.block.MatterProperty;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.world.Location;
@@ -14,7 +12,6 @@ import org.spongepowered.api.world.World;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 /**

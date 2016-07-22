@@ -22,7 +22,7 @@ buildscript {
     }
 }
 
-apply plugin: 'net.minecraftforge.gradle.tweaker-server'
+apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 apply plugin: "com.qixalite.spongestart"
 
@@ -34,11 +34,11 @@ spongestart{
 }
 
 minecraft {
-    version = '1.10.2'
+    version = "1.10.2-12.18.1.2018"
     mappings = 'snapshot_20160628'
 
     runDir = 'run'
-    tweakClass = 'org.spongepowered.asm.launch.MixinTweaker'
+    //
 
     makeObfSourceJar = false
 }
@@ -53,7 +53,8 @@ jar {
     manifest {
         attributes(
                 'MixinConfigs': 'mixins.noxray.json',
-                'ForceLoadAsMod' : true
+                'ForceLoadAsMod' : true,
+                'tweakClass': 'org.spongepowered.asm.launch.MixinTweaker'
         )
     }
 }
@@ -65,7 +66,7 @@ repositories {
     }
 }
 
-dependencies{
+dependencies {
     compile 'org.spongepowered:spongeapi:5.0.0-SNAPSHOT'
     compile('org.spongepowered:mixin:0.5.11-SNAPSHOT') {
         exclude module: 'launchwrapper'
