@@ -22,15 +22,5 @@ public interface BlockModifier {
      */
     BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks);
 
-    /**
-     * Handle blocks for a specified player.
-     *
-     * @param original The original block
-     * @param location The location of the block
-     * @param player The player the data will be sended to
-     * @return The block that will be replaced. return the original for no change
-     */
-    BlockState HandlePlayerSpecificBlock(BlockState original, Location<World> location, Player player);
-
     Predicate<BlockState> getFilter();
 }

@@ -26,16 +26,19 @@ public class GenerationModifier implements BlockModifier {
     public BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks) {
         for (BlockState surroundingBlock : surroundingBlocks) {
             if (surroundingBlock.getType().equals(BlockTypes.AIR)) {
-                return original;
+                if (surroundingBlock.getType().equals(BlockTypes.WATER)) {
+                    return original;
+                } else {
+                    return handlePlayerBlock(original, location);
+                }
             }
         }
         return BlockTypes.STONE.getDefaultState();
 
     }
 
-    @Override
-    public BlockState HandlePlayerSpecificBlock(BlockState original, Location<World> location, Player player) {
-        return null;
+    public BlockState handlePlayerBlock(BlockState original, Location<World> location){
+        return original;
     }
 
     @Override

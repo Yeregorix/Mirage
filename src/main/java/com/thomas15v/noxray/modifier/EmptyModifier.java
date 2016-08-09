@@ -11,14 +11,8 @@ import java.util.function.Predicate;
 
 public class EmptyModifier implements BlockModifier {
 
-
     @Override
     public BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks) {
-        return null;
-    }
-
-    @Override
-    public BlockState HandlePlayerSpecificBlock(BlockState original, Location<World> location, Player player) {
         return null;
     }
 
