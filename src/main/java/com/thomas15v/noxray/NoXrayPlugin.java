@@ -22,7 +22,7 @@ import org.spongepowered.api.plugin.Plugin;
 
 import java.io.IOException;
 
-@Plugin(id = "noxray", name = "NoXray", version = "0.3-beta", authors = "thomas15v")
+@Plugin(id = "noxray", name = "NoXray", version = "0.3.2-beta", authors = "thomas15v")
 public class NoXrayPlugin {
 
     @Inject
@@ -50,7 +50,7 @@ public class NoXrayPlugin {
     @Listener
     public void onStart(GameLoadCompleteEvent event){
         loadConfig();
-        blockModifier = new PlayerGenerationModifier();
+        blockModifier = new GenerationModifier();
         instance = this;
         game.getEventManager().registerListeners(this, new PlayerEventListener());
         if (config.isUseOreDict()) {
