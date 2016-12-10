@@ -34,7 +34,7 @@ spongestart{
 }
 
 minecraft {
-    version = "1.10.2-12.18.1.2018"
+    version = "1.10.2-12.18.2.2171"
     mappings = 'snapshot_20160628'
 
     runDir = 'run'
@@ -67,8 +67,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:5.0.0-SNAPSHOT'
-    compile('org.spongepowered:mixin:0.5.11-SNAPSHOT') {
+    compile 'org.spongepowered:spongeapi:5.1.0-SNAPSHOT'
+    compile('org.spongepowered:mixin:0.6-SNAPSHOT') {
         exclude module: 'launchwrapper'
         exclude module: 'guava'
     }
