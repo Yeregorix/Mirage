@@ -24,7 +24,7 @@ import org.spongepowered.api.plugin.Plugin;
 
 import java.io.IOException;
 
-@Plugin(id = "noxray", name = "NoXray", version = "0.3.2-beta", authors = "thomas15v", description = "Anti-Xray")
+@Plugin(id = "noxray", name = "NoXray", version = "0.3.3-beta", authors = "thomas15v", description = "Anti-Xray")
 public class NoXrayPlugin {
 
     @Inject
