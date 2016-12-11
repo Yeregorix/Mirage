@@ -4,6 +4,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.thomas15v.noxray.api.BlockModifier;
 import com.thomas15v.noxray.config.NoXrayConfig;
+import com.thomas15v.noxray.event.ChunkEventListener;
 import com.thomas15v.noxray.event.PlayerEventListener;
 import com.thomas15v.noxray.modifications.OreUtil;
 import com.thomas15v.noxray.modifier.GenerationModifier;
@@ -18,11 +19,12 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 
 import java.io.IOException;
 
-@Plugin(id = "noxray", name = "NoXray", version = "0.3.2-beta", authors = "thomas15v")
+@Plugin(id = "noxray", name = "NoXray", version = "0.3.2-beta", authors = "thomas15v", description = "Anti-Xray")
 public class NoXrayPlugin {
 
     @Inject
@@ -52,12 +54,18 @@ public class NoXrayPlugin {
         loadConfig();
         blockModifier = new GenerationModifier();
         instance = this;
+        game.getEventManager().registerListeners(this, new ChunkEventListener());
         game.getEventManager().registerListeners(this, new PlayerEventListener());
         if (config.isUseOreDict()) {
             try {
                 OreUtil.registerForgeOres();
             } catch (NoClassDefFoundError ignored){}
         }
+    }
+
+    @Listener
+    public void onServerStarted(GameStartedServerEvent event) {
+    	this.logger.info("Loaded successfully.");
     }
 
     public BlockModifier getBlockModifier() {

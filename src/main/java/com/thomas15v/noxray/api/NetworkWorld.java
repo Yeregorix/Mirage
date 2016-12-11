@@ -4,21 +4,25 @@ import com.flowpowered.math.vector.Vector3i;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Represent the world viewed for the network (akka online players)
  */
 public class NetworkWorld {
 
-    private Map<Vector3i, NetworkChunk> networkChunkMap = new HashMap<>();
+    // Thread-safe map
+    private Map<Vector3i, NetworkChunk> networkChunkMap = new ConcurrentSkipListMap<>();
     //todo: modifiers for each world
     private BlockModifier modifier;
 
-    public synchronized void addChunk(NetworkChunk chunk){
-        Vector3i location = chunk.getLocation();
-        networkChunkMap.put(location, chunk);
+    public void addChunk(NetworkChunk chunk){
+        networkChunkMap.put(chunk.getLocation(), chunk);
+    }
+
+    public void removeChunk(Vector3i pos){
+        networkChunkMap.remove(pos);
     }
 
     @Nullable
