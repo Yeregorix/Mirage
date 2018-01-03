@@ -4,7 +4,7 @@ import net.minecraft.util.BitArray;
 
 public interface InternalBitArray {
 
-    BitArray copy();
+	BitArray copy();
 
-    void setLongArray(long[] longArray);
+	void setLongArray(long[] longArray);
 }

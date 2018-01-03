@@ -18,35 +18,35 @@ import java.util.function.Predicate;
  */
 public class GenerationModifier implements BlockModifier {
 
-    private static final List<BlockType> COMMON_BLOCKS = Arrays.asList(BlockTypes.AIR, BlockTypes.STONE, BlockTypes.NETHERRACK, BlockTypes.END_STONE, BlockTypes.BEDROCK);
-    private static final Predicate<BlockState> FILTER = blockState -> OreUtil.isOre(blockState.getType());
+	private static final List<BlockType> COMMON_BLOCKS = Arrays.asList(BlockTypes.AIR, BlockTypes.STONE, BlockTypes.NETHERRACK, BlockTypes.END_STONE, BlockTypes.BEDROCK);
+	private static final Predicate<BlockState> FILTER = blockState -> OreUtil.isOre(blockState.getType());
 
-    @Override
-    public BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks) {
-        for (BlockState surroundingBlock : surroundingBlocks) {
-            if (surroundingBlock.getType().equals(BlockTypes.AIR)) {
-                if (surroundingBlock.getType().equals(BlockTypes.WATER)) {
-                    return original;
-                } else {
-                    return handlePlayerBlock(original, location);
-                }
-            }
-        }
-        return BlockTypes.STONE.getDefaultState();
+	@Override
+	public BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks) {
+		for (BlockState surroundingBlock : surroundingBlocks) {
+			if (surroundingBlock.getType().equals(BlockTypes.AIR)) {
+				if (surroundingBlock.getType().equals(BlockTypes.WATER)) {
+					return original;
+				} else {
+					return handlePlayerBlock(original, location);
+				}
+			}
+		}
+		return BlockTypes.STONE.getDefaultState();
 
-    }
+	}
 
-    public BlockState handlePlayerBlock(BlockState original, Location<World> location){
-        return original;
-    }
+	public BlockState handlePlayerBlock(BlockState original, Location<World> location) {
+		return original;
+	}
 
-    @Override
-    public Predicate<BlockState> getFilter() {
-        return FILTER;
-    }
+	@Override
+	public Predicate<BlockState> getFilter() {
+		return FILTER;
+	}
 
 
-    public static boolean checkBlock(Location blockState, Direction direction) {
-        return !blockState.getBlockRelative(direction).getBlock().getType().equals(BlockTypes.AIR);
-    }
+	public static boolean checkBlock(Location blockState, Direction direction) {
+		return !blockState.getBlockRelative(direction).getBlock().getType().equals(BlockTypes.AIR);
+	}
 }

@@ -8,10 +8,10 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(World.class)
 public abstract class MixinWorld implements InternalWorld {
 
-    private NetworkWorld networkWorld = new NetworkWorld();
+	private NetworkWorld networkWorld = new NetworkWorld();
 
-    @Override
-    public NetworkWorld getNetworkWorld() {
-        return networkWorld;
-    }
+	@Override
+	public NetworkWorld getNetworkWorld() {
+		return networkWorld;
+	}
 }

@@ -15,32 +15,32 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(value = Chunk.class)
 public class MixinChunk implements InternalChunk {
 
-    @Shadow
-    public int xPosition;
-    @Shadow
-    public int zPosition;
-    @Shadow
-    private World worldObj;
-    @Shadow
-    @Final
-    private ExtendedBlockStorage[] storageArrays;
+	@Shadow
+	public int x;
+	@Shadow
+	public int z;
+	@Shadow
+	private World world;
+	@Shadow
+	@Final
+	private ExtendedBlockStorage[] storageArrays;
 
-    private NetworkChunk networkChunk;
+	private NetworkChunk networkChunk;
 
-    @Override
-    public void obFuscate(){
-        if (networkChunk == null) {
-            if (worldObj.getWorldType().getWorldTypeID() != -1 && worldObj.getWorldType().getWorldTypeID() != 1 && networkChunk == null) {
-                NetworkBlockContainer[] blockContainers = new NetworkBlockContainer[storageArrays.length];
-                for (int i = 0; i < storageArrays.length; i++) {
-                    if (storageArrays[i] != null) {
-                        blockContainers[i] = ((InternalBlockStateContainer) storageArrays[i].getData()).getBlockContainer();
-                    }
-                }
-                networkChunk = new NetworkChunk(blockContainers, (org.spongepowered.api.world.Chunk) this);
-                ((InternalWorld) worldObj).getNetworkWorld().addChunk(networkChunk);
-                networkChunk.obfuscate();
-            }
-        }
-    }
+	@Override
+	public void obFuscate() {
+		if (networkChunk == null) {
+			if (world.getWorldType().getId() != -1 && world.getWorldType().getId() != 1 && networkChunk == null) {
+				NetworkBlockContainer[] blockContainers = new NetworkBlockContainer[storageArrays.length];
+				for (int i = 0; i < storageArrays.length; i++) {
+					if (storageArrays[i] != null) {
+						blockContainers[i] = ((InternalBlockStateContainer) storageArrays[i].getData()).getBlockContainer();
+					}
+				}
+				networkChunk = new NetworkChunk(blockContainers, (org.spongepowered.api.world.Chunk) this);
+				((InternalWorld) world).getNetworkWorld().addChunk(networkChunk);
+				networkChunk.obfuscate();
+			}
+		}
+	}
 }

@@ -4,5 +4,5 @@ import com.thomas15v.noxray.api.NetworkWorld;
 
 public interface InternalWorld {
 
-    NetworkWorld getNetworkWorld();
+	NetworkWorld getNetworkWorld();
 }

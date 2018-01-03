@@ -12,32 +12,32 @@ import java.util.Set;
 
 public class OreUtil {
 
-    private static Set<BlockType> Ores = new HashSet<>();
+	private static Set<BlockType> Ores = new HashSet<>();
 
-    static {
-        addOre(BlockTypes.REDSTONE_ORE);
-        addOre(BlockTypes.MONSTER_EGG);
-        //other ores are covered by BlockOre class
-    }
+	static {
+		addOre(BlockTypes.REDSTONE_ORE);
+		addOre(BlockTypes.MONSTER_EGG);
+		//other ores are covered by BlockOre class
+	}
 
-    public static boolean isOre(BlockType blockState){
-        return blockState instanceof BlockOre | Ores.contains(blockState);
-    }
+	public static boolean isOre(BlockType blockState) {
+		return blockState instanceof BlockOre | Ores.contains(blockState);
+	}
 
-    public static void addOre(BlockType blockType){
-        Ores.add(blockType);
-    }
+	public static void addOre(BlockType blockType) {
+		Ores.add(blockType);
+	}
 
-    public static void registerForgeOres(){
-        for (String s : OreDictionary.getOreNames()) {
-            if (s.contains("ore")){
-                OreDictionary.getOres(s).stream().filter(ore -> ore.getItem() instanceof ItemBlock).forEach(ore -> {
-                    Block block = ((ItemBlock) ore.getItem()).getBlock();
-                    if (!(block instanceof BlockOre)) {
-                        OreUtil.addOre((BlockType) block);
-                    }
-                });
-            }
-        }
-    }
+	public static void registerForgeOres() {
+		for (String s : OreDictionary.getOreNames()) {
+			if (s.contains("ore")) {
+				OreDictionary.getOres(s).stream().filter(ore -> ore.getItem() instanceof ItemBlock).forEach(ore -> {
+					Block block = ((ItemBlock) ore.getItem()).getBlock();
+					if (!(block instanceof BlockOre)) {
+						OreUtil.addOre((BlockType) block);
+					}
+				});
+			}
+		}
+	}
 }

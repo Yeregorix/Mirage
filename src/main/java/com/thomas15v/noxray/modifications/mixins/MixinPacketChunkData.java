@@ -15,22 +15,22 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(SPacketChunkData.class)
 public class MixinPacketChunkData implements InternalPacketChunkData {
 
-    private EntityPlayerMP player;
+	private EntityPlayerMP player;
 
-    @Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
-    public void writeModified(BlockStateContainer storage, PacketBuffer buffer, PacketBuffer methodbuffer, Chunk chunk, boolean aboolean, int anunknownint){
-        ((InternalBlockStateContainer)storage).writeModified(buffer);
-    }
+	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
+	public void writeModified(BlockStateContainer storage, PacketBuffer buffer, PacketBuffer methodbuffer, Chunk chunk, boolean aboolean, int anunknownint) {
+		((InternalBlockStateContainer) storage).writeModified(buffer);
+	}
 
-    @Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
-    public int caclulateModifiedSize(BlockStateContainer blockStateContainer, Chunk chunk, boolean p_189556_2_, int p_189556_3_){
-        ((InternalChunk) chunk).obFuscate();
-        InternalBlockStateContainer container = (InternalBlockStateContainer) blockStateContainer;
-        return container.modifiedSize();
-    }
+	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
+	public int calculateModifiedSize(BlockStateContainer blockStateContainer, Chunk chunk, boolean p_189556_2_, int p_189556_3_) {
+		((InternalChunk) chunk).obFuscate();
+		InternalBlockStateContainer container = (InternalBlockStateContainer) blockStateContainer;
+		return container.modifiedSize();
+	}
 
-    @Override
-    public void setPlayer(EntityPlayerMP player) {
-        this.player = player;
-    }
+	@Override
+	public void setPlayer(EntityPlayerMP player) {
+		this.player = player;
+	}
 }

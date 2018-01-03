@@ -5,11 +5,11 @@ import net.minecraft.network.PacketBuffer;
 
 public interface InternalBlockStateContainer {
 
-    int modifiedSize();
+	int modifiedSize();
 
-    void writeModified(PacketBuffer buffer);
+	void writeModified(PacketBuffer buffer);
 
-    void setY(int y);
+	void setY(int y);
 
-    NetworkBlockContainer getBlockContainer();
+	NetworkBlockContainer getBlockContainer();
 }

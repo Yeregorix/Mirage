@@ -15,76 +15,76 @@ import javax.annotation.Nullable;
  */
 public class NetworkChunk {
 
-    private NetworkBlockContainer[] blockStateContainers;
-    private Chunk chunk;
+	private NetworkBlockContainer[] blockStateContainers;
+	private Chunk chunk;
 
-    public NetworkChunk(NetworkBlockContainer[] blockStateContainers, Chunk chunk){
-        this.blockStateContainers = blockStateContainers;
-        this.chunk = chunk;
-    }
+	public NetworkChunk(NetworkBlockContainer[] blockStateContainers, Chunk chunk) {
+		this.blockStateContainers = blockStateContainers;
+		this.chunk = chunk;
+	}
 
-    public BlockState get(Vector3i vector3i){
-        return get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
-    }
+	public BlockState get(Vector3i vector3i) {
+		return get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
+	}
 
-    public BlockState get(int x, int y, int z){
-        NetworkBlockContainer blockContainer = getBlockContainerFor(y);
-        if (blockContainer == null) {
-            return null;
-        }
-        return (BlockState) blockContainer.get(x, y & 15 , z);
-    }
+	public BlockState get(int x, int y, int z) {
+		NetworkBlockContainer blockContainer = getBlockContainerFor(y);
+		if (blockContainer == null) {
+			return null;
+		}
+		return (BlockState) blockContainer.get(x, y & 15, z);
+	}
 
-    @Nullable
-    private NetworkBlockContainer getBlockContainerFor(int y){
-        return blockStateContainers[y >> 4];
-    }
+	@Nullable
+	private NetworkBlockContainer getBlockContainerFor(int y) {
+		return blockStateContainers[y >> 4];
+	}
 
-    public void set(Location<World> vector3i, BlockState blockState){
-        set(vector3i.getBlockX() & 15, vector3i.getBlockY(), vector3i.getBlockZ() & 15, blockState);
-    }
+	public void set(Location<World> vector3i, BlockState blockState) {
+		set(vector3i.getBlockX() & 15, vector3i.getBlockY(), vector3i.getBlockZ() & 15, blockState);
+	}
 
-    private void set(int x, int y, int z, BlockState blockState){
-        NetworkBlockContainer blockContainer = getBlockContainerFor(y);
-        if (blockContainer != null) {
-            blockContainer.set(x,y & 15,z, (IBlockState) blockState);
-        }
-    }
+	private void set(int x, int y, int z, BlockState blockState) {
+		NetworkBlockContainer blockContainer = getBlockContainerFor(y);
+		if (blockContainer != null) {
+			blockContainer.set(x, y & 15, z, (IBlockState) blockState);
+		}
+	}
 
-    /**
-     * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
-     */
-    public void obfuscate(){
-        for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
-            if (blockStateContainer != null){
-                blockStateContainer.obfuscate(this);
-            }
-        }
-    }
+	/**
+	 * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
+	 */
+	public void obfuscate() {
+		for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
+			if (blockStateContainer != null) {
+				blockStateContainer.obfuscate(this);
+			}
+		}
+	}
 
-    public Vector3i getLocation(){
-        return chunk.getPosition();
-    }
+	public Vector3i getLocation() {
+		return chunk.getPosition();
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        NetworkChunk that = (NetworkChunk) o;
-        return Objects.equal(blockStateContainers, that.blockStateContainers) &&
-                Objects.equal(chunk, that.chunk);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		NetworkChunk that = (NetworkChunk) o;
+		return Objects.equal(blockStateContainers, that.blockStateContainers) &&
+				Objects.equal(chunk, that.chunk);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(blockStateContainers, chunk);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(blockStateContainers, chunk);
+	}
 
-    public NetworkBlockContainer[] getBlockStateContainers() {
-        return blockStateContainers;
-    }
+	public NetworkBlockContainer[] getBlockStateContainers() {
+		return blockStateContainers;
+	}
 
-    public World getWorld(){
-        return chunk.getWorld();
-    }
+	public World getWorld() {
+		return chunk.getWorld();
+	}
 }

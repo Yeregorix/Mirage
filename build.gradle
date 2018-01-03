@@ -16,9 +16,9 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
-        classpath 'org.spongepowered:mixingradle:0.4-SNAPSHOT'
-        classpath "gradle.plugin.com.qixalite:SpongeStart:1.5"
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.4+'
+        classpath "gradle.plugin.com.qixalite:SpongeStart:1.6.0"
     }
 }
 
@@ -31,21 +31,21 @@ targetCompatibility = 1.8
 
 spongestart{
     eula true
+    minecraft '1.12.2'
+    type 'stable'
 }
 
 minecraft {
-    version = "1.10.2-12.18.2.2171"
-    mappings = 'snapshot_20160628'
+    version = "1.12.2-14.23.1.2555"
+    mappings = 'snapshot_20171007'
 
     runDir = 'run'
-    //
-
     makeObfSourceJar = false
 }
 
 sourceSets {
     main {
-        refMap = "mixins.noxray.refmap.json"
+        ext.refMap = "mixins.noxray.refmap.json"
     }
 }
 
@@ -67,8 +67,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:5.1.0-SNAPSHOT'
-    compile('org.spongepowered:mixin:0.6-SNAPSHOT') {
+    compile 'org.spongepowered:spongeapi:7.1.0-SNAPSHOT'
+    compile('org.spongepowered:mixin:0.7.5-SNAPSHOT') {
         exclude module: 'launchwrapper'
         exclude module: 'guava'
     }

@@ -10,22 +10,22 @@ import java.util.Arrays;
 @Mixin(BitArray.class)
 public class MixinBitArray implements InternalBitArray {
 
-    @Shadow
-    private long[] longArray;
-    @Shadow
-    private int bitsPerEntry;
-    @Shadow
-    private int arraySize;
+	@Shadow
+	private long[] longArray;
+	@Shadow
+	private int bitsPerEntry;
+	@Shadow
+	private int arraySize;
 
-    @Override
-    public BitArray copy() {
-        InternalBitArray bitArray = (InternalBitArray) new BitArray(bitsPerEntry, arraySize);
-        bitArray.setLongArray(Arrays.copyOf(longArray, longArray.length));
-        return (BitArray) bitArray;
-    }
+	@Override
+	public BitArray copy() {
+		InternalBitArray bitArray = (InternalBitArray) new BitArray(bitsPerEntry, arraySize);
+		bitArray.setLongArray(Arrays.copyOf(longArray, longArray.length));
+		return (BitArray) bitArray;
+	}
 
-    @Override
-    public void setLongArray(long[] longArray) {
-        this.longArray = longArray;
-    }
+	@Override
+	public void setLongArray(long[] longArray) {
+		this.longArray = longArray;
+	}
 }

@@ -9,17 +9,17 @@ import org.spongepowered.api.world.World;
  */
 public class NMSUtil {
 
-    public static int getLightLevel(Location<World> location){
-        return ((net.minecraft.world.World)location.getExtent()).
-                getLight(getBlockPos(location));
-    }
+	public static int getLightLevel(Location<World> location) {
+		return ((net.minecraft.world.World) location.getExtent()).
+				getLight(getBlockPos(location));
+	}
 
-    public static boolean canSeeTheSky(Location<World> location){
-        return ((net.minecraft.world.World)location.getExtent()).canSeeSky(getBlockPos(location));
-    }
+	public static boolean canSeeTheSky(Location<World> location) {
+		return ((net.minecraft.world.World) location.getExtent()).canSeeSky(getBlockPos(location));
+	}
 
-    private static BlockPos getBlockPos(Location<World> location){
-        return new BlockPos(location.getX(), location.getY(), location.getZ());
-    }
+	private static BlockPos getBlockPos(Location<World> location) {
+		return new BlockPos(location.getX(), location.getY(), location.getZ());
+	}
 
 }

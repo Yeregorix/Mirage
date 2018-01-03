@@ -4,6 +4,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 public interface InternalPacketChunkData {
 
-    void setPlayer(EntityPlayerMP player);
+	void setPlayer(EntityPlayerMP player);
 
 }

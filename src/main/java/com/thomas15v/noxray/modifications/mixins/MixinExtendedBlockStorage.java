@@ -12,11 +12,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ExtendedBlockStorage.class)
 public class MixinExtendedBlockStorage {
 
-    @Shadow
-    private BlockStateContainer data;
+	@Shadow
+	private BlockStateContainer data;
 
-    @Inject(method = "<init>", at = @At("RETURN") )
-    public void setY (int y, boolean storeSkylight, CallbackInfo callbackInfo){
-        ((InternalBlockStateContainer)data).setY(y);
-    }
+	@Inject(method = "<init>", at = @At("RETURN"))
+	public void setY(int y, boolean storeSkylight, CallbackInfo callbackInfo) {
+		((InternalBlockStateContainer) data).setY(y);
+	}
 }
