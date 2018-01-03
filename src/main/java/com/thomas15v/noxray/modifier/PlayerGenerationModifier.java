@@ -40,5 +40,4 @@ public class PlayerGenerationModifier extends GenerationModifier {
 			return super.handlePlayerBlock(original, location);
 		}
 	}
-
 }

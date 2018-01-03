@@ -30,6 +30,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.BlockStateContainer;
 import net.minecraft.world.chunk.IBlockStatePalette;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -40,47 +41,49 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinBlockStateContainer implements InternalBlockStateContainer {
 
 	@Shadow
-	public abstract IBlockState get(int x, int y, int z);
+	@Final
+	protected static IBlockState AIR_BLOCK_STATE;
+	@Shadow
+	@Final
+	private static IBlockStatePalette REGISTRY_BASED_PALETTE;
 
 	@Shadow
-	private static IBlockStatePalette REGISTRY_BASED_PALETTE;
-	@Shadow
-	protected static IBlockState AIR_BLOCK_STATE;
+	public abstract IBlockState get(int x, int y, int z);
 
 	private NetworkBlockContainer modifiedStorage = new NetworkBlockContainer(REGISTRY_BASED_PALETTE, AIR_BLOCK_STATE);
 
 	@Override
-	public void writeModified(PacketBuffer buf) {
-		modifiedStorage.write(buf);
+	public int modifiedSize() {
+		return this.modifiedStorage.size();
 	}
 
 	@Override
-	public int modifiedSize() {
-		return modifiedStorage.size();
+	public void writeModified(PacketBuffer buf) {
+		this.modifiedStorage.write(buf);
 	}
 
 	@Override
 	public void setY(int y) {
-		modifiedStorage.setY(y);
-	}
-
-	@Inject(method = "set(IIILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void setModified(int x, int y, int z, IBlockState blockState, CallbackInfo callbackInfo) {
-		modifiedStorage.set(x, y, z, blockState);
-	}
-
-	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void setModified(int index, IBlockState state, CallbackInfo callbackInfo) {
-		modifiedStorage.set(index, state);
-	}
-
-	@Inject(method = "setBits", at = @At("HEAD"))
-	private void setModifiedBits(int bitsIn, CallbackInfo callbackInfo) {
-		modifiedStorage.setBits(bitsIn);
+		this.modifiedStorage.setY(y);
 	}
 
 	@Override
 	public NetworkBlockContainer getBlockContainer() {
-		return modifiedStorage;
+		return this.modifiedStorage;
+	}
+
+	@Inject(method = "set(IIILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
+	public void setModified(int x, int y, int z, IBlockState blockState, CallbackInfo callbackInfo) {
+		this.modifiedStorage.set(x, y, z, blockState);
+	}
+
+	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
+	public void setModified(int index, IBlockState state, CallbackInfo callbackInfo) {
+		this.modifiedStorage.set(index, state);
+	}
+
+	@Inject(method = "setBits", at = @At("HEAD"))
+	private void setModifiedBits(int bitsIn, CallbackInfo callbackInfo) {
+		this.modifiedStorage.setBits(bitsIn);
 	}
 }

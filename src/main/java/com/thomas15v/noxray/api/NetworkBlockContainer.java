@@ -56,27 +56,8 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 	private int y = -1;
 
 	public NetworkBlockContainer(IBlockStatePalette REGISTRY_BASED_PALETTE, IBlockState AIR_BLOCK_STATE) {
-
 		this.REGISTRY_BASED_PALETTE = REGISTRY_BASED_PALETTE;
 		this.AIR_BLOCK_STATE = AIR_BLOCK_STATE;
-	}
-
-	public void setBits(int bitsIn) {
-		if (bitsIn != bits) {
-			bits = bitsIn;
-
-			if (bits <= 4) {
-				bits = 4;
-				this.palette = new BlockStatePaletteLinear(bits, this);
-			} else if (bits <= 8) {
-				this.palette = new BlockStatePaletteHashMap(bits, this);
-			} else {
-				this.palette = REGISTRY_BASED_PALETTE;
-				bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
-			}
-			this.palette.idFor(AIR_BLOCK_STATE);
-			this.storage = new BitArray(bits, 4096);
-		}
 	}
 
 	@Override
@@ -88,19 +69,37 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 			IBlockState iblockstate = iblockstatepalette.getBlockState(bitarray.getAt(i));
 
 			if (iblockstate != null) {
-				this.set(i, iblockstate);
+				set(i, iblockstate);
 			}
 		}
-		return palette.idFor(state);
+		return this.palette.idFor(state);
+	}
+
+	public void setBits(int bitsIn) {
+		if (bitsIn != this.bits) {
+			this.bits = bitsIn;
+
+			if (this.bits <= 4) {
+				this.bits = 4;
+				this.palette = new BlockStatePaletteLinear(this.bits, this);
+			} else if (this.bits <= 8) {
+				this.palette = new BlockStatePaletteHashMap(this.bits, this);
+			} else {
+				this.palette = this.REGISTRY_BASED_PALETTE;
+				this.bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
+			}
+			this.palette.idFor(this.AIR_BLOCK_STATE);
+			this.storage = new BitArray(this.bits, 4096);
+		}
 	}
 
 	public void set(int index, IBlockState state) {
-		int i = palette.idFor(state);
-		storage.setAt(index, i);
+		int i = this.palette.idFor(state);
+		this.storage.setAt(index, i);
 	}
 
 	public void set(int x, int y, int z, IBlockState blockState) {
-		this.set(getIndex(x, y, z), blockState);
+		set(getIndex(x, y, z), blockState);
 	}
 
 	private static int getIndex(int x, int y, int z) {
@@ -114,7 +113,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 	public void write(PacketBuffer buf) {
 		buf.writeByte(this.bits);
 		this.palette.write(buf);
-		buf.writeLongArray(storage.getBackingLongArray());
+		buf.writeLongArray(this.storage.getBackingLongArray());
 	}
 
 	public void setY(int y) {
@@ -122,16 +121,16 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 	}
 
 	public BlockState get(Vector3i vector3i) {
-		return (BlockState) get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
+		return (BlockState) this.get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
 	}
 
 	public IBlockState get(int x, int y, int z) {
-		return this.get(getIndex(x, y, z));
+		return get(getIndex(x, y, z));
 	}
 
 	protected IBlockState get(int index) {
 		IBlockState iblockstate = this.palette.getBlockState(this.storage.getAt(index));
-		return iblockstate == null ? AIR_BLOCK_STATE : iblockstate;
+		return iblockstate == null ? this.AIR_BLOCK_STATE : iblockstate;
 	}
 
 	public void obfuscate(NetworkChunk chunk) {
@@ -152,7 +151,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 	private void obfuscateBlock(Predicate<BlockState> filter, Location<World> location, NetworkChunk chunk, BlockModifier blockModifier) {
 		BlockState blockState = location.getBlock();
 		if (filter.test(blockState)) {
-			BlockState response = blockModifier.handleBlock(blockState, location, getSurrounding(location));
+			BlockState response = blockModifier.handleBlock(blockState, location, this.getSurrounding(location));
 			if (response != blockState) {
 				chunk.set(location, response);
 			}

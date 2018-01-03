@@ -76,11 +76,11 @@ public class NoXrayPlugin {
 	@Listener
 	public void onStart(GameLoadCompleteEvent event) {
 		loadConfig();
-		blockModifier = new GenerationModifier();
+		this.blockModifier = new GenerationModifier();
 		instance = this;
-		game.getEventManager().registerListeners(this, new ChunkEventListener());
-		game.getEventManager().registerListeners(this, new PlayerEventListener());
-		if (config.isUseOreDict()) {
+		this.game.getEventManager().registerListeners(this, new ChunkEventListener());
+		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
+		if (this.config.isUseOreDict()) {
 			try {
 				OreUtil.registerForgeOres();
 			} catch (NoClassDefFoundError ignored) {
@@ -93,22 +93,22 @@ public class NoXrayPlugin {
 		this.logger.info("Loaded successfully.");
 	}
 
-	public BlockModifier getBlockModifier() {
-		return blockModifier;
-	}
-
 	private void loadConfig() {
 
 		try {
-			CommentedConfigurationNode node = loader.load(ConfigurationOptions.defaults().setObjectMapperFactory(factory).setShouldCopyDefaults(true));
-			config = node.getValue(TypeToken.of(NoXrayConfig.class), new NoXrayConfig());
-			loader.save(node);
+			CommentedConfigurationNode node = this.loader.load(ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true));
+			this.config = node.getValue(TypeToken.of(NoXrayConfig.class), new NoXrayConfig());
+			this.loader.save(node);
 		} catch (IOException | ObjectMappingException e) {
 			e.printStackTrace();
 		}
 	}
 
+	public BlockModifier getBlockModifier() {
+		return this.blockModifier;
+	}
+
 	public Logger getLogger() {
-		return logger;
+		return this.logger;
 	}
 }

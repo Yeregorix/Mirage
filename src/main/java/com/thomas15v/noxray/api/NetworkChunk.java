@@ -87,7 +87,12 @@ public class NetworkChunk {
 	}
 
 	public Vector3i getLocation() {
-		return chunk.getPosition();
+		return this.chunk.getPosition();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(this.blockStateContainers, this.chunk);
 	}
 
 	@Override
@@ -95,20 +100,15 @@ public class NetworkChunk {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		NetworkChunk that = (NetworkChunk) o;
-		return Objects.equal(blockStateContainers, that.blockStateContainers) &&
-				Objects.equal(chunk, that.chunk);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(blockStateContainers, chunk);
+		return Objects.equal(this.blockStateContainers, that.blockStateContainers) &&
+				Objects.equal(this.chunk, that.chunk);
 	}
 
 	public NetworkBlockContainer[] getBlockStateContainers() {
-		return blockStateContainers;
+		return this.blockStateContainers;
 	}
 
 	public World getWorld() {
-		return chunk.getWorld();
+		return this.chunk.getWorld();
 	}
 }

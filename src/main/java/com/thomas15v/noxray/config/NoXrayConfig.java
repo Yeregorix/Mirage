@@ -51,14 +51,14 @@ public class NoXrayConfig {
 
 
 	public boolean isUseOreDict() {
-		return useOreDict;
+		return this.useOreDict;
 	}
 
 	public boolean isCaveEnabled() {
-		return caveEnabled;
+		return this.caveEnabled;
 	}
 
 	public int getCaveRange() {
-		return caveRange;
+		return this.caveRange;
 	}
 }

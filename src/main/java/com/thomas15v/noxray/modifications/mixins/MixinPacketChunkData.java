@@ -48,7 +48,7 @@ public class MixinPacketChunkData implements InternalPacketChunkData {
 
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
 	public int calculateModifiedSize(BlockStateContainer blockStateContainer, Chunk chunk, boolean p_189556_2_, int p_189556_3_) {
-		((InternalChunk) chunk).obFuscate();
+		((InternalChunk) chunk).obfuscate();
 		InternalBlockStateContainer container = (InternalBlockStateContainer) blockStateContainer;
 		return container.modifiedSize();
 	}

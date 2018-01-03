@@ -42,19 +42,19 @@ public class NetworkWorld {
 	private BlockModifier modifier;
 
 	public void addChunk(NetworkChunk chunk) {
-		networkChunkMap.put(chunk.getLocation(), chunk);
+		this.networkChunkMap.put(chunk.getLocation(), chunk);
 	}
 
 	public void removeChunk(Vector3i pos) {
-		networkChunkMap.remove(pos);
+		this.networkChunkMap.remove(pos);
 	}
 
 	@Nullable
 	private NetworkChunk getChunk(Vector3i vector3i) {
-		return networkChunkMap.get(vector3i);
+		return this.networkChunkMap.get(vector3i);
 	}
 
 	private Collection<NetworkChunk> getChunks() {
-		return networkChunkMap.values();
+		return this.networkChunkMap.values();
 	}
 }

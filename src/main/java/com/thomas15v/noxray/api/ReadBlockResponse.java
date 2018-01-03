@@ -44,14 +44,14 @@ public class ReadBlockResponse {
 	 * @returns the new block state
 	 */
 	public BlockState getBlockState() {
-		return blockState;
+		return this.blockState;
 	}
 
 	/**
 	 * @returns if this block should be handled for players
 	 */
 	public boolean isPlayerSpecific() {
-		return playerSpecific;
+		return this.playerSpecific;
 	}
 
 	public ReadBlockResponse setBlockState(BlockState blockState) {

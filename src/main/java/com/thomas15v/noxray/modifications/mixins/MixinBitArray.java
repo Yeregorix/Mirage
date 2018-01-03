@@ -26,25 +26,30 @@ package com.thomas15v.noxray.modifications.mixins;
 
 import com.thomas15v.noxray.modifications.internal.InternalBitArray;
 import net.minecraft.util.BitArray;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Arrays;
 
 @Mixin(BitArray.class)
 public class MixinBitArray implements InternalBitArray {
-
 	@Shadow
+	@Final
+	@Mutable
 	private long[] longArray;
 	@Shadow
+	@Final
 	private int bitsPerEntry;
 	@Shadow
+	@Final
 	private int arraySize;
 
 	@Override
 	public BitArray copy() {
-		InternalBitArray bitArray = (InternalBitArray) new BitArray(bitsPerEntry, arraySize);
-		bitArray.setLongArray(Arrays.copyOf(longArray, longArray.length));
+		InternalBitArray bitArray = (InternalBitArray) new BitArray(this.bitsPerEntry, this.arraySize);
+		bitArray.setLongArray(Arrays.copyOf(this.longArray, this.longArray.length));
 		return (BitArray) bitArray;
 	}
 
