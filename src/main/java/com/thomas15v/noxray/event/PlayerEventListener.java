@@ -24,39 +24,92 @@
 
 package com.thomas15v.noxray.event;
 
+import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableSet;
 import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.util.Direction;
+import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-public class PlayerEventListener {
+import java.util.List;
+import java.util.Set;
 
-	@Listener
-	public void onBlockUpdate(ChangeBlockEvent.Break event) {
-		if (event.getCause().containsType(Player.class)) {
-			event.getTransactions().forEach(PlayerEventListener::updateBlocks);
+public class PlayerEventListener {
+	private static final Set<BlockType> whitelist = ImmutableSet.of(BlockTypes.AIR, BlockTypes.PISTON, BlockTypes.PISTON_EXTENSION, BlockTypes.PISTON_HEAD, BlockTypes.STICKY_PISTON);
+	private static final int[] offsets = {-1, 0, 1};
+
+	@Listener(order = Order.POST)
+	public void onBlockBreak(ChangeBlockEvent.Break e) {
+		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
+			if (t.isValid() && !whitelist.contains(t.getFinal().getState().getType()))
+				t.getOriginal().getLocation().ifPresent(PlayerEventListener::updateSurroundingBlocks);
 		}
 	}
 
-	private static void updateBlocks(Transaction<BlockSnapshot> transaction) {
-		Location<World> location = transaction.getOriginal().getLocation().get();
-		for (Direction direction : Direction.values()) {
-			if (!direction.isSecondaryOrdinal()) {
-				updateBlock(location.getBlockRelative(direction));
+	@Listener(order = Order.POST)
+	public void onBlockInteract(InteractBlockEvent e) {
+		if (e.getCause().containsType(Player.class))
+			e.getTargetBlock().getLocation().ifPresent(PlayerEventListener::updateSurroundingBlocks);
+	}
+
+	@Listener(order = Order.POST)
+	public void onExplosionDetonate(ExplosionEvent.Detonate e) {
+		List<Location<World>> list = e.getAffectedLocations();
+		for (Location<World> loc : list) {
+			for (int dx : offsets) {
+				for (int dy : offsets) {
+					for (int dz : offsets) {
+						if (dx == 0 && dy == 0 && dz == 0)
+							continue;
+
+						Location<World> loc2 = loc.add(dx, dy, dz);
+						if (!list.contains(loc2))
+							updateBlock(loc2);
+					}
+				}
 			}
 		}
 	}
 
-	private static void updateBlock(Location<World> block) {
-		if (block.getBlockType() == BlockTypes.AIR)
-			return;
-		block.getExtent().sendBlockChange(block.getPosition().toInt(), block.getBlock());
+	public static void updateBlock(Location<World> loc) {
+		updateBlock(loc.getExtent(), loc.getBlockPosition());
 	}
 
+	public static void updateBlock(World w, Vector3i pos) {
+		updateBlock(w, pos.getX(), pos.getY(), pos.getZ());
+	}
 
+	public static void updateBlock(World w, int x, int y, int z) {
+		if (w.getBlockType(x, y, z) != BlockTypes.AIR)
+			w.resetBlockChange(x, y, z);
+	}
+
+	public static void updateSurroundingBlocks(Location<World> loc) {
+		updateSurroundingBlocks(loc.getExtent(), loc.getBlockPosition());
+	}
+
+	public static void updateSurroundingBlocks(World w, Vector3i pos) {
+		updateSurroundingBlocks(w, pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	public static void updateSurroundingBlocks(World w, int x, int y, int z) {
+		for (int dx : offsets) {
+			for (int dy : offsets) {
+				for (int dz : offsets) {
+					if (dx == 0 && dy == 0 && dz == 0)
+						continue;
+
+					updateBlock(w, x + dx, y + dy, z + dz);
+				}
+			}
+		}
+	}
 }

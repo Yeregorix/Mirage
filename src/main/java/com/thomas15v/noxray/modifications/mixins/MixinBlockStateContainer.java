@@ -54,7 +54,7 @@ public abstract class MixinBlockStateContainer implements InternalBlockStateCont
 
 	@Override
 	public int modifiedSize() {
-		return this.modifiedStorage.size();
+		return this.modifiedStorage.getSerializedSize();
 	}
 
 	@Override
@@ -72,17 +72,12 @@ public abstract class MixinBlockStateContainer implements InternalBlockStateCont
 		return this.modifiedStorage;
 	}
 
-	@Inject(method = "set(IIILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void setModified(int x, int y, int z, IBlockState blockState, CallbackInfo callbackInfo) {
-		this.modifiedStorage.set(x, y, z, blockState);
-	}
-
 	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
 	public void setModified(int index, IBlockState state, CallbackInfo callbackInfo) {
 		this.modifiedStorage.set(index, state);
 	}
 
-	@Inject(method = "setBits", at = @At("HEAD"))
+	@Inject(method = "setBits(I)V", at = @At("HEAD"))
 	private void setModifiedBits(int bitsIn, CallbackInfo callbackInfo) {
 		this.modifiedStorage.setBits(bitsIn);
 	}

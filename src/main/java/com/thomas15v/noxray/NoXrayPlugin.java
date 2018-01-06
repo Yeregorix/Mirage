@@ -31,17 +31,17 @@ import com.thomas15v.noxray.config.NoXrayConfig;
 import com.thomas15v.noxray.event.ChunkEventListener;
 import com.thomas15v.noxray.event.PlayerEventListener;
 import com.thomas15v.noxray.modifications.OreUtil;
-import com.thomas15v.noxray.modifier.GenerationModifier;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GameLoadCompleteEvent;
+import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 
@@ -49,66 +49,62 @@ import java.io.IOException;
 
 @Plugin(id = "noxray", name = "NoXray", version = "0.3.3-beta", authors = "thomas15v", description = "Anti-Xray")
 public class NoXrayPlugin {
+	public static final Logger LOGGER = LoggerFactory.getLogger("NoXray");
+	private static NoXrayPlugin instance;
 
 	@Inject
 	private Game game;
-
-	private static NoXrayPlugin instance;
-
-	public static NoXrayPlugin getInstance() {
-		return instance;
-	}
-
-	private BlockModifier blockModifier;
-
-	@Inject
-	private Logger logger;
-
 	@Inject
 	@DefaultConfig(sharedRoot = false)
 	private ConfigurationLoader<CommentedConfigurationNode> loader;
-
 	@Inject
 	private GuiceObjectMapperFactory factory;
 
 	private NoXrayConfig config;
+	private BlockModifier blockModifier;
+	private float density;
 
 	@Listener
-	public void onStart(GameLoadCompleteEvent event) {
-		loadConfig();
-		this.blockModifier = new GenerationModifier();
+	public void onLoadComplete(GamePreInitializationEvent e) {
 		instance = this;
-		this.game.getEventManager().registerListeners(this, new ChunkEventListener());
-		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
-		if (this.config.isUseOreDict()) {
+		loadConfig();
+		this.blockModifier = this.config.getModifier();
+		this.density = this.config.getDensity();
+		if (this.config.useOreDict()) {
 			try {
 				OreUtil.registerForgeOres();
 			} catch (NoClassDefFoundError ignored) {
 			}
 		}
-	}
 
-	@Listener
-	public void onServerStarted(GameStartedServerEvent event) {
-		this.logger.info("Loaded successfully.");
+		this.game.getEventManager().registerListeners(this, new ChunkEventListener());
+		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
 	}
 
 	private void loadConfig() {
-
 		try {
 			CommentedConfigurationNode node = this.loader.load(ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true));
 			this.config = node.getValue(TypeToken.of(NoXrayConfig.class), new NoXrayConfig());
 			this.loader.save(node);
 		} catch (IOException | ObjectMappingException e) {
-			e.printStackTrace();
+			LOGGER.warn("Error occured while loading config file", e);
 		}
+	}
+
+	@Listener
+	public void onServerStarted(GameStartedServerEvent event) {
+		LOGGER.info("Loaded successfully.");
 	}
 
 	public BlockModifier getBlockModifier() {
 		return this.blockModifier;
 	}
 
-	public Logger getLogger() {
-		return this.logger;
+	public float getDensity() {
+		return this.density;
+	}
+
+	public static NoXrayPlugin get() {
+		return instance;
 	}
 }

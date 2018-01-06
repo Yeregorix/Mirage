@@ -22,40 +22,32 @@
  * SOFTWARE.
  */
 
-package com.thomas15v.noxray.api;
+package com.thomas15v.noxray.modifier;
 
-import org.spongepowered.api.block.BlockState;
+import com.thomas15v.noxray.api.BlockModifier;
 
-public class ReadBlockResponse {
+import java.util.HashMap;
+import java.util.Map;
 
-	private BlockState blockState;
-	private boolean playerSpecific;
+public class ModifierRegistry {
+	private static final Map<String, BlockModifier> modifiers = new HashMap<>();
 
-	public ReadBlockResponse(BlockState blockState) {
-		this(blockState, false);
+	public static void register(String name, BlockModifier modifier) {
+		if (contains(name))
+			throw new IllegalArgumentException("Modifier already registered");
+		modifiers.put(name.toLowerCase(), modifier);
 	}
 
-	public ReadBlockResponse(BlockState blockState, boolean playerSpecific) {
-		this.blockState = blockState;
-		this.playerSpecific = playerSpecific;
+	public static boolean contains(String name) {
+		return modifiers.containsKey(name.toLowerCase());
 	}
 
-	/**
-	 * @returns the new block state
-	 */
-	public BlockState getBlockState() {
-		return this.blockState;
+	public static BlockModifier get(String name) {
+		return modifiers.get(name.toLowerCase());
 	}
 
-	/**
-	 * @returns if this block should be handled for players
-	 */
-	public boolean isPlayerSpecific() {
-		return this.playerSpecific;
-	}
-
-	public ReadBlockResponse setBlockState(BlockState blockState) {
-		this.blockState = blockState;
-		return this;
+	static {
+		register("obvious", new ObviousModifier());
+		register("random", new RandomModifier());
 	}
 }

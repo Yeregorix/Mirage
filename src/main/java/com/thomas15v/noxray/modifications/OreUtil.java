@@ -24,44 +24,75 @@
 
 package com.thomas15v.noxray.modifications;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockOre;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.data.property.block.FullBlockSelectionBoxProperty;
+import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.DimensionTypes;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class OreUtil {
+	private static final Set<BlockType> oresSet = new HashSet<>();
+	private static final List<BlockType> oresList = new ArrayList<>();
 
-	private static Set<BlockType> Ores = new HashSet<>();
-
-	static {
-		addOre(BlockTypes.REDSTONE_ORE);
-		addOre(BlockTypes.MONSTER_EGG);
-		//other ores are covered by BlockOre class
+	public static boolean isOre(BlockType type) {
+		return type instanceof BlockOre | oresSet.contains(type);
 	}
 
-	public static boolean isOre(BlockType blockState) {
-		return blockState instanceof BlockOre | Ores.contains(blockState);
-	}
-
-	public static void addOre(BlockType blockType) {
-		Ores.add(blockType);
+	public static BlockType getRandomOre(Random r) {
+		return oresList.get(r.nextInt(oresList.size()));
 	}
 
 	public static void registerForgeOres() {
 		for (String s : OreDictionary.getOreNames()) {
 			if (s.contains("ore")) {
-				OreDictionary.getOres(s).stream().filter(ore -> ore.getItem() instanceof ItemBlock).forEach(ore -> {
-					Block block = ((ItemBlock) ore.getItem()).getBlock();
-					if (!(block instanceof BlockOre)) {
-						OreUtil.addOre((BlockType) block);
-					}
-				});
+				for (ItemStack stack : OreDictionary.getOres(s)) {
+					Item item = stack.getItem();
+					if (item instanceof ItemBlock)
+						addOre((BlockType) ((ItemBlock) item).getBlock());
+				}
 			}
 		}
+	}
+
+	public static void addOre(BlockType type) {
+		if (!(type instanceof BlockOre))
+			oresSet.add(type);
+		oresList.add(type);
+	}
+
+	public static boolean isExposed(Iterable<BlockType> it) {
+		for (BlockType type : it) {
+			if (!type.getProperty(FullBlockSelectionBoxProperty.class).get().getValue())
+				return true;
+		}
+		return false;
+	}
+
+	public static BlockType getCommonGroundBlockType(DimensionType type) {
+		if (type == DimensionTypes.OVERWORLD)
+			return BlockTypes.STONE;
+		if (type == DimensionTypes.NETHER)
+			return BlockTypes.NETHERRACK;
+		if (type == DimensionTypes.THE_END)
+			return BlockTypes.END_STONE;
+		return BlockTypes.STONE;
+	}
+
+	static {
+		addOre(BlockTypes.REDSTONE_ORE);
+		addOre(BlockTypes.MONSTER_EGG);
+		addOre(BlockTypes.EMERALD_ORE);
+		addOre(BlockTypes.DIAMOND_ORE);
+		addOre(BlockTypes.COAL_ORE);
+		addOre(BlockTypes.IRON_ORE);
+		addOre(BlockTypes.LAPIS_ORE);
+		addOre(BlockTypes.GOLD_ORE);
 	}
 }

@@ -24,18 +24,56 @@
 
 package com.thomas15v.noxray.modifications.mixins;
 
+import com.thomas15v.noxray.api.BlockStorage;
 import com.thomas15v.noxray.api.NetworkWorld;
+import com.thomas15v.noxray.modifications.OreUtil;
 import com.thomas15v.noxray.modifications.internal.InternalWorld;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(World.class)
-public abstract class MixinWorld implements InternalWorld {
-
+public abstract class MixinWorld implements InternalWorld, BlockStorage {
 	private final NetworkWorld networkWorld = new NetworkWorld();
+	private DimensionType dimensionType;
+	private BlockType groundType;
+
+	@Override
+	public int getBlockLightLevel(int x, int y, int z) {
+		return getLightFor(EnumSkyBlock.BLOCK, new BlockPos(x, y, z));
+	}
+
+	@Shadow
+	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
 	@Override
 	public NetworkWorld getNetworkWorld() {
 		return this.networkWorld;
+	}
+
+	@Override
+	public boolean canSeeTheSky(int x, int y, int z) {
+		return canSeeSky(new BlockPos(x, y, z));
+	}
+
+	@Shadow
+	public abstract boolean canSeeSky(BlockPos pos);
+
+	@Override
+	public DimensionType getDimensionType() {
+		if (this.dimensionType == null)
+			this.dimensionType = ((org.spongepowered.api.world.World) this).getDimension().getType();
+		return this.dimensionType;
+	}
+
+	@Override
+	public BlockType getCommonGroundBlockType() {
+		if (this.groundType == null)
+			this.groundType = OreUtil.getCommonGroundBlockType(getDimensionType());
+		return this.groundType;
 	}
 }

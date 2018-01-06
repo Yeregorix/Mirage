@@ -26,86 +26,102 @@ package com.thomas15v.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
+import com.thomas15v.noxray.NoXrayPlugin;
 import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import javax.annotation.Nullable;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Represent a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk {
-
-	private NetworkBlockContainer[] blockStateContainers;
+	private NetworkBlockContainer[] containers;
 	private Chunk chunk;
 
-	public NetworkChunk(NetworkBlockContainer[] blockStateContainers, Chunk chunk) {
-		this.blockStateContainers = blockStateContainers;
+	public NetworkChunk(NetworkBlockContainer[] containers, Chunk chunk) {
+		this.containers = containers;
 		this.chunk = chunk;
 	}
 
-	public BlockState get(Vector3i vector3i) {
-		return get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
+	public BlockState get(Vector3i pos) {
+		return get(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	public BlockState get(int x, int y, int z) {
-		NetworkBlockContainer blockContainer = getBlockContainerFor(y);
-		if (blockContainer == null) {
-			return null;
-		}
-		return (BlockState) blockContainer.get(x, y & 15, z);
+		NetworkBlockContainer container = getContainer(y);
+		return container == null ? null : (BlockState) container.get(x & 15, y & 15, z & 15);
 	}
 
 	@Nullable
-	private NetworkBlockContainer getBlockContainerFor(int y) {
-		return blockStateContainers[y >> 4];
+	private NetworkBlockContainer getContainer(int y) {
+		return this.containers[y >> 4];
 	}
 
-	public void set(Location<World> vector3i, BlockState blockState) {
-		set(vector3i.getBlockX() & 15, vector3i.getBlockY(), vector3i.getBlockZ() & 15, blockState);
+	public void set(Vector3i pos, BlockState block) {
+		set(pos.getX(), pos.getY(), pos.getZ(), block);
 	}
 
-	private void set(int x, int y, int z, BlockState blockState) {
-		NetworkBlockContainer blockContainer = getBlockContainerFor(y);
-		if (blockContainer != null) {
-			blockContainer.set(x, y & 15, z, (IBlockState) blockState);
-		}
+	public void set(int x, int y, int z, BlockState block) {
+		NetworkBlockContainer container = getContainer(y);
+		if (container != null)
+			container.set(x & 15, y & 15, z & 15, (IBlockState) block);
+	}
+
+	public void obfuscate() {
+		obfuscate(NoXrayPlugin.get().getBlockModifier());
 	}
 
 	/**
 	 * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
 	 */
-	public void obfuscate() {
-		for (NetworkBlockContainer blockStateContainer : blockStateContainers) {
-			if (blockStateContainer != null) {
-				blockStateContainer.obfuscate(this);
+	public void obfuscate(BlockModifier modifier) {
+		BlockStorage storage = (BlockStorage) this.chunk.getWorld();
+		Random r = ThreadLocalRandom.current();
+		int x = this.chunk.getPosition().getX() * 16, z = this.chunk.getPosition().getZ() * 16;
+
+		for (NetworkBlockContainer container : this.containers) {
+			if (container == null)
+				continue;
+
+			for (int dy = 0; dy < 16; dy++) {
+				int y = container.getY() + dy;
+				for (int dz = 0; dz < 16; dz++) {
+					for (int dx = 0; dx < 16; dx++) {
+						BlockState newBlock = modifier.modify(storage, r, x + dx, y, z + dz);
+						if (newBlock != null)
+							set(x + dx, y, z + dz, newBlock);
+					}
+				}
 			}
 		}
 	}
 
-	public Vector3i getLocation() {
+	public Vector3i getPosition() {
 		return this.chunk.getPosition();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(this.blockStateContainers, this.chunk);
+		return Objects.hashCode(this.containers, this.chunk);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 		NetworkChunk that = (NetworkChunk) o;
-		return Objects.equal(this.blockStateContainers, that.blockStateContainers) &&
-				Objects.equal(this.chunk, that.chunk);
+		return Objects.equal(this.containers, that.containers) && Objects.equal(this.chunk, that.chunk);
 	}
 
-	public NetworkBlockContainer[] getBlockStateContainers() {
-		return this.blockStateContainers;
+	public NetworkBlockContainer[] getContainers() {
+		return this.containers;
 	}
 
 	public World getWorld() {

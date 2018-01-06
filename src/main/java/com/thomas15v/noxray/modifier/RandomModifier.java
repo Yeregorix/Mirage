@@ -24,23 +24,32 @@
 
 package com.thomas15v.noxray.modifier;
 
+import com.thomas15v.noxray.NoXrayPlugin;
 import com.thomas15v.noxray.api.BlockModifier;
+import com.thomas15v.noxray.api.BlockStorage;
+import com.thomas15v.noxray.modifications.OreUtil;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
+import org.spongepowered.api.block.BlockType;
 
-import java.util.List;
-import java.util.function.Predicate;
+import javax.annotation.Nullable;
+import java.util.Random;
 
-public class EmptyModifier implements BlockModifier {
+public class RandomModifier implements BlockModifier {
 
+	@Nullable
 	@Override
-	public BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks) {
-		return null;
-	}
+	public BlockState modify(BlockStorage storage, Random r, int x, int y, int z) {
+		BlockType type = storage.getBlockType(x, y, z);
+		if (type != storage.getCommonGroundBlockType() && !OreUtil.isOre(type))
+			return null;
 
-	@Override
-	public Predicate<BlockState> getFilter() {
-		return blockState -> false;
+		if (OreUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
+			return null;
+
+		float density = NoXrayPlugin.get().getDensity();
+		if (density < 1 && r.nextFloat() > density)
+			return storage.getCommonGroundBlock();
+
+		return OreUtil.getRandomOre(r).getDefaultState();
 	}
 }

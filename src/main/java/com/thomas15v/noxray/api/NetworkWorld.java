@@ -35,26 +35,33 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Represent the world viewed for the network (akka online players)
  */
 public class NetworkWorld {
-
 	// Thread-safe map
-	private Map<Vector3i, NetworkChunk> networkChunkMap = new ConcurrentSkipListMap<>();
+	private Map<Vector3i, NetworkChunk> chunks = new ConcurrentSkipListMap<>();
 	//todo: modifiers for each world
 	private BlockModifier modifier;
 
 	public void addChunk(NetworkChunk chunk) {
-		this.networkChunkMap.put(chunk.getLocation(), chunk);
+		this.chunks.put(chunk.getPosition(), chunk);
 	}
 
 	public void removeChunk(Vector3i pos) {
-		this.networkChunkMap.remove(pos);
+		this.chunks.remove(pos);
 	}
 
 	@Nullable
-	private NetworkChunk getChunk(Vector3i vector3i) {
-		return this.networkChunkMap.get(vector3i);
+	private NetworkChunk getChunk(Vector3i pos) {
+		return this.chunks.get(pos);
 	}
 
 	private Collection<NetworkChunk> getChunks() {
-		return this.networkChunkMap.values();
+		return this.chunks.values();
+	}
+
+	public BlockModifier getModifier() {
+		return this.modifier;
+	}
+
+	public void setModifier(BlockModifier modifier) {
+		this.modifier = modifier;
 	}
 }

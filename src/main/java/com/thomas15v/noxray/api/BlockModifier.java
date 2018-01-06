@@ -25,25 +25,20 @@
 package com.thomas15v.noxray.api;
 
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
 
-import java.util.List;
-import java.util.function.Predicate;
+import javax.annotation.Nullable;
+import java.util.Random;
 
 public interface BlockModifier {
+	BlockModifier EMPTY = (storage, r, x, y, z) -> null;
 
 	/**
 	 * This method gets called when a block gets read from the disk.
 	 * Not that this function should not trigger another chunkload operation since this could cause a stack overflow.
-	 * THIS METHOD IS ASYNC AND NOT THREADSAFE AND WE CANT CALL SPONGE API FUNCTIONS FROM HERE
+	 * THIS METHOD IS ASYNC AND CAN'T CALL SPONGE API FUNCTIONS FROM HERE
 	 *
-	 * @param original          The original block
-	 * @param location          The location of the block
-	 * @param surroundingBlocks list with surrounding blocks
-	 * @return a ReadBlockResponse with the modifiedblock and if the block should be handled for players.
+	 * @return a BlockState if the block has been modified, null else.
 	 */
-	BlockState handleBlock(BlockState original, Location<World> location, List<BlockState> surroundingBlocks);
-
-	Predicate<BlockState> getFilter();
+	@Nullable
+	BlockState modify(BlockStorage storage, Random r, int x, int y, int z);
 }

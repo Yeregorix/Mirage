@@ -22,28 +22,32 @@
  * SOFTWARE.
  */
 
-package com.thomas15v.noxray.modifications;
+package com.thomas15v.noxray.modifier;
 
-import net.minecraft.util.math.BlockPos;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
+import com.thomas15v.noxray.api.BlockModifier;
+import com.thomas15v.noxray.api.BlockStorage;
+import com.thomas15v.noxray.modifications.OreUtil;
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
+
+import javax.annotation.Nullable;
+import java.util.Random;
 
 /**
- * A class that contains stuff that Sponge prob should take a look at :).
+ * Only modifies the obviously ore blocks, And is the less lagiest solution
  */
-public class NMSUtil {
+public class ObviousModifier implements BlockModifier {
 
-	public static int getLightLevel(Location<World> location) {
-		return ((net.minecraft.world.World) location.getExtent()).
-				getLight(getBlockPos(location));
+	@Nullable
+	@Override
+	public BlockState modify(BlockStorage storage, Random r, int x, int y, int z) {
+		BlockType type = storage.getBlockType(x, y, z);
+		if (!OreUtil.isOre(type))
+			return null;
+
+		if (OreUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
+			return null;
+
+		return storage.getCommonGroundBlock();
 	}
-
-	public static boolean canSeeTheSky(Location<World> location) {
-		return ((net.minecraft.world.World) location.getExtent()).canSeeSky(getBlockPos(location));
-	}
-
-	private static BlockPos getBlockPos(Location<World> location) {
-		return new BlockPos(location.getX(), location.getY(), location.getZ());
-	}
-
 }

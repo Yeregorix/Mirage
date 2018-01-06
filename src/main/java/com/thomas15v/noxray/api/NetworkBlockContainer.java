@@ -24,8 +24,6 @@
 
 package com.thomas15v.noxray.api;
 
-import com.flowpowered.math.vector.Vector3i;
-import com.thomas15v.noxray.NoXrayPlugin;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
@@ -35,24 +33,13 @@ import net.minecraft.world.chunk.BlockStatePaletteHashMap;
 import net.minecraft.world.chunk.BlockStatePaletteLinear;
 import net.minecraft.world.chunk.BlockStatePaletteResizer;
 import net.minecraft.world.chunk.IBlockStatePalette;
-import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.util.Direction;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
 
 public class NetworkBlockContainer implements BlockStatePaletteResizer {
-
-	private BitArray storage;
+	private final IBlockStatePalette REGISTRY_BASED_PALETTE;
+	private final IBlockState AIR_BLOCK_STATE;
 	private IBlockStatePalette palette;
+	private BitArray storage;
 	private int bits;
-
-	private IBlockStatePalette REGISTRY_BASED_PALETTE;
-	private IBlockState AIR_BLOCK_STATE;
-
 	private int y = -1;
 
 	public NetworkBlockContainer(IBlockStatePalette REGISTRY_BASED_PALETTE, IBlockState AIR_BLOCK_STATE) {
@@ -60,18 +47,26 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 		this.AIR_BLOCK_STATE = AIR_BLOCK_STATE;
 	}
 
+	public int getY() {
+		return this.y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
+	}
+
 	@Override
-	public int onResize(int size, IBlockState state) {
+	public int onResize(int bits, IBlockState state) {
 		BitArray bitarray = this.storage;
 		IBlockStatePalette iblockstatepalette = this.palette;
-		setBits(size);
+		setBits(bits);
+
 		for (int i = 0; i < bitarray.size(); ++i) {
 			IBlockState iblockstate = iblockstatepalette.getBlockState(bitarray.getAt(i));
-
-			if (iblockstate != null) {
+			if (iblockstate != null)
 				set(i, iblockstate);
-			}
 		}
+
 		return this.palette.idFor(state);
 	}
 
@@ -88,9 +83,18 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 				this.palette = this.REGISTRY_BASED_PALETTE;
 				this.bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
 			}
-			this.palette.idFor(this.AIR_BLOCK_STATE);
+
+			this.palette.idFor(AIR_BLOCK_STATE);
 			this.storage = new BitArray(this.bits, 4096);
 		}
+	}
+
+	public void set(int x, int y, int z, IBlockState state) {
+		set(getIndex(x, y, z), state);
+	}
+
+	public static int getIndex(int x, int y, int z) {
+		return y << 8 | z << 4 | x;
 	}
 
 	public void set(int index, IBlockState state) {
@@ -98,16 +102,13 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 		this.storage.setAt(index, i);
 	}
 
-	public void set(int x, int y, int z, IBlockState blockState) {
-		set(getIndex(x, y, z), blockState);
+	public IBlockState get(int x, int y, int z) {
+		return get(getIndex(x, y, z));
 	}
 
-	private static int getIndex(int x, int y, int z) {
-		return y << 8 | z << 4 | x;
-	}
-
-	public int size() {
-		return 1 + this.palette.getSerializedSize() + PacketBuffer.getVarIntSize(this.storage.size()) + this.storage.getBackingLongArray().length * 8;
+	public IBlockState get(int index) {
+		IBlockState iblockstate = this.palette.getBlockState(this.storage.getAt(index));
+		return iblockstate == null ? this.AIR_BLOCK_STATE : iblockstate;
 	}
 
 	public void write(PacketBuffer buf) {
@@ -116,72 +117,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 		buf.writeLongArray(this.storage.getBackingLongArray());
 	}
 
-	public void setY(int y) {
-		this.y = y;
+	public int getSerializedSize() {
+		return 1 + this.palette.getSerializedSize() + PacketBuffer.getVarIntSize(this.storage.size()) + this.storage.getBackingLongArray().length * 8;
 	}
-
-	public BlockState get(Vector3i vector3i) {
-		return (BlockState) this.get(vector3i.getX(), vector3i.getY(), vector3i.getZ());
-	}
-
-	public IBlockState get(int x, int y, int z) {
-		return get(getIndex(x, y, z));
-	}
-
-	protected IBlockState get(int index) {
-		IBlockState iblockstate = this.palette.getBlockState(this.storage.getAt(index));
-		return iblockstate == null ? this.AIR_BLOCK_STATE : iblockstate;
-	}
-
-	public void obfuscate(NetworkChunk chunk) {
-		BlockModifier blockModifier = NoXrayPlugin.getInstance().getBlockModifier();
-		Predicate<BlockState> filter = blockModifier.getFilter();
-		for (int y = 0; y < 16; y++) {
-			for (int z = 0; z < 16; z++) {
-				for (int x = 0; x < 16; x++) {
-					obfuscateBlock(filter,
-							chunk.getWorld().getLocation(x + chunk.getLocation().getX() * 16, y + this.y, z + chunk.getLocation().getZ() * 16),
-							chunk,
-							blockModifier);
-				}
-			}
-		}
-	}
-
-	private void obfuscateBlock(Predicate<BlockState> filter, Location<World> location, NetworkChunk chunk, BlockModifier blockModifier) {
-		BlockState blockState = location.getBlock();
-		if (filter.test(blockState)) {
-			BlockState response = blockModifier.handleBlock(blockState, location, this.getSurrounding(location));
-			if (response != blockState) {
-				chunk.set(location, response);
-			}
-		}
-	}
-
-	private final static Direction[] directions = new Direction[]{Direction.EAST,
-			Direction.NORTH, Direction.SOUTH, Direction.WEST};
-
-	public List<BlockState> getSurrounding(Location<World> location) {
-		List<BlockState> blockStates = new ArrayList<BlockState>() {
-			@Override
-			public boolean add(BlockState blockState) {
-				return blockState != null && super.add(blockState);
-			}
-		};
-
-		if (location.getY() != 256) {
-			blockStates.add(location.getRelative(Direction.UP).getBlock());
-		}
-		if (location.getY() != 0) {
-			blockStates.add(location.getRelative(Direction.DOWN).getBlock());
-		}
-		for (Direction direction : directions) {
-			blockStates.add(location.getRelative(direction).getBlock());
-		}
-		if (blockStates.size() < 5) {
-			System.out.println("WARNING FAULTY CODE: " + blockStates + " " + location);
-		}
-		return blockStates;
-	}
-
 }
