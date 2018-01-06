@@ -26,6 +26,8 @@ package com.thomas15v.noxray.event;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
+import com.thomas15v.noxray.api.NetworkChunk;
+import com.thomas15v.noxray.modifications.internal.InternalWorld;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -88,8 +90,9 @@ public class PlayerEventListener {
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {
-		if (w.getBlockType(x, y, z) != BlockTypes.AIR)
-			w.resetBlockChange(x, y, z);
+		NetworkChunk chunk = ((InternalWorld) w).getNetworkWorld().getChunk(new Vector3i(x >> 4, 0, z >> 4));
+		if (chunk != null)
+			chunk.deobfuscateBlock(x, y, z);
 	}
 
 	public static void updateSurroundingBlocks(Location<World> loc) {

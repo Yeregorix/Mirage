@@ -35,7 +35,7 @@ public interface BlockModifier {
 	/**
 	 * This method gets called when a block gets read from the disk.
 	 * Not that this function should not trigger another chunkload operation since this could cause a stack overflow.
-	 * THIS METHOD IS ASYNC AND CAN'T CALL SPONGE API FUNCTIONS FROM HERE
+	 * THIS METHOD IS ASYNC AND WE CAN'T CALL SPONGE API FUNCTIONS FROM HERE
 	 *
 	 * @return a BlockState if the block has been modified, null else.
 	 */

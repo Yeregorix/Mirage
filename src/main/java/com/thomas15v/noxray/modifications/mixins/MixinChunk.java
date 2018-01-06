@@ -30,6 +30,7 @@ import com.thomas15v.noxray.modifications.internal.InternalBlockStateContainer;
 import com.thomas15v.noxray.modifications.internal.InternalChunk;
 import com.thomas15v.noxray.modifications.internal.InternalWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import org.spongepowered.asm.mixin.Final;
@@ -38,13 +39,6 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(value = Chunk.class)
 public class MixinChunk implements InternalChunk {
-
-	@Shadow
-	@Final
-	public int x;
-	@Shadow
-	@Final
-	public int z;
 	@Shadow
 	@Final
 	private World world;
@@ -55,18 +49,18 @@ public class MixinChunk implements InternalChunk {
 	private NetworkChunk networkChunk;
 
 	@Override
-	public void obfuscate() {
+	public void obfuscateBlocks() {
 		if (this.networkChunk == null) {
-			if (this.world.getWorldType().getId() != -1 && this.world.getWorldType().getId() != 1 && this.networkChunk == null) {
-				NetworkBlockContainer[] blockContainers = new NetworkBlockContainer[this.storageArrays.length];
+			WorldType type = this.world.getWorldType();
+			if (type != WorldType.FLAT && type != WorldType.DEBUG_ALL_BLOCK_STATES) {
+				NetworkBlockContainer[] containers = new NetworkBlockContainer[this.storageArrays.length];
 				for (int i = 0; i < this.storageArrays.length; i++) {
-					if (this.storageArrays[i] != null) {
-						blockContainers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getBlockContainer();
-					}
+					if (this.storageArrays[i] != null)
+						containers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getBlockContainer();
 				}
-				this.networkChunk = new NetworkChunk(blockContainers, (org.spongepowered.api.world.Chunk) this);
+				this.networkChunk = new NetworkChunk(containers, (org.spongepowered.api.world.Chunk) this);
 				((InternalWorld) this.world).getNetworkWorld().addChunk(this.networkChunk);
-				this.networkChunk.obfuscate();
+				this.networkChunk.obfuscateBlocks();
 			}
 		}
 	}

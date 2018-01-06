@@ -49,11 +49,11 @@ public class NetworkWorld {
 	}
 
 	@Nullable
-	private NetworkChunk getChunk(Vector3i pos) {
+	public NetworkChunk getChunk(Vector3i pos) {
 		return this.chunks.get(pos);
 	}
 
-	private Collection<NetworkChunk> getChunks() {
+	public Collection<NetworkChunk> getChunks() {
 		return this.chunks.values();
 	}
 
