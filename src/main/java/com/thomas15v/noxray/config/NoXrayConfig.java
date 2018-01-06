@@ -40,7 +40,7 @@ public class NoXrayConfig {
 	@Setting(value = "Modifier", comment = MODIFIER_COMMENT)
 	private String modifier = "obvious";
 	@Setting(value = "Density", comment = DENSITY_COMMENT)
-	private float density = 0.4f;
+	private float density = 0.5f;
 
 	public boolean useOreDict() {
 		return this.useOreDict;
