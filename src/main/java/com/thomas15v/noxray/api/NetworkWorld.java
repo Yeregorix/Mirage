@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Thomas Vanmellaerts
+ * Copyright (c) 2016 Thomas Vanmellaerts, 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,38 +24,12 @@
 
 package com.thomas15v.noxray.api;
 
-import com.flowpowered.math.vector.Vector3i;
-
-import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
-
 /**
  * Represent the world viewed for the network (akka online players)
  */
 public class NetworkWorld {
-	// Thread-safe map
-	private Map<Vector3i, NetworkChunk> chunks = new ConcurrentSkipListMap<>();
-	//todo: modifiers for each world
+	// TODO modifiers for each world
 	private BlockModifier modifier;
-
-	public void addChunk(NetworkChunk chunk) {
-		this.chunks.put(chunk.getPosition(), chunk);
-	}
-
-	public void removeChunk(Vector3i pos) {
-		this.chunks.remove(pos);
-	}
-
-	@Nullable
-	public NetworkChunk getChunk(Vector3i pos) {
-		return this.chunks.get(pos);
-	}
-
-	public Collection<NetworkChunk> getChunks() {
-		return this.chunks.values();
-	}
 
 	public BlockModifier getModifier() {
 		return this.modifier;
