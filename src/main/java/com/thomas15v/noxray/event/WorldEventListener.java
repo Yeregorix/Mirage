@@ -49,7 +49,7 @@ import java.util.Set;
 public class WorldEventListener {
 	private static final Set<BlockType> whitelist = ImmutableSet.of(BlockTypes.AIR, BlockTypes.PISTON, BlockTypes.PISTON_EXTENSION, BlockTypes.PISTON_HEAD, BlockTypes.STICKY_PISTON);
 
-	@Listener
+	@Listener(order = Order.POST)
 	public void onWorldLoad(LoadWorldEvent e) {
 		try {
 			((InternalWorld) e.getTargetWorld()).getNetworkWorld().loadConfig();

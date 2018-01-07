@@ -25,8 +25,9 @@
 package com.thomas15v.noxray;
 
 import com.google.inject.Inject;
+import com.thomas15v.noxray.api.NetworkChunk;
 import com.thomas15v.noxray.event.WorldEventListener;
-import com.thomas15v.noxray.modifications.internal.InternalWorld;
+import com.thomas15v.noxray.modifications.internal.InternalChunk;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -42,6 +43,7 @@ import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.World;
 
 import java.nio.file.Path;
@@ -72,8 +74,15 @@ public class NoXrayPlugin {
 	@Listener
 	public void onServerStarted(GameStartedServerEvent e) {
 		this.updateTask = Task.builder().execute(() -> {
-			for (World w : this.game.getServer().getWorlds())
-				((InternalWorld) w).getNetworkWorld().sendBlockChanges();
+			for (World w : this.game.getServer().getWorlds()) {
+				for (Chunk c : w.getLoadedChunks()) {
+					NetworkChunk netChunk = ((InternalChunk) c).getNetworkChunk();
+					if (netChunk != null) {
+						netChunk.postObfuscateBlocks();
+						netChunk.sendBlockChanges();
+					}
+				}
+			}
 		}).intervalTicks(1).submit(this);
 
 		LOGGER.info("Loaded successfully.");

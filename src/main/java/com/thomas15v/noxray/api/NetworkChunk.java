@@ -33,8 +33,8 @@ import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketBlockChange;
+import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.network.play.server.SPacketMultiBlockChange;
 import net.minecraft.network.play.server.SPacketMultiBlockChange.BlockUpdateData;
 import net.minecraft.server.management.PlayerChunkMapEntry;
@@ -44,6 +44,7 @@ import net.minecraft.world.WorldServer;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.World;
 
 import javax.annotation.Nullable;
 import java.util.Random;
@@ -55,9 +56,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public class NetworkChunk {
 	private final Short2ObjectMap<BlockState> changes = new Short2ObjectOpenHashMap<>();
 	private final NetworkBlockContainer[] containers;
+	private State state = State.NOT_OBFUSCATED;
+	private int changedSections;
 	private final Chunk chunk;
 	private final int x, z;
-	private boolean obfuscated;
 
 	public NetworkChunk(NetworkBlockContainer[] containers, Chunk chunk) {
 		this.containers = containers;
@@ -71,8 +73,8 @@ public class NetworkChunk {
 		return getBlock(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	public boolean isObfuscated() {
-		return this.obfuscated;
+	public State getState() {
+		return this.state;
 	}
 
 	private void checkBlockBounds(int x, int y, int z) {
@@ -89,17 +91,23 @@ public class NetworkChunk {
 	}
 
 	public void obfuscateBlocks() {
-		NetworkWorld w = ((InternalWorld) this.chunk.getWorld()).getNetworkWorld();
-		obfuscateBlocks(w.getModifier(), w.getOptions());
-	}
-
-	public void obfuscateBlocks(BlockModifier modifier, Options options) {
-		if (this.obfuscated)
+		if (this.state != State.NOT_OBFUSCATED)
 			return;
 
-		BlockStorage storage = (BlockStorage) this.chunk.getWorld();
+		// TODO Use cache
+
+		World world = this.chunk.getWorld();
+		boolean ready = world.getChunk(this.x, 0, this.z - 1).isPresent()
+				&& world.getChunk(this.x, 0, this.z + 1).isPresent()
+				&& world.getChunk(this.x - 1, 0, this.z).isPresent()
+				&& world.getChunk(this.x + 1, 0, this.z).isPresent();
+
+		NetworkWorld netWorld = ((InternalWorld) world).getNetworkWorld();
+		BlockModifier modifier = ready ? netWorld.getModifier() : BlockModifier.HIDE_ALL;
+		Options options = netWorld.getOptions();
+		BlockStorage storage = (BlockStorage) world;
 		Random r = ThreadLocalRandom.current();
-		int x = this.chunk.getPosition().getX() * 16, z = this.chunk.getPosition().getZ() * 16;
+		int x = this.x * 16, z = this.z * 16;
 
 		for (NetworkBlockContainer container : this.containers) {
 			if (container == null)
@@ -111,13 +119,65 @@ public class NetworkChunk {
 					for (int dx = 0; dx < 16; dx++) {
 						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
 						if (fakeBlock != null)
-							setBlock(x + dx, y, z + dz, fakeBlock);
+							container.set(dx, dy, dz, (IBlockState) fakeBlock);
 					}
 				}
 			}
 		}
 
-		this.obfuscated = true;
+		this.state = ready ? State.OBFUSCATED : State.WAITING_FOR_OBFUSCATION;
+	}
+
+	public void postObfuscateBlocks() {
+		if (this.state != State.WAITING_FOR_OBFUSCATION)
+			return;
+
+		World world = this.chunk.getWorld();
+		boolean ready = world.getChunk(this.x, 0, this.z - 1).isPresent()
+				&& world.getChunk(this.x, 0, this.z + 1).isPresent()
+				&& world.getChunk(this.x - 1, 0, this.z).isPresent()
+				&& world.getChunk(this.x + 1, 0, this.z).isPresent();
+
+		if (!ready)
+			return;
+
+		NetworkWorld netWorld = ((InternalWorld) world).getNetworkWorld();
+		BlockModifier modifier = netWorld.getModifier();
+		Options options = netWorld.getOptions();
+		BlockStorage storage = (BlockStorage) world;
+		Random r = ThreadLocalRandom.current();
+		int x = this.x * 16, z = this.z * 16;
+
+		for (NetworkBlockContainer container : this.containers) {
+			if (container == null)
+				continue;
+
+			for (int dy = 0; dy < 16; dy++) {
+				int y = container.getY() + dy;
+				for (int dz = 0; dz < 16; dz++) {
+					for (int dx = 0; dx < 16; dx++) {
+						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
+						if (fakeBlock == null) {
+							BlockState realBlock = storage.getBlock(x, y, z);
+							if (options.oresSet.contains(realBlock)) {
+								container.set(dx, dy, dz, (IBlockState) realBlock);
+								addChange(dx, y, dz, realBlock);
+							}
+						} else {
+							container.set(dx, dy, dz, (IBlockState) fakeBlock);
+							addChange(dx, y, dz, fakeBlock);
+						}
+					}
+				}
+			}
+		}
+
+		this.state = ready ? State.OBFUSCATED : State.WAITING_FOR_OBFUSCATION;
+	}
+
+	private void addChange(int x, int y, int z, BlockState block) {
+		this.changes.put((short) (x << 12 | z << 8 | y), block);
+		this.changedSections |= 1 << (y >> 4);
 	}
 
 	public void setBlock(int x, int y, int z, BlockState block) {
@@ -129,13 +189,13 @@ public class NetworkChunk {
 	}
 
 	public void deobfuscateBlock(int x, int y, int z) {
-		if (!this.obfuscated)
+		if (this.state == State.NOT_OBFUSCATED)
 			return;
 
 		BlockState realBlock = this.chunk.getBlock(x, y, z), fakeBlock = getBlock(x, y, z);
 		if (realBlock != fakeBlock) {
 			setBlock(x, y, z, realBlock);
-			this.changes.put((short) ((x & 15) << 12 | (z & 15) << 8 | y), realBlock);
+			addChange(x & 15, y, z & 15, realBlock);
 		}
 	}
 
@@ -144,31 +204,31 @@ public class NetworkChunk {
 		if (size == 0)
 			return;
 
-		if (size == 1) {
-			SPacketBlockChange packet = new SPacketBlockChange();
-			Entry<BlockState> e = this.changes.short2ObjectEntrySet().iterator().next();
-			short pos = e.getShortKey();
-			packet.blockPosition = new BlockPos((pos >> 12 & 15) + this.x * 16, pos & 255, (pos >> 8 & 15) + this.z * 16);
-			packet.blockState = (IBlockState) e.getValue();
-			sendPacket(packet);
-		} else {
-			SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
-			packet.chunkPos = new ChunkPos(this.x, this.z);
-			BlockUpdateData[] datas = new BlockUpdateData[size];
-			int i = 0;
-			for (Entry<BlockState> e : this.changes.short2ObjectEntrySet())
-				datas[i++] = packet.new BlockUpdateData(e.getShortKey(), (IBlockState) e.getValue());
-			packet.changedBlocks = datas;
-			sendPacket(packet);
+		PlayerChunkMapEntry entry = ((WorldServer) this.chunk.getWorld()).getPlayerChunkMap().getEntry(this.x, this.z);
+		if (entry != null) {
+			if (size == 1) {
+				SPacketBlockChange packet = new SPacketBlockChange();
+				Entry<BlockState> e = this.changes.short2ObjectEntrySet().iterator().next();
+				short pos = e.getShortKey();
+				packet.blockPosition = new BlockPos((pos >> 12 & 15) + this.x * 16, pos & 255, (pos >> 8 & 15) + this.z * 16);
+				packet.blockState = (IBlockState) e.getValue();
+				entry.sendPacket(packet);
+			} else if (size < 64) {
+				SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
+				packet.chunkPos = new ChunkPos(this.x, this.z);
+				BlockUpdateData[] datas = new BlockUpdateData[size];
+				int i = 0;
+				for (Entry<BlockState> e : this.changes.short2ObjectEntrySet())
+					datas[i++] = packet.new BlockUpdateData(e.getShortKey(), (IBlockState) e.getValue());
+				packet.changedBlocks = datas;
+				entry.sendPacket(packet);
+			} else {
+				entry.sendPacket(new SPacketChunkData((net.minecraft.world.chunk.Chunk) this.chunk, this.changedSections));
+			}
 		}
 
 		this.changes.clear();
-	}
-
-	private void sendPacket(Packet<?> packet) {
-		PlayerChunkMapEntry entry = ((WorldServer) this.chunk.getWorld()).getPlayerChunkMap().getEntry(this.x, this.z);
-		if (entry != null)
-			entry.sendPacket(packet);
+		this.changedSections = 0;
 	}
 
 	@Nullable
@@ -196,5 +256,9 @@ public class NetworkChunk {
 
 	public Chunk getChunk() {
 		return this.chunk;
+	}
+
+	public enum State {
+		NOT_OBFUSCATED, WAITING_FOR_OBFUSCATION, OBFUSCATED
 	}
 }

@@ -31,7 +31,8 @@ import javax.annotation.Nullable;
 import java.util.Random;
 
 public interface BlockModifier {
-	BlockModifier EMPTY = (storage, config, r, x, y, z) -> null;
+	BlockModifier EMPTY = (storage, options, r, x, y, z) -> null;
+	BlockModifier HIDE_ALL = (storage, options, r, x, y, z) -> options.oresSet.contains(storage.getBlock(x, y, z)) ? options.ground : null;
 
 	/**
 	 * This method gets called when a block gets read from the disk.

@@ -39,7 +39,7 @@ public interface BlockStorage extends BlockVolume {
 	}
 
 	default List<BlockType> getSurroundingBlockTypes(int x, int y, int z) {
-		List<BlockType> list = new ArrayList<>();
+		List<BlockType> list = new ArrayList<>(6);
 
 		if (y != 256)
 			list.add(getBlockType(x, y + 1, z));
@@ -59,7 +59,7 @@ public interface BlockStorage extends BlockVolume {
 	}
 
 	default List<BlockState> getSurroundingBlocks(int x, int y, int z) {
-		List<BlockState> list = new ArrayList<>();
+		List<BlockState> list = new ArrayList<>(6);
 
 		if (y != 256)
 			list.add(getBlock(x, y + 1, z));

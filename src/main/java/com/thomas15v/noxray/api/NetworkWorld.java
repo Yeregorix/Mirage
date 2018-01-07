@@ -27,14 +27,12 @@ package com.thomas15v.noxray.api;
 import com.thomas15v.noxray.NoXrayPlugin;
 import com.thomas15v.noxray.config.Options;
 import com.thomas15v.noxray.config.WorldConfig;
-import com.thomas15v.noxray.modifications.internal.InternalChunk;
 import com.thomas15v.noxray.modifier.ModifierRegistry;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.World;
@@ -55,11 +53,6 @@ public class NetworkWorld {
 
 	public NetworkWorld(World w) {
 		this.world = w;
-	}
-
-	public void sendBlockChanges() {
-		for (Chunk c : this.world.getLoadedChunks())
-			((InternalChunk) c).sendBlockChanges();
 	}
 
 	public void loadConfig() throws IOException, ObjectMappingException {
@@ -97,8 +90,8 @@ public class NetworkWorld {
 
 		if (this.config.deobfRadius < 1)
 			this.config.deobfRadius = 1;
-		if (this.config.deobfRadius > 10)
-			this.config.deobfRadius = 10;
+		if (this.config.deobfRadius > 8)
+			this.config.deobfRadius = 8;
 
 		if (this.config.density < 0)
 			this.config.density = 0;
