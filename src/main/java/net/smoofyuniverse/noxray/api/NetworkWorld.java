@@ -101,9 +101,10 @@ public class NetworkWorld {
 		node.setValue(WorldConfig.TOKEN, this.config);
 		this.loader.save(node);
 
+		this.config.modifier = this.config.modifier.toLowerCase();
 		BlockModifier mod = ModifierRegistry.get(this.config.modifier);
 		if (mod == null) {
-			NoXray.LOGGER.warn("Modifier '" + this.config.modifier.toLowerCase() + "' does not exists.");
+			NoXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists.");
 			this.modifier = BlockModifier.EMPTY;
 		} else
 			this.modifier = mod;

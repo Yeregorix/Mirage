@@ -24,6 +24,8 @@
 
 package net.smoofyuniverse.noxray.api;
 
+import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
@@ -38,6 +40,8 @@ import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.WorldServer;
+import net.smoofyuniverse.noxray.NoXray;
+import net.smoofyuniverse.noxray.NoXrayTimings;
 import net.smoofyuniverse.noxray.config.Options;
 import net.smoofyuniverse.noxray.modifications.internal.InternalWorld;
 import net.smoofyuniverse.noxray.modifications.internal.NetworkBlockContainer;
@@ -94,6 +98,8 @@ public class NetworkChunk {
 		if (this.state != State.NOT_OBFUSCATED)
 			return;
 
+		NoXrayTimings.OBFUSCATION.startTiming();
+
 		// TODO Use cache
 
 		World world = this.chunk.getWorld();
@@ -104,6 +110,7 @@ public class NetworkChunk {
 
 		NetworkWorld netWorld = ((InternalWorld) world).getNetworkWorld();
 		BlockModifier modifier = ready ? netWorld.getModifier() : BlockModifier.HIDE_ALL;
+		Timing modifierTiming = Timings.of(NoXray.get(), "Modifier: " + (ready ? netWorld.getConfig().modifier : "hideall"));
 		Options options = netWorld.getOptions();
 		BlockStorage storage = (BlockStorage) world;
 		Random r = ThreadLocalRandom.current();
@@ -117,7 +124,9 @@ public class NetworkChunk {
 				int y = container.getY() + dy;
 				for (int dz = 0; dz < 16; dz++) {
 					for (int dx = 0; dx < 16; dx++) {
+						modifierTiming.startTiming();
 						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
+						modifierTiming.stopTiming();
 						if (fakeBlock != null)
 							container.set(dx, dy, dz, (IBlockState) fakeBlock);
 					}
@@ -126,11 +135,15 @@ public class NetworkChunk {
 		}
 
 		this.state = ready ? State.OBFUSCATED : State.WAITING_FOR_OBFUSCATION;
+
+		NoXrayTimings.OBFUSCATION.stopTiming();
 	}
 
 	public void postObfuscateBlocks() {
 		if (this.state != State.WAITING_FOR_OBFUSCATION)
 			return;
+
+		NoXrayTimings.POST_OBFUSCATION.startTiming();
 
 		World world = this.chunk.getWorld();
 		boolean ready = world.getChunk(this.x, 0, this.z - 1).isPresent()
@@ -138,11 +151,14 @@ public class NetworkChunk {
 				&& world.getChunk(this.x - 1, 0, this.z).isPresent()
 				&& world.getChunk(this.x + 1, 0, this.z).isPresent();
 
-		if (!ready)
+		if (!ready) {
+			NoXrayTimings.POST_OBFUSCATION.stopTiming();
 			return;
+		}
 
 		NetworkWorld netWorld = ((InternalWorld) world).getNetworkWorld();
 		BlockModifier modifier = netWorld.getModifier();
+		Timing modifierTiming = Timings.of(NoXray.get(), "Modifier: " + netWorld.getConfig().modifier);
 		Options options = netWorld.getOptions();
 		BlockStorage storage = (BlockStorage) world;
 		Random r = ThreadLocalRandom.current();
@@ -156,7 +172,9 @@ public class NetworkChunk {
 				int y = container.getY() + dy;
 				for (int dz = 0; dz < 16; dz++) {
 					for (int dx = 0; dx < 16; dx++) {
+						modifierTiming.startTiming();
 						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
+						modifierTiming.stopTiming();
 						if (fakeBlock == null) {
 							BlockState realBlock = storage.getBlock(x, y, z);
 							if (options.oresSet.contains(realBlock)) {
@@ -173,6 +191,8 @@ public class NetworkChunk {
 		}
 
 		this.state = ready ? State.OBFUSCATED : State.WAITING_FOR_OBFUSCATION;
+
+		NoXrayTimings.POST_OBFUSCATION.stopTiming();
 	}
 
 	private void addChange(int x, int y, int z, BlockState block) {
@@ -204,6 +224,8 @@ public class NetworkChunk {
 		if (size == 0)
 			return;
 
+		NoXrayTimings.BLOCK_CHANGES_SENDING.startTiming();
+
 		PlayerChunkMapEntry entry = ((WorldServer) this.chunk.getWorld()).getPlayerChunkMap().getEntry(this.x, this.z);
 		if (entry != null) {
 			if (size == 1) {
@@ -226,6 +248,8 @@ public class NetworkChunk {
 				entry.sendPacket(new SPacketChunkData((net.minecraft.world.chunk.Chunk) this.chunk, this.changedSections));
 			}
 		}
+
+		NoXrayTimings.BLOCK_CHANGES_SENDING.stopTiming();
 
 		this.changes.clear();
 		this.changedSections = 0;

@@ -64,9 +64,14 @@ public class NoXray {
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
 
+	public NoXray() {
+		if (instance != null)
+			throw new IllegalStateException();
+		instance = this;
+	}
+
 	@Listener
 	public void onLoadComplete(GamePreInitializationEvent e) {
-		instance = this;
 		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true);
 		this.game.getEventManager().registerListeners(this, new WorldEventListener());
 	}
@@ -98,6 +103,8 @@ public class NoXray {
 	}
 
 	public static NoXray get() {
+		if (instance == null)
+			throw new IllegalStateException("Instance not available");
 		return instance;
 	}
 }
