@@ -22,39 +22,8 @@
  * SOFTWARE.
  */
 
-package com.thomas15v.noxray.modifications.mixins;
+package com.thomas15v.noxray.config;
 
-import com.thomas15v.noxray.modifications.internal.InternalBitArray;
-import net.minecraft.util.BitArray;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
-
-import java.util.Arrays;
-
-@Mixin(BitArray.class)
-public class MixinBitArray implements InternalBitArray {
-	@Shadow
-	@Final
-	@Mutable
-	private long[] longArray;
-	@Shadow
-	@Final
-	private int bitsPerEntry;
-	@Shadow
-	@Final
-	private int arraySize;
-
-	@Override
-	public BitArray copy() {
-		InternalBitArray bitArray = (InternalBitArray) new BitArray(this.bitsPerEntry, this.arraySize);
-		bitArray.setLongArray(Arrays.copyOf(this.longArray, this.longArray.length));
-		return (BitArray) bitArray;
-	}
-
-	@Override
-	public void setLongArray(long[] longArray) {
-		this.longArray = longArray;
-	}
+public class WorldConfig {
+	// TODO per world configuration
 }

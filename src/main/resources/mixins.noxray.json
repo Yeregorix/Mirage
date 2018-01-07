@@ -9,7 +9,6 @@
     "MixinPacketChunkData",
     "MixinBlockStateContainer",
     "MixinExtendedBlockStorage",
-    "MixinBitArray",
     "MixinChunk",
     "MixinWorld"
   ],
