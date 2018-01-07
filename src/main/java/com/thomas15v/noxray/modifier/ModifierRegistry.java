@@ -49,5 +49,6 @@ public class ModifierRegistry {
 	static {
 		register("obvious", new ObviousModifier());
 		register("random", new RandomModifier());
+		register("empty", BlockModifier.EMPTY);
 	}
 }

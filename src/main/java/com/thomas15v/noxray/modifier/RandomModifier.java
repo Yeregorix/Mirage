@@ -24,12 +24,10 @@
 
 package com.thomas15v.noxray.modifier;
 
-import com.thomas15v.noxray.NoXrayPlugin;
 import com.thomas15v.noxray.api.BlockModifier;
 import com.thomas15v.noxray.api.BlockStorage;
-import com.thomas15v.noxray.modifications.OreUtil;
+import com.thomas15v.noxray.config.Options;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
 
 import javax.annotation.Nullable;
 import java.util.Random;
@@ -38,18 +36,20 @@ public class RandomModifier implements BlockModifier {
 
 	@Nullable
 	@Override
-	public BlockState modify(BlockStorage storage, Random r, int x, int y, int z) {
-		BlockType type = storage.getBlockType(x, y, z);
-		if (type != storage.getCommonGroundBlockType() && !OreUtil.isOre(type))
+	public BlockState modify(BlockStorage storage, Options options, Random r, int x, int y, int z) {
+		BlockState block = storage.getBlock(x, y, z);
+		if (block != options.ground && !options.oresSet.contains(block))
 			return null;
 
-		if (OreUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
+		if (ModifierUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
 			return null;
 
-		float density = NoXrayPlugin.get().getDensity();
-		if (density < 1 && r.nextFloat() > density)
-			return storage.getCommonGroundBlock();
+		if (options.ores == 0)
+			return options.ground;
 
-		return OreUtil.getRandomOre(r).getDefaultState();
+		if (options.density != 1 && r.nextFloat() > options.density)
+			return options.ground;
+
+		return options.oresList.get(r.nextInt(options.ores));
 	}
 }

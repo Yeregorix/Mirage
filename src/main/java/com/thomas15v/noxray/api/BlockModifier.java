@@ -24,13 +24,14 @@
 
 package com.thomas15v.noxray.api;
 
+import com.thomas15v.noxray.config.Options;
 import org.spongepowered.api.block.BlockState;
 
 import javax.annotation.Nullable;
 import java.util.Random;
 
 public interface BlockModifier {
-	BlockModifier EMPTY = (storage, r, x, y, z) -> null;
+	BlockModifier EMPTY = (storage, config, r, x, y, z) -> null;
 
 	/**
 	 * This method gets called when a block gets read from the disk.
@@ -40,5 +41,5 @@ public interface BlockModifier {
 	 * @return a BlockState if the block has been modified, null else.
 	 */
 	@Nullable
-	BlockState modify(BlockStorage storage, Random r, int x, int y, int z);
+	BlockState modify(BlockStorage storage, Options options, Random r, int x, int y, int z);
 }

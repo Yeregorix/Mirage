@@ -26,6 +26,8 @@ package com.thomas15v.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
+import com.thomas15v.noxray.config.Options;
+import com.thomas15v.noxray.modifications.internal.InternalWorld;
 import com.thomas15v.noxray.modifications.internal.NetworkBlockContainer;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
@@ -86,10 +88,12 @@ public class NetworkChunk {
 		setBlock(pos.getX(), pos.getY(), pos.getZ(), block);
 	}
 
-	/**
-	 * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
-	 */
-	public void obfuscateBlocks(BlockModifier modifier) {
+	public void obfuscateBlocks() {
+		NetworkWorld w = ((InternalWorld) this.chunk.getWorld()).getNetworkWorld();
+		obfuscateBlocks(w.getModifier(), w.getOptions());
+	}
+
+	public void obfuscateBlocks(BlockModifier modifier, Options options) {
 		if (this.obfuscated)
 			return;
 
@@ -105,7 +109,7 @@ public class NetworkChunk {
 				int y = container.getY() + dy;
 				for (int dz = 0; dz < 16; dz++) {
 					for (int dx = 0; dx < 16; dx++) {
-						BlockState fakeBlock = modifier.modify(storage, r, x + dx, y, z + dz);
+						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
 						if (fakeBlock != null)
 							setBlock(x + dx, y, z + dz, fakeBlock);
 					}

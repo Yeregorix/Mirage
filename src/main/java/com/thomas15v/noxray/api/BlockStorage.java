@@ -27,7 +27,6 @@ package com.thomas15v.noxray.api;
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.extent.BlockVolume;
 
 import java.util.ArrayList;
@@ -86,12 +85,4 @@ public interface BlockStorage extends BlockVolume {
 	}
 
 	boolean canSeeTheSky(int x, int y, int z);
-
-	DimensionType getDimensionType();
-
-	default BlockState getCommonGroundBlock() {
-		return getCommonGroundBlockType().getDefaultState();
-	}
-
-	BlockType getCommonGroundBlockType();
 }

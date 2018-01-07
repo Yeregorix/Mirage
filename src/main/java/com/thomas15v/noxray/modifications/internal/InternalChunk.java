@@ -24,8 +24,6 @@
 
 package com.thomas15v.noxray.modifications.internal;
 
-import com.thomas15v.noxray.NoXrayPlugin;
-import com.thomas15v.noxray.api.BlockModifier;
 import com.thomas15v.noxray.api.NetworkChunk;
 
 import javax.annotation.Nullable;
@@ -33,13 +31,9 @@ import javax.annotation.Nullable;
 public interface InternalChunk {
 
 	default void obfuscateBlocks() {
-		obfuscateBlocks(NoXrayPlugin.get().getBlockModifier());
-	}
-
-	default void obfuscateBlocks(BlockModifier modifier) {
 		NetworkChunk chunk = getNetworkChunk();
 		if (chunk != null)
-			chunk.obfuscateBlocks(modifier);
+			chunk.obfuscateBlocks();
 	}
 
 	@Nullable

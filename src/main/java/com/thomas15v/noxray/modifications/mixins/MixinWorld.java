@@ -26,7 +26,6 @@ package com.thomas15v.noxray.modifications.mixins;
 
 import com.thomas15v.noxray.api.BlockStorage;
 import com.thomas15v.noxray.api.NetworkWorld;
-import com.thomas15v.noxray.modifications.OreUtil;
 import com.thomas15v.noxray.modifications.internal.InternalWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
@@ -62,18 +61,4 @@ public abstract class MixinWorld implements InternalWorld, BlockStorage {
 
 	@Shadow
 	public abstract boolean canSeeSky(BlockPos pos);
-
-	@Override
-	public DimensionType getDimensionType() {
-		if (this.dimensionType == null)
-			this.dimensionType = ((org.spongepowered.api.world.World) this).getDimension().getType();
-		return this.dimensionType;
-	}
-
-	@Override
-	public BlockType getCommonGroundBlockType() {
-		if (this.groundType == null)
-			this.groundType = OreUtil.getCommonGroundBlockType(getDimensionType());
-		return this.groundType;
-	}
 }
