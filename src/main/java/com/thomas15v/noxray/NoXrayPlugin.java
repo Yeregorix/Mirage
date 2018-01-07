@@ -46,7 +46,7 @@ import org.spongepowered.api.world.World;
 
 import java.nio.file.Path;
 
-@Plugin(id = "noxray", name = "NoXray", version = "0.4.0-beta", authors = "thomas15v", description = "Anti-Xray")
+@Plugin(id = "noxray", name = "NoXray", version = "0.4.0-beta", authors = {"thomas15v", "Yeregorix"}, description = "A simple but powerful Anti-Xray")
 public class NoXrayPlugin {
 	public static final Logger LOGGER = LoggerFactory.getLogger("NoXray");
 	private static NoXrayPlugin instance;
