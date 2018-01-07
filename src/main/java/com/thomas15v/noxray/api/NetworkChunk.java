@@ -27,7 +27,18 @@ package com.thomas15v.noxray.api;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
 import com.thomas15v.noxray.modifications.internal.NetworkBlockContainer;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.network.Packet;
+import net.minecraft.network.play.server.SPacketBlockChange;
+import net.minecraft.network.play.server.SPacketMultiBlockChange;
+import net.minecraft.network.play.server.SPacketMultiBlockChange.BlockUpdateData;
+import net.minecraft.server.management.PlayerChunkMapEntry;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.WorldServer;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.Chunk;
@@ -40,13 +51,18 @@ import java.util.concurrent.ThreadLocalRandom;
  * Represent a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk {
-	private NetworkBlockContainer[] containers;
-	private Chunk chunk;
+	private final Short2ObjectMap<BlockState> changes = new Short2ObjectOpenHashMap<>();
+	private final NetworkBlockContainer[] containers;
+	private final Chunk chunk;
+	private final int x, z;
 	private boolean obfuscated;
 
 	public NetworkChunk(NetworkBlockContainer[] containers, Chunk chunk) {
 		this.containers = containers;
 		this.chunk = chunk;
+		Vector3i pos = chunk.getPosition();
+		this.x = pos.getX();
+		this.z = pos.getZ();
 	}
 
 	public BlockState getBlock(Vector3i pos) {
@@ -115,8 +131,40 @@ public class NetworkChunk {
 		BlockState realBlock = this.chunk.getBlock(x, y, z), fakeBlock = getBlock(x, y, z);
 		if (realBlock != fakeBlock) {
 			setBlock(x, y, z, realBlock);
-			this.chunk.getWorld().sendBlockChange(x, y, z, realBlock);
+			this.changes.put((short) ((x & 15) << 12 | (z & 15) << 8 | y), realBlock);
 		}
+	}
+
+	public void sendBlockChanges() {
+		int size = this.changes.size();
+		if (size == 0)
+			return;
+
+		if (size == 1) {
+			SPacketBlockChange packet = new SPacketBlockChange();
+			Entry<BlockState> e = this.changes.short2ObjectEntrySet().iterator().next();
+			short pos = e.getShortKey();
+			packet.blockPosition = new BlockPos((pos >> 12 & 15) + this.x * 16, pos & 255, (pos >> 8 & 15) + this.z * 16);
+			packet.blockState = (IBlockState) e.getValue();
+			sendPacket(packet);
+		} else {
+			SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
+			packet.chunkPos = new ChunkPos(this.x, this.z);
+			BlockUpdateData[] datas = new BlockUpdateData[size];
+			int i = 0;
+			for (Entry<BlockState> e : this.changes.short2ObjectEntrySet())
+				datas[i++] = packet.new BlockUpdateData(e.getShortKey(), (IBlockState) e.getValue());
+			packet.changedBlocks = datas;
+			sendPacket(packet);
+		}
+
+		this.changes.clear();
+	}
+
+	private void sendPacket(Packet<?> packet) {
+		PlayerChunkMapEntry entry = ((WorldServer) this.chunk.getWorld()).getPlayerChunkMap().getEntry(this.x, this.z);
+		if (entry != null)
+			entry.sendPacket(packet);
 	}
 
 	@Nullable
@@ -125,10 +173,6 @@ public class NetworkChunk {
 
 		NetworkBlockContainer container = this.containers[y >> 4];
 		return container == null ? null : (BlockState) container.get(x & 15, y & 15, z & 15);
-	}
-
-	public Vector3i getPosition() {
-		return this.chunk.getPosition();
 	}
 
 	@Override

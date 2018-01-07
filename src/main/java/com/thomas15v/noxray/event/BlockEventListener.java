@@ -45,7 +45,7 @@ import java.util.Set;
 
 public class BlockEventListener {
 	private static final Set<BlockType> whitelist = ImmutableSet.of(BlockTypes.AIR, BlockTypes.PISTON, BlockTypes.PISTON_EXTENSION, BlockTypes.PISTON_HEAD, BlockTypes.STICKY_PISTON);
-	private static final int[] offsets = {-1, 0, 1};
+	private static final int[] offsets = {-2, -1, 0, 1, 2};
 
 	@Listener(order = Order.POST)
 	public void onBlockBreak(ChangeBlockEvent.Break e) {

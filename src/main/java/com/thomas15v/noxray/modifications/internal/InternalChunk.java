@@ -50,4 +50,10 @@ public interface InternalChunk {
 		if (chunk != null)
 			chunk.deobfuscateBlock(x, y, z);
 	}
+
+	default void sendBlockChanges() {
+		NetworkChunk chunk = getNetworkChunk();
+		if (chunk != null)
+			chunk.sendBlockChanges();
+	}
 }

@@ -25,14 +25,31 @@
 package com.thomas15v.noxray.api;
 
 import com.thomas15v.noxray.config.WorldConfig;
+import com.thomas15v.noxray.modifications.internal.InternalChunk;
+import org.spongepowered.api.world.Chunk;
+import org.spongepowered.api.world.World;
 
 /**
  * Represent the world viewed for the network (akka online players)
  */
 public class NetworkWorld {
 	private WorldConfig config;
+	private final World world;
+
+	public NetworkWorld(World w) {
+		this.world = w;
+	}
+
+	public void sendBlockChanges() {
+		for (Chunk c : this.world.getLoadedChunks())
+			((InternalChunk) c).sendBlockChanges();
+	}
 
 	public WorldConfig getConfig() {
 		return this.config;
+	}
+
+	public World getWorld() {
+		return this.world;
 	}
 }

@@ -30,6 +30,7 @@ import com.thomas15v.noxray.api.BlockModifier;
 import com.thomas15v.noxray.config.NoXrayConfig;
 import com.thomas15v.noxray.event.BlockEventListener;
 import com.thomas15v.noxray.modifications.OreUtil;
+import com.thomas15v.noxray.modifications.internal.InternalWorld;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -42,7 +43,10 @@ import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.world.World;
 
 import java.io.IOException;
 
@@ -62,6 +66,7 @@ public class NoXrayPlugin {
 	private NoXrayConfig config;
 	private BlockModifier blockModifier;
 	private float density;
+	private Task updateTask;
 
 	@Listener
 	public void onLoadComplete(GamePreInitializationEvent e) {
@@ -90,8 +95,18 @@ public class NoXrayPlugin {
 	}
 
 	@Listener
-	public void onServerStarted(GameStartedServerEvent event) {
+	public void onServerStarted(GameStartedServerEvent e) {
+		this.updateTask = Task.builder().execute(() -> {
+			for (World w : this.game.getServer().getWorlds())
+				((InternalWorld) w).getNetworkWorld().sendBlockChanges();
+		}).intervalTicks(1).submit(this);
+
 		LOGGER.info("Loaded successfully.");
+	}
+
+	@Listener
+	public void onServerStopping(GameStoppingServerEvent e) {
+		this.updateTask.cancel();
 	}
 
 	public BlockModifier getBlockModifier() {

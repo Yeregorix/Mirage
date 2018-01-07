@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(World.class)
 public abstract class MixinWorld implements InternalWorld, BlockStorage {
-	private final NetworkWorld networkWorld = new NetworkWorld();
+	private final NetworkWorld networkWorld = new NetworkWorld((org.spongepowered.api.world.World) this);
 	private DimensionType dimensionType;
 	private BlockType groundType;
 
