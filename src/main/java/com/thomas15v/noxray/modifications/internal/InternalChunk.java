@@ -24,8 +24,30 @@
 
 package com.thomas15v.noxray.modifications.internal;
 
+import com.thomas15v.noxray.NoXrayPlugin;
+import com.thomas15v.noxray.api.BlockModifier;
+import com.thomas15v.noxray.api.NetworkChunk;
+
+import javax.annotation.Nullable;
+
 public interface InternalChunk {
 
-	void obfuscateBlocks();
+	default void obfuscateBlocks() {
+		obfuscateBlocks(NoXrayPlugin.get().getBlockModifier());
+	}
 
+	default void obfuscateBlocks(BlockModifier modifier) {
+		NetworkChunk chunk = getNetworkChunk();
+		if (chunk != null)
+			chunk.obfuscateBlocks(modifier);
+	}
+
+	@Nullable
+	NetworkChunk getNetworkChunk();
+
+	default void deobfuscateBlock(int x, int y, int z) {
+		NetworkChunk chunk = getNetworkChunk();
+		if (chunk != null)
+			chunk.deobfuscateBlock(x, y, z);
+	}
 }

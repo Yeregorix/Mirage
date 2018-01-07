@@ -76,9 +76,10 @@ sourceSets {
 jar {
     manifest {
         attributes(
+                'tweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
                 'MixinConfigs': 'mixins.noxray.json',
-                'ForceLoadAsMod' : true,
-                'tweakClass': 'org.spongepowered.asm.launch.MixinTweaker'
+                'FMLAT': 'noxray_at.cfg',
+                'ForceLoadAsMod' : true
         )
     }
 }

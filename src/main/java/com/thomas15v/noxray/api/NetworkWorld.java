@@ -24,18 +24,15 @@
 
 package com.thomas15v.noxray.api;
 
+import com.thomas15v.noxray.config.WorldConfig;
+
 /**
  * Represent the world viewed for the network (akka online players)
  */
 public class NetworkWorld {
-	// TODO modifiers for each world
-	private BlockModifier modifier;
+	private WorldConfig config;
 
-	public BlockModifier getModifier() {
-		return this.modifier;
-	}
-
-	public void setModifier(BlockModifier modifier) {
-		this.modifier = modifier;
+	public WorldConfig getConfig() {
+		return this.config;
 	}
 }

@@ -24,33 +24,19 @@
 
 package com.thomas15v.noxray.modifications.mixins;
 
-import com.thomas15v.noxray.api.NetworkBlockContainer;
 import com.thomas15v.noxray.modifications.internal.InternalBlockStateContainer;
+import com.thomas15v.noxray.modifications.internal.NetworkBlockContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.BlockStateContainer;
-import net.minecraft.world.chunk.IBlockStatePalette;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockStateContainer.class)
 public abstract class MixinBlockStateContainer implements InternalBlockStateContainer {
-
-	@Shadow
-	@Final
-	protected static IBlockState AIR_BLOCK_STATE;
-	@Shadow
-	@Final
-	private static IBlockStatePalette REGISTRY_BASED_PALETTE;
-
-	@Shadow
-	public abstract IBlockState get(int x, int y, int z);
-
-	private NetworkBlockContainer modifiedStorage = new NetworkBlockContainer(REGISTRY_BASED_PALETTE, AIR_BLOCK_STATE);
+	private NetworkBlockContainer modifiedStorage = new NetworkBlockContainer();
 
 	@Override
 	public int modifiedSize() {

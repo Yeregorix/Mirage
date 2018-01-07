@@ -26,8 +26,7 @@ package com.thomas15v.noxray.event;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
-import com.thomas15v.noxray.api.NetworkChunk;
-import com.thomas15v.noxray.modifications.internal.InternalWorld;
+import com.thomas15v.noxray.modifications.internal.InternalChunk;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -44,7 +43,7 @@ import org.spongepowered.api.world.World;
 import java.util.List;
 import java.util.Set;
 
-public class PlayerEventListener {
+public class BlockEventListener {
 	private static final Set<BlockType> whitelist = ImmutableSet.of(BlockTypes.AIR, BlockTypes.PISTON, BlockTypes.PISTON_EXTENSION, BlockTypes.PISTON_HEAD, BlockTypes.STICKY_PISTON);
 	private static final int[] offsets = {-1, 0, 1};
 
@@ -52,14 +51,14 @@ public class PlayerEventListener {
 	public void onBlockBreak(ChangeBlockEvent.Break e) {
 		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
 			if (t.isValid() && !whitelist.contains(t.getFinal().getState().getType()))
-				t.getOriginal().getLocation().ifPresent(PlayerEventListener::updateSurroundingBlocks);
+				t.getOriginal().getLocation().ifPresent(BlockEventListener::updateSurroundingBlocks);
 		}
 	}
 
 	@Listener(order = Order.POST)
 	public void onBlockInteract(InteractBlockEvent e) {
 		if (e.getCause().containsType(Player.class))
-			e.getTargetBlock().getLocation().ifPresent(PlayerEventListener::updateSurroundingBlocks);
+			e.getTargetBlock().getLocation().ifPresent(BlockEventListener::updateSurroundingBlocks);
 	}
 
 	@Listener(order = Order.POST)
@@ -90,7 +89,7 @@ public class PlayerEventListener {
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {
-		NetworkChunk chunk = ((InternalWorld) w).getNetworkWorld().getChunk(new Vector3i(x >> 4, 0, z >> 4));
+		InternalChunk chunk = (InternalChunk) w.getChunkAtBlock(x, y, z).get();
 		if (chunk != null)
 			chunk.deobfuscateBlock(x, y, z);
 	}

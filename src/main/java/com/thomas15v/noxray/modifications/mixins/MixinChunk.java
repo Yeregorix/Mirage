@@ -24,11 +24,10 @@
 
 package com.thomas15v.noxray.modifications.mixins;
 
-import com.thomas15v.noxray.api.NetworkBlockContainer;
 import com.thomas15v.noxray.api.NetworkChunk;
 import com.thomas15v.noxray.modifications.internal.InternalBlockStateContainer;
 import com.thomas15v.noxray.modifications.internal.InternalChunk;
-import com.thomas15v.noxray.modifications.internal.InternalWorld;
+import com.thomas15v.noxray.modifications.internal.NetworkBlockContainer;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.Chunk;
@@ -49,7 +48,7 @@ public class MixinChunk implements InternalChunk {
 	private NetworkChunk networkChunk;
 
 	@Override
-	public void obfuscateBlocks() {
+	public NetworkChunk getNetworkChunk() {
 		if (this.networkChunk == null) {
 			WorldType type = this.world.getWorldType();
 			if (type != WorldType.FLAT && type != WorldType.DEBUG_ALL_BLOCK_STATES) {
@@ -59,9 +58,8 @@ public class MixinChunk implements InternalChunk {
 						containers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getBlockContainer();
 				}
 				this.networkChunk = new NetworkChunk(containers, (org.spongepowered.api.world.Chunk) this);
-				((InternalWorld) this.world).getNetworkWorld().addChunk(this.networkChunk);
-				this.networkChunk.obfuscateBlocks();
 			}
 		}
+		return this.networkChunk;
 	}
 }

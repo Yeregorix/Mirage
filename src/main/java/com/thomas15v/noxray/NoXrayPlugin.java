@@ -28,8 +28,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.thomas15v.noxray.api.BlockModifier;
 import com.thomas15v.noxray.config.NoXrayConfig;
-import com.thomas15v.noxray.event.ChunkEventListener;
-import com.thomas15v.noxray.event.PlayerEventListener;
+import com.thomas15v.noxray.event.BlockEventListener;
 import com.thomas15v.noxray.modifications.OreUtil;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -77,8 +76,7 @@ public class NoXrayPlugin {
 			}
 		}
 
-		this.game.getEventManager().registerListeners(this, new ChunkEventListener());
-		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
+		this.game.getEventManager().registerListeners(this, new BlockEventListener());
 	}
 
 	private void loadConfig() {

@@ -22,30 +22,22 @@
  * SOFTWARE.
  */
 
-package com.thomas15v.noxray.api;
+package com.thomas15v.noxray.modifications.internal;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.BitArray;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.chunk.BlockStatePaletteHashMap;
-import net.minecraft.world.chunk.BlockStatePaletteLinear;
-import net.minecraft.world.chunk.BlockStatePaletteResizer;
-import net.minecraft.world.chunk.IBlockStatePalette;
+import net.minecraft.world.chunk.*;
 
 public class NetworkBlockContainer implements BlockStatePaletteResizer {
-	private final IBlockStatePalette REGISTRY_BASED_PALETTE;
-	private final IBlockState AIR_BLOCK_STATE;
+	private static final IBlockStatePalette REGISTRY_BASED_PALETTE = BlockStateContainer.REGISTRY_BASED_PALETTE;
+	private static final IBlockState AIR_BLOCK_STATE = BlockStateContainer.AIR_BLOCK_STATE;
 	private IBlockStatePalette palette;
 	private BitArray storage;
 	private int bits;
 	private int y = -1;
-
-	public NetworkBlockContainer(IBlockStatePalette REGISTRY_BASED_PALETTE, IBlockState AIR_BLOCK_STATE) {
-		this.REGISTRY_BASED_PALETTE = REGISTRY_BASED_PALETTE;
-		this.AIR_BLOCK_STATE = AIR_BLOCK_STATE;
-	}
 
 	public int getY() {
 		return this.y;
@@ -80,7 +72,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 			} else if (this.bits <= 8) {
 				this.palette = new BlockStatePaletteHashMap(this.bits, this);
 			} else {
-				this.palette = this.REGISTRY_BASED_PALETTE;
+				this.palette = REGISTRY_BASED_PALETTE;
 				this.bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
 			}
 
@@ -108,7 +100,7 @@ public class NetworkBlockContainer implements BlockStatePaletteResizer {
 
 	public IBlockState get(int index) {
 		IBlockState iblockstate = this.palette.getBlockState(this.storage.getAt(index));
-		return iblockstate == null ? this.AIR_BLOCK_STATE : iblockstate;
+		return iblockstate == null ? AIR_BLOCK_STATE : iblockstate;
 	}
 
 	public void write(PacketBuffer buf) {

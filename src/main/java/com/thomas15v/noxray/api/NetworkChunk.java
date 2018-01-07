@@ -26,12 +26,11 @@ package com.thomas15v.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.base.Objects;
-import com.thomas15v.noxray.NoXrayPlugin;
+import com.thomas15v.noxray.modifications.internal.NetworkBlockContainer;
 import net.minecraft.block.state.IBlockState;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.World;
 
 import javax.annotation.Nullable;
 import java.util.Random;
@@ -43,6 +42,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class NetworkChunk {
 	private NetworkBlockContainer[] containers;
 	private Chunk chunk;
+	private boolean obfuscated;
 
 	public NetworkChunk(NetworkBlockContainer[] containers, Chunk chunk) {
 		this.containers = containers;
@@ -53,12 +53,8 @@ public class NetworkChunk {
 		return getBlock(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	@Nullable
-	public BlockState getBlock(int x, int y, int z) {
-		checkBlockBounds(x, y, z);
-
-		NetworkBlockContainer container = getContainer(y);
-		return container == null ? null : (BlockState) container.get(x & 15, y & 15, z & 15);
+	public boolean isObfuscated() {
+		return this.obfuscated;
 	}
 
 	private void checkBlockBounds(int x, int y, int z) {
@@ -70,31 +66,17 @@ public class NetworkChunk {
 		return this.chunk.containsBlock(x, y, z);
 	}
 
-	@Nullable
-	private NetworkBlockContainer getContainer(int y) {
-		return this.containers[y >> 4];
-	}
-
 	public void setBlock(Vector3i pos, BlockState block) {
 		setBlock(pos.getX(), pos.getY(), pos.getZ(), block);
-	}
-
-	public void setBlock(int x, int y, int z, BlockState block) {
-		checkBlockBounds(x, y, z);
-
-		NetworkBlockContainer container = getContainer(y);
-		if (container != null)
-			container.set(x & 15, y & 15, z & 15, (IBlockState) block);
-	}
-
-	public void obfuscateBlocks() {
-		obfuscateBlocks(NoXrayPlugin.get().getBlockModifier());
 	}
 
 	/**
 	 * Obfuscates all the known blocks inside a chunk. Since we don't know the blocks bordering the chunk yet
 	 */
 	public void obfuscateBlocks(BlockModifier modifier) {
+		if (this.obfuscated)
+			return;
+
 		BlockStorage storage = (BlockStorage) this.chunk.getWorld();
 		Random r = ThreadLocalRandom.current();
 		int x = this.chunk.getPosition().getX() * 16, z = this.chunk.getPosition().getZ() * 16;
@@ -114,14 +96,35 @@ public class NetworkChunk {
 				}
 			}
 		}
+
+		this.obfuscated = true;
+	}
+
+	public void setBlock(int x, int y, int z, BlockState block) {
+		checkBlockBounds(x, y, z);
+
+		NetworkBlockContainer container = this.containers[y >> 4];
+		if (container != null)
+			container.set(x & 15, y & 15, z & 15, (IBlockState) block);
 	}
 
 	public void deobfuscateBlock(int x, int y, int z) {
+		if (!this.obfuscated)
+			return;
+
 		BlockState realBlock = this.chunk.getBlock(x, y, z), fakeBlock = getBlock(x, y, z);
 		if (realBlock != fakeBlock) {
 			setBlock(x, y, z, realBlock);
-			getWorld().sendBlockChange(x, y, z, realBlock);
+			this.chunk.getWorld().sendBlockChange(x, y, z, realBlock);
 		}
+	}
+
+	@Nullable
+	public BlockState getBlock(int x, int y, int z) {
+		checkBlockBounds(x, y, z);
+
+		NetworkBlockContainer container = this.containers[y >> 4];
+		return container == null ? null : (BlockState) container.get(x & 15, y & 15, z & 15);
 	}
 
 	public Vector3i getPosition() {
@@ -143,11 +146,7 @@ public class NetworkChunk {
 		return Objects.equal(this.containers, that.containers) && Objects.equal(this.chunk, that.chunk);
 	}
 
-	public NetworkBlockContainer[] getContainers() {
-		return this.containers;
-	}
-
-	public World getWorld() {
-		return this.chunk.getWorld();
+	public Chunk getChunk() {
+		return this.chunk;
 	}
 }

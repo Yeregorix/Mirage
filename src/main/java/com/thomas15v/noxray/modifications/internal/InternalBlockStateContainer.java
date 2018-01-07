@@ -24,7 +24,6 @@
 
 package com.thomas15v.noxray.modifications.internal;
 
-import com.thomas15v.noxray.api.NetworkBlockContainer;
 import net.minecraft.network.PacketBuffer;
 
 public interface InternalBlockStateContainer {
