@@ -179,7 +179,7 @@ public class NetworkChunk {
 						BlockState fakeBlock = modifier.modify(storage, options, r, x + dx, y, z + dz);
 						modifierTiming.stopTiming();
 						if (fakeBlock == null) {
-							BlockState realBlock = storage.getBlock(x, y, z);
+							BlockState realBlock = storage.getBlock(x + dx, y, z + dz);
 							if (options.oresSet.contains(realBlock)) {
 								container.set(dx, dy, dz, (IBlockState) realBlock);
 								changed = true;
