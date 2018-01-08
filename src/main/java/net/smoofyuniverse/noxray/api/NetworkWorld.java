@@ -90,8 +90,8 @@ public class NetworkWorld {
 
 		if (this.config.deobfRadius < 1)
 			this.config.deobfRadius = 1;
-		if (this.config.deobfRadius > 8)
-			this.config.deobfRadius = 8;
+		if (this.config.deobfRadius > 4)
+			this.config.deobfRadius = 4;
 
 		if (this.config.density < 0)
 			this.config.density = 0;
@@ -106,6 +106,7 @@ public class NetworkWorld {
 		if (mod == null) {
 			NoXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists.");
 			this.modifier = BlockModifier.EMPTY;
+			this.config.modifier = "empty";
 		} else
 			this.modifier = mod;
 
