@@ -34,5 +34,5 @@ public interface InternalBlockStateContainer {
 
 	void setY(int y);
 
-	NetworkBlockContainer getBlockContainer();
+	NetworkBlockContainer getNetworkBlockContainer();
 }

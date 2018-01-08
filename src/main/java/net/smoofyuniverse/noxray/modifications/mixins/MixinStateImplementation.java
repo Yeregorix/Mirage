@@ -47,7 +47,7 @@ public class MixinStateImplementation {
 	private int hash;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
-	public void onInit(CallbackInfo cb) {
+	public void onInit(CallbackInfo ci) {
 		this.hash = this.properties.hashCode();
 	}
 

@@ -54,17 +54,17 @@ public abstract class MixinBlockStateContainer implements InternalBlockStateCont
 	}
 
 	@Override
-	public NetworkBlockContainer getBlockContainer() {
+	public NetworkBlockContainer getNetworkBlockContainer() {
 		return this.modifiedStorage;
 	}
 
 	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void setModified(int index, IBlockState state, CallbackInfo callbackInfo) {
+	public void onSet(int index, IBlockState state, CallbackInfo ci) {
 		this.modifiedStorage.set(index, state);
 	}
 
 	@Inject(method = "setBits(I)V", at = @At("HEAD"))
-	private void setModifiedBits(int bitsIn, CallbackInfo callbackInfo) {
+	public void onSetBits(int bitsIn, CallbackInfo ci) {
 		this.modifiedStorage.setBits(bitsIn);
 	}
 }

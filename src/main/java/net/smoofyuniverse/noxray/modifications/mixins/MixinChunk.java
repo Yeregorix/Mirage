@@ -55,7 +55,7 @@ public class MixinChunk implements InternalChunk {
 				NetworkBlockContainer[] containers = new NetworkBlockContainer[this.storageArrays.length];
 				for (int i = 0; i < this.storageArrays.length; i++) {
 					if (this.storageArrays[i] != null)
-						containers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getBlockContainer();
+						containers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getNetworkBlockContainer();
 				}
 				this.networkChunk = new NetworkChunk(containers, (org.spongepowered.api.world.Chunk) this);
 			}
