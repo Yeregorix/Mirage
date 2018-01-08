@@ -40,13 +40,6 @@ public class ObviousModifier implements BlockModifier {
 	@Nullable
 	@Override
 	public BlockState modify(BlockStorage storage, Options options, Random r, int x, int y, int z) {
-		BlockState block = storage.getBlock(x, y, z);
-		if (!options.oresSet.contains(block))
-			return null;
-
-		if (ModifierUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
-			return null;
-
-		return options.ground;
+		return (options.oresSet.contains(storage.getBlock(x, y, z)) && !storage.isExposed(x, y, z)) ? options.ground : null;
 	}
 }

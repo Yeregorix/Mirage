@@ -25,54 +25,15 @@
 package net.smoofyuniverse.noxray.api;
 
 import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.world.extent.BlockVolume;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public interface BlockStorage extends BlockVolume {
 
-	default List<BlockType> getSurroundingBlockTypes(Vector3i pos) {
-		return getSurroundingBlockTypes(pos.getX(), pos.getY(), pos.getZ());
+	default boolean isExposed(Vector3i pos) {
+		return isExposed(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	default List<BlockType> getSurroundingBlockTypes(int x, int y, int z) {
-		List<BlockType> list = new ArrayList<>(6);
-
-		if (y != 256)
-			list.add(getBlockType(x, y + 1, z));
-		if (y != 0)
-			list.add(getBlockType(x, y - 1, z));
-
-		list.add(getBlockType(x + 1, y, z));
-		list.add(getBlockType(x, y, z + 1));
-		list.add(getBlockType(x - 1, y, z));
-		list.add(getBlockType(x, y, z - 1));
-
-		return list;
-	}
-
-	default List<BlockState> getSurroundingBlocks(Vector3i pos) {
-		return getSurroundingBlocks(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	default List<BlockState> getSurroundingBlocks(int x, int y, int z) {
-		List<BlockState> list = new ArrayList<>(6);
-
-		if (y != 256)
-			list.add(getBlock(x, y + 1, z));
-		if (y != 0)
-			list.add(getBlock(x, y - 1, z));
-
-		list.add(getBlock(x + 1, y, z));
-		list.add(getBlock(x, y, z + 1));
-		list.add(getBlock(x - 1, y, z));
-		list.add(getBlock(x, y, z - 1));
-
-		return list;
-	}
+	boolean isExposed(int x, int y, int z);
 
 	default int getBlockLightLevel(Vector3i pos) {
 		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());

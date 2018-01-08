@@ -27,6 +27,8 @@ package net.smoofyuniverse.noxray.modifications.mixins;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.smoofyuniverse.noxray.api.BlockStorage;
 import net.smoofyuniverse.noxray.api.NetworkWorld;
 import net.smoofyuniverse.noxray.modifications.internal.InternalWorld;
@@ -37,9 +39,30 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(World.class)
 public abstract class MixinWorld implements InternalWorld, BlockStorage {
+	@Shadow
+	protected IChunkProvider chunkProvider;
+
 	private final NetworkWorld networkWorld = new NetworkWorld((org.spongepowered.api.world.World) this);
 	private DimensionType dimensionType;
 	private BlockType groundType;
+
+	@Override
+	public boolean isExposed(int x, int y, int z) {
+		if (!containsBlock(x, y, z))
+			return false;
+
+		if (y != 256 && notFullCube(x, y + 1, z))
+			return true;
+		if (y != 0 && notFullCube(x, y - 1, z))
+			return true;
+
+		return notFullCube(x + 1, y, z) || notFullCube(x - 1, y, z) || notFullCube(x, y, z + 1) || notFullCube(x, y, z - 1);
+	}
+
+	private boolean notFullCube(int x, int y, int z) {
+		Chunk chunk = this.chunkProvider.getLoadedChunk(x >> 4, z >> 4);
+		return chunk != null && !chunk.getBlockState(x, y, z).isFullCube();
+	}
 
 	@Override
 	public int getBlockLightLevel(int x, int y, int z) {

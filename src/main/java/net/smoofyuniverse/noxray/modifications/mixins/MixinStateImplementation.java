@@ -22,18 +22,42 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifier;
+package net.smoofyuniverse.noxray.modifications.mixins;
 
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.data.property.block.FullBlockSelectionBoxProperty;
+import com.google.common.collect.ImmutableMap;
+import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-public class ModifierUtil {
+@Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
+public class MixinStateImplementation {
+	@Shadow
+	@Final
+	private Block block;
+	@Shadow
+	@Final
+	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
 
-	public static boolean isExposed(Iterable<BlockType> it) {
-		for (BlockType type : it) {
-			if (!type.getProperty(FullBlockSelectionBoxProperty.class).get().getValue())
-				return true;
-		}
-		return false;
+	private int hash;
+
+	@Inject(method = "<init>", at = @At("RETURN"))
+	public void onInit(CallbackInfo cb) {
+		this.hash = this.properties.hashCode();
+	}
+
+	/**
+	 * @author Yeregorix
+	 * @reason Significantly improves performance
+	 */
+	@Override
+	@Overwrite
+	public int hashCode() {
+		return this.hash;
 	}
 }

@@ -30,6 +30,7 @@ import org.spongepowered.api.block.BlockState;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 public class Options {
@@ -45,5 +46,9 @@ public class Options {
 		this.ground = ground;
 		this.density = density;
 		this.ores = ores.size();
+	}
+
+	public BlockState randomBlock(Random r) {
+		return (this.ores == 0 || (this.density != 1 && r.nextFloat() > this.density)) ? this.ground : this.oresList.get(r.nextInt(this.ores));
 	}
 }

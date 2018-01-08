@@ -168,8 +168,11 @@ public class NetworkChunk {
 			if (container == null)
 				continue;
 
+			int sectionY = container.getY();
+			boolean changed = false;
+
 			for (int dy = 0; dy < 16; dy++) {
-				int y = container.getY() + dy;
+				int y = sectionY + dy;
 				for (int dz = 0; dz < 16; dz++) {
 					for (int dx = 0; dx < 16; dx++) {
 						modifierTiming.startTiming();
@@ -179,33 +182,38 @@ public class NetworkChunk {
 							BlockState realBlock = storage.getBlock(x, y, z);
 							if (options.oresSet.contains(realBlock)) {
 								container.set(dx, dy, dz, (IBlockState) realBlock);
-								addChange(dx, y, dz, realBlock);
+								changed = true;
 							}
 						} else {
 							container.set(dx, dy, dz, (IBlockState) fakeBlock);
-							addChange(dx, y, dz, fakeBlock);
+							changed = true;
 						}
 					}
 				}
 			}
+
+			if (changed)
+				this.changedSections |= 1 << (sectionY >> 4);
 		}
 
 		this.state = ready ? State.OBFUSCATED : State.WAITING_FOR_OBFUSCATION;
 
+		resendChunk(this.changedSections);
+
 		NoXrayTimings.POST_OBFUSCATION.stopTiming();
 	}
 
-	private void addChange(int x, int y, int z, BlockState block) {
-		this.changes.put((short) (x << 12 | z << 8 | y), block);
-		this.changedSections |= 1 << (y >> 4);
-	}
+	private void resendChunk(int sections) {
+		NoXrayTimings.BLOCK_CHANGES_SENDING.startTiming();
 
-	public void setBlock(int x, int y, int z, BlockState block) {
-		checkBlockBounds(x, y, z);
+		PlayerChunkMapEntry entry = ((WorldServer) this.chunk.getWorld()).getPlayerChunkMap().getEntry(this.x, this.z);
+		if (entry != null)
+			entry.sendPacket(new SPacketChunkData((net.minecraft.world.chunk.Chunk) this.chunk, sections));
 
-		NetworkBlockContainer container = this.containers[y >> 4];
-		if (container != null)
-			container.set(x & 15, y & 15, z & 15, (IBlockState) block);
+		NoXrayTimings.BLOCK_CHANGES_SENDING.stopTiming();
+
+		this.changes.clear();
+		this.changedSections = 0;
 	}
 
 	public void deobfuscateBlock(int x, int y, int z) {
@@ -213,9 +221,20 @@ public class NetworkChunk {
 			return;
 
 		BlockState realBlock = this.chunk.getBlock(x, y, z), fakeBlock = getBlock(x, y, z);
-		if (realBlock != fakeBlock) {
+		if (realBlock != fakeBlock)
 			setBlock(x, y, z, realBlock);
-			addChange(x & 15, y, z & 15, realBlock);
+	}
+
+	public void setBlock(int x, int y, int z, BlockState block) {
+		checkBlockBounds(x, y, z);
+
+		NetworkBlockContainer container = this.containers[y >> 4];
+		if (container != null) {
+			x &= 15;
+			z &= 15;
+			container.set(x, y & 15, z, (IBlockState) block);
+			this.changes.put((short) (x << 12 | z << 8 | y), block);
+			this.changedSections |= 1 << (y >> 4);
 		}
 	}
 
@@ -223,6 +242,11 @@ public class NetworkChunk {
 		int size = this.changes.size();
 		if (size == 0)
 			return;
+
+		if (size >= 64) {
+			resendChunk(this.changedSections);
+			return;
+		}
 
 		NoXrayTimings.BLOCK_CHANGES_SENDING.startTiming();
 
@@ -235,7 +259,7 @@ public class NetworkChunk {
 				packet.blockPosition = new BlockPos((pos >> 12 & 15) + this.x * 16, pos & 255, (pos >> 8 & 15) + this.z * 16);
 				packet.blockState = (IBlockState) e.getValue();
 				entry.sendPacket(packet);
-			} else if (size < 64) {
+			} else {
 				SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
 				packet.chunkPos = new ChunkPos(this.x, this.z);
 				BlockUpdateData[] datas = new BlockUpdateData[size];
@@ -244,8 +268,6 @@ public class NetworkChunk {
 					datas[i++] = packet.new BlockUpdateData(e.getShortKey(), (IBlockState) e.getValue());
 				packet.changedBlocks = datas;
 				entry.sendPacket(packet);
-			} else {
-				entry.sendPacket(new SPacketChunkData((net.minecraft.world.chunk.Chunk) this.chunk, this.changedSections));
 			}
 		}
 

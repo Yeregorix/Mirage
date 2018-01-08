@@ -38,18 +38,6 @@ public class RandomModifier implements BlockModifier {
 	@Override
 	public BlockState modify(BlockStorage storage, Options options, Random r, int x, int y, int z) {
 		BlockState block = storage.getBlock(x, y, z);
-		if (block != options.ground && !options.oresSet.contains(block))
-			return null;
-
-		if (ModifierUtil.isExposed(storage.getSurroundingBlockTypes(x, y, z)))
-			return null;
-
-		if (options.ores == 0)
-			return options.ground;
-
-		if (options.density != 1 && r.nextFloat() > options.density)
-			return options.ground;
-
-		return options.oresList.get(r.nextInt(options.ores));
+		return (block == options.ground || options.oresSet.contains(block)) && !storage.isExposed(x, y, z) ? options.randomBlock(r) : null;
 	}
 }
