@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Represent the world viewed for the network (akka online players)
@@ -113,6 +114,9 @@ public class NetworkWorld implements WorldView {
 			this.config.density = 0;
 		if (this.config.density > 1)
 			this.config.density = 1;
+
+		if (this.config.seed == 0)
+			this.config.seed = ThreadLocalRandom.current().nextLong();
 
 		this.config.modifier = this.config.modifier.toLowerCase();
 		ViewModifier mod = ModifierRegistry.get(this.config.modifier).orElse(null);

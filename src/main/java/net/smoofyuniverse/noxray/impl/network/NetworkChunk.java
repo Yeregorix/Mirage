@@ -45,7 +45,7 @@ import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 /**
  * Represent a chunk viewed for the network (akka online players)
@@ -59,6 +59,8 @@ public class NetworkChunk implements ChunkView {
 	private InternalChunk chunk;
 	private NetworkWorld world;
 	private final int x, z;
+	private Random random = new Random();
+	private long seed;
 
 	public NetworkChunk(NetworkBlockContainer[] containers, InternalChunk chunk, NetworkWorld world) {
 		this.containers = containers;
@@ -68,6 +70,12 @@ public class NetworkChunk implements ChunkView {
 		Vector3i pos = getPosition();
 		this.x = pos.getX();
 		this.z = pos.getZ();
+
+		long wSeed = world.getConfig().seed;
+		this.random.setSeed(wSeed);
+		long k = this.random.nextLong() / 2L * 2L + 1L;
+		long l = this.random.nextLong() / 2L * 2L + 1L;
+		this.seed = (long) this.x * k + (long) this.z * l ^ wSeed;
 	}
 
 	public State getState() {
@@ -212,8 +220,10 @@ public class NetworkChunk implements ChunkView {
 		}
 
 		if (ready) {
+			this.random.setSeed(this.seed);
+
 			timing.startTiming();
-			mod.modify(this, ThreadLocalRandom.current());
+			mod.modify(this, this.random);
 			timing.stopTiming();
 
 			this.state = State.OBFUSCATED;

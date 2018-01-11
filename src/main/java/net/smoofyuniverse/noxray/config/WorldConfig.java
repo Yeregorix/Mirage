@@ -45,6 +45,8 @@ public class WorldConfig {
 	public float density = 0.5f;
 	@Setting(value = "DeobfRadius", comment = "Radius to deobfuscate on block update, between 1 and 4")
 	public int deobfRadius = 2;
+	@Setting(value = "Seed", comment = "The seed used by the modifier, shouldn't be modified")
+	public long seed = 0;
 
 	public Options asOptions() {
 		return new Options(this.ores, this.ground, this.density);
