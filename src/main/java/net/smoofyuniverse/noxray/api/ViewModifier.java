@@ -22,26 +22,20 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.internal;
+package net.smoofyuniverse.noxray.api;
 
-import net.smoofyuniverse.noxray.api.NetworkChunk;
+import co.aikar.timings.Timing;
+import net.smoofyuniverse.noxray.api.volume.ChunkView;
 
-import javax.annotation.Nullable;
+import java.util.Random;
 
-public interface InternalChunk {
+public interface ViewModifier {
 
-	default void obfuscateBlocks() {
-		NetworkChunk chunk = getNetworkChunk();
-		if (chunk != null)
-			chunk.obfuscateBlocks();
-	}
+	String getName();
 
-	@Nullable
-	NetworkChunk getNetworkChunk();
+	Timing getTiming();
 
-	default void deobfuscateBlock(int x, int y, int z) {
-		NetworkChunk chunk = getNetworkChunk();
-		if (chunk != null)
-			chunk.deobfuscateBlock(x, y, z);
-	}
+	boolean isReady(ChunkView view);
+
+	void modify(ChunkView view, Random r);
 }

@@ -22,26 +22,18 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.impl.internal;
 
-import net.minecraft.world.chunk.BlockStateContainer;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.smoofyuniverse.noxray.modifications.internal.InternalBlockStateContainer;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.smoofyuniverse.noxray.api.volume.WorldStorage;
+import net.smoofyuniverse.noxray.impl.network.NetworkWorld;
 
-@Mixin(ExtendedBlockStorage.class)
-public class MixinExtendedBlockStorage {
-	@Shadow
-	@Final
-	private BlockStateContainer data;
+import javax.annotation.Nullable;
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	public void onInit(int y, boolean storeSkylight, CallbackInfo ci) {
-		((InternalBlockStateContainer) this.data).setY(y);
-	}
+public interface InternalWorld extends WorldStorage {
+
+	@Override
+	NetworkWorld getView();
+
+	@Nullable
+	InternalChunk getChunk(int x, int z);
 }

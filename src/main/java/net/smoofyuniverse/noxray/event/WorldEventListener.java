@@ -27,8 +27,7 @@ package net.smoofyuniverse.noxray.event;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import net.smoofyuniverse.noxray.NoXray;
-import net.smoofyuniverse.noxray.modifications.internal.InternalChunk;
-import net.smoofyuniverse.noxray.modifications.internal.InternalWorld;
+import net.smoofyuniverse.noxray.impl.internal.InternalWorld;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -52,7 +51,7 @@ public class WorldEventListener {
 	@Listener(order = Order.POST)
 	public void onWorldLoad(LoadWorldEvent e) {
 		try {
-			((InternalWorld) e.getTargetWorld()).getNetworkWorld().loadConfig();
+			((InternalWorld) e.getTargetWorld()).getView().loadConfig();
 		} catch (Exception ex) {
 			NoXray.LOGGER.error("Failed to load world " + e.getTargetWorld().getName() + "'s configuration", ex);
 		}
@@ -76,7 +75,7 @@ public class WorldEventListener {
 	public void onExplosionDetonate(ExplosionEvent.Detonate e) {
 		List<Location<World>> list = e.getAffectedLocations();
 		for (Location<World> loc : list) {
-			int r = ((InternalWorld) loc.getExtent()).getNetworkWorld().getConfig().deobfRadius;
+			int r = ((InternalWorld) loc.getExtent()).getView().getConfig().deobfRadius;
 
 			for (int dx = -r; dx <= r; dx++) {
 				for (int dy = -r; dy <= r; dy++) {
@@ -102,7 +101,7 @@ public class WorldEventListener {
 	}
 
 	public static void updateSurroundingBlocks(World w, int x, int y, int z) {
-		int r = ((InternalWorld) w).getNetworkWorld().getConfig().deobfRadius;
+		int r = ((InternalWorld) w).getView().getConfig().deobfRadius;
 
 		for (int dx = -r; dx <= r; dx++) {
 			for (int dy = -r; dy <= r; dy++) {
@@ -125,6 +124,6 @@ public class WorldEventListener {
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {
-		((InternalChunk) w.getChunkAtBlock(x, y, z).get()).deobfuscateBlock(x, y, z);
+		((InternalWorld) w).getView().deobfuscate(x, y, z);
 	}
 }

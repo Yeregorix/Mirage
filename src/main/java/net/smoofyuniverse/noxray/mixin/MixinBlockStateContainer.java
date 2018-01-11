@@ -22,49 +22,49 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.mixin;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.BlockStateContainer;
-import net.smoofyuniverse.noxray.modifications.internal.InternalBlockStateContainer;
-import net.smoofyuniverse.noxray.modifications.internal.NetworkBlockContainer;
+import net.smoofyuniverse.noxray.impl.internal.InternalBlockContainer;
+import net.smoofyuniverse.noxray.impl.network.NetworkBlockContainer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockStateContainer.class)
-public abstract class MixinBlockStateContainer implements InternalBlockStateContainer {
-	private NetworkBlockContainer modifiedStorage = new NetworkBlockContainer();
+public abstract class MixinBlockStateContainer implements InternalBlockContainer {
+	private NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
 
 	@Override
 	public int modifiedSize() {
-		return this.modifiedStorage.getSerializedSize();
+		return this.networkContainer.getSerializedSize();
 	}
 
 	@Override
 	public void writeModified(PacketBuffer buf) {
-		this.modifiedStorage.write(buf);
+		this.networkContainer.write(buf);
 	}
 
 	@Override
 	public void setY(int y) {
-		this.modifiedStorage.setY(y);
+		this.networkContainer.setY(y);
 	}
 
 	@Override
 	public NetworkBlockContainer getNetworkBlockContainer() {
-		return this.modifiedStorage;
+		return this.networkContainer;
 	}
 
 	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
 	public void onSet(int index, IBlockState state, CallbackInfo ci) {
-		this.modifiedStorage.set(index, state);
+		this.networkContainer.set(index, state);
 	}
 
 	@Inject(method = "setBits(I)V", at = @At("HEAD"))
 	public void onSetBits(int bitsIn, CallbackInfo ci) {
-		this.modifiedStorage.setBits(bitsIn);
+		this.networkContainer.setBits(bitsIn);
 	}
 }

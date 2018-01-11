@@ -22,14 +22,15 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.mixin;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.world.chunk.BlockStateContainer;
 import net.minecraft.world.chunk.Chunk;
-import net.smoofyuniverse.noxray.modifications.internal.InternalBlockStateContainer;
-import net.smoofyuniverse.noxray.modifications.internal.InternalChunk;
+import net.smoofyuniverse.noxray.impl.internal.InternalBlockContainer;
+import net.smoofyuniverse.noxray.impl.internal.InternalChunk;
+import net.smoofyuniverse.noxray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -39,12 +40,14 @@ public class MixinPacketChunkData {
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
 	public void writeModified(BlockStateContainer storage, PacketBuffer buffer, PacketBuffer methodbuffer, Chunk chunk, boolean b, int i) {
-		((InternalBlockStateContainer) storage).writeModified(buffer);
+		((InternalBlockContainer) storage).writeModified(buffer);
 	}
 
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
 	public int calculateModifiedSize(BlockStateContainer storage, Chunk chunk, boolean b, int i) {
-		((InternalChunk) chunk).obfuscateBlocks();
-		return ((InternalBlockStateContainer) storage).modifiedSize();
+		NetworkChunk netChunk = ((InternalChunk) chunk).getView();
+		if (netChunk != null)
+			netChunk.onSending();
+		return ((InternalBlockContainer) storage).modifiedSize();
 	}
 }

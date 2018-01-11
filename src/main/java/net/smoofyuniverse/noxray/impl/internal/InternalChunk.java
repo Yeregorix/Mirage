@@ -22,14 +22,16 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray;
+package net.smoofyuniverse.noxray.impl.internal;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import net.smoofyuniverse.noxray.api.volume.ChunkStorage;
+import net.smoofyuniverse.noxray.impl.network.NetworkChunk;
 
-public class NoXrayTimings {
-	public static final Timing OBFUSCATION = Timings.of(NoXray.get(), "Obfuscation");
-	public static final Timing DEOBFUSCATION = Timings.of(NoXray.get(), "Deobfuscation");
-	public static final Timing BLOCK_CHANGES_SENDING = Timings.of(NoXray.get(), "Block Changes Sending");
-	public static final Timing FAST_PRE_MODIFIER = Timings.of(NoXray.get(), "FastPreModifier");
+public interface InternalChunk extends ChunkStorage {
+
+	@Override
+	NetworkChunk getView();
+
+	@Override
+	InternalWorld getWorld();
 }

@@ -22,34 +22,31 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifier;
+package net.smoofyuniverse.noxray.api;
 
-import net.smoofyuniverse.noxray.api.BlockModifier;
+import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
 
-import java.util.HashMap;
-import java.util.Map;
+public abstract class AbstractModifier implements ViewModifier {
+	private final Timing timing;
+	private final String name;
 
-public class ModifierRegistry {
-	private static final Map<String, BlockModifier> modifiers = new HashMap<>();
-
-	public static void register(String name, BlockModifier modifier) {
-		if (contains(name))
-			throw new IllegalArgumentException("Modifier already registered");
-		modifiers.put(name.toLowerCase(), modifier);
+	protected AbstractModifier(Object plugin, String name) {
+		this(Timings.of(plugin, "Modifier: " + name), name);
 	}
 
-	public static boolean contains(String name) {
-		return modifiers.containsKey(name.toLowerCase());
+	protected AbstractModifier(Timing timing, String name) {
+		this.timing = timing;
+		this.name = name;
 	}
 
-	public static BlockModifier get(String name) {
-		return modifiers.get(name.toLowerCase());
+	@Override
+	public String getName() {
+		return this.name;
 	}
 
-	static {
-		register("obvious", new ObviousModifier());
-		register("random", new RandomModifier());
-		register("hideall", BlockModifier.HIDE_ALL);
-		register("empty", BlockModifier.EMPTY);
+	@Override
+	public Timing getTiming() {
+		return this.timing;
 	}
 }

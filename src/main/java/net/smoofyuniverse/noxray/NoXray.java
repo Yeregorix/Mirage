@@ -25,9 +25,10 @@
 package net.smoofyuniverse.noxray;
 
 import com.google.inject.Inject;
-import net.smoofyuniverse.noxray.api.NetworkChunk;
 import net.smoofyuniverse.noxray.event.WorldEventListener;
-import net.smoofyuniverse.noxray.modifications.internal.InternalChunk;
+import net.smoofyuniverse.noxray.impl.internal.InternalChunk;
+import net.smoofyuniverse.noxray.impl.network.NetworkChunk;
+import net.smoofyuniverse.noxray.impl.network.NetworkChunk.State;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -81,9 +82,10 @@ public class NoXray {
 		this.updateTask = Task.builder().execute(() -> {
 			for (World w : this.game.getServer().getWorlds()) {
 				for (Chunk c : w.getLoadedChunks()) {
-					NetworkChunk netChunk = ((InternalChunk) c).getNetworkChunk();
+					NetworkChunk netChunk = ((InternalChunk) c).getView();
 					if (netChunk != null) {
-						netChunk.postObfuscateBlocks();
+						if (netChunk.getState() == State.NEED_REOBFUSCATION)
+							netChunk.obfuscate();
 						netChunk.sendBlockChanges();
 					}
 				}

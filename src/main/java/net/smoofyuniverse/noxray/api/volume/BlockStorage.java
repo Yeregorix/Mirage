@@ -22,42 +22,30 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.api.volume;
 
-import com.google.common.collect.ImmutableMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.properties.IProperty;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 
-@Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
-public class MixinStateImplementation {
-	@Shadow
-	@Final
-	private Block block;
-	@Shadow
-	@Final
-	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
+public interface BlockStorage extends ImmutableBlockVolume {
 
-	private int hash;
+	BlockView getView();
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	public void onInit(CallbackInfo ci) {
-		this.hash = this.properties.hashCode();
+	default boolean isExposed(Vector3i pos) {
+		return isExposed(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	/**
-	 * @author Yeregorix
-	 * @reason Significantly improves performance
-	 */
-	@Override
-	@Overwrite
-	public int hashCode() {
-		return this.hash;
+	boolean isExposed(int x, int y, int z);
+
+	default int getBlockLightLevel(Vector3i pos) {
+		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());
 	}
+
+	int getBlockLightLevel(int x, int y, int z);
+
+	default boolean canSeeTheSky(Vector3i pos) {
+		return canSeeTheSky(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	boolean canSeeTheSky(int x, int y, int z);
 }

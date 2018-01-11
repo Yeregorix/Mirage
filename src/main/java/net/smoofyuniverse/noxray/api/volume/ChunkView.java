@@ -22,14 +22,39 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray;
+package net.smoofyuniverse.noxray.api.volume;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.Direction;
 
-public class NoXrayTimings {
-	public static final Timing OBFUSCATION = Timings.of(NoXray.get(), "Obfuscation");
-	public static final Timing DEOBFUSCATION = Timings.of(NoXray.get(), "Deobfuscation");
-	public static final Timing BLOCK_CHANGES_SENDING = Timings.of(NoXray.get(), "Block Changes Sending");
-	public static final Timing FAST_PRE_MODIFIER = Timings.of(NoXray.get(), "FastPreModifier");
+import java.util.Optional;
+
+public interface ChunkView extends BlockView {
+
+	@Override
+	ChunkStorage getStorage();
+
+	default boolean isNeighborLoaded(Direction dir) {
+		return getNeighborView(dir).isPresent();
+	}
+
+	default Optional<ChunkView> getNeighborView(Direction dir) {
+		if (dir.isSecondaryOrdinal())
+			throw new IllegalArgumentException("Direction");
+		return getWorld().getChunkView(getPosition().add(dir.asBlockOffset()));
+	}
+
+	WorldView getWorld();
+
+	Vector3i getPosition();
+
+	boolean isExpositionCheckReady();
+
+	boolean isObfuscated();
+
+	void obfuscate();
+
+	void deobfuscate();
+
+	boolean deobfuscate(int x, int y, int z);
 }

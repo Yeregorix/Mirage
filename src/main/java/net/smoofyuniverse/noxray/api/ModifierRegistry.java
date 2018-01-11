@@ -22,14 +22,38 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray;
+package net.smoofyuniverse.noxray.api;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import net.smoofyuniverse.noxray.modifier.EmptyModifier;
+import net.smoofyuniverse.noxray.modifier.HideAllModifier;
+import net.smoofyuniverse.noxray.modifier.ObviousModifier;
+import net.smoofyuniverse.noxray.modifier.RandomModifier;
 
-public class NoXrayTimings {
-	public static final Timing OBFUSCATION = Timings.of(NoXray.get(), "Obfuscation");
-	public static final Timing DEOBFUSCATION = Timings.of(NoXray.get(), "Deobfuscation");
-	public static final Timing BLOCK_CHANGES_SENDING = Timings.of(NoXray.get(), "Block Changes Sending");
-	public static final Timing FAST_PRE_MODIFIER = Timings.of(NoXray.get(), "FastPreModifier");
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class ModifierRegistry {
+	private static final Map<String, ViewModifier> modifiers = new HashMap<>();
+
+	public static void register(ViewModifier modifier) {
+		if (contains(modifier.getName()))
+			throw new IllegalArgumentException("Name is already registered");
+		modifiers.put(modifier.getName().toLowerCase(), modifier);
+	}
+
+	public static boolean contains(String name) {
+		return modifiers.containsKey(name.toLowerCase());
+	}
+
+	public static Optional<ViewModifier> get(String name) {
+		return Optional.ofNullable(modifiers.get(name.toLowerCase()));
+	}
+
+	static {
+		register(ObviousModifier.INSTANCE);
+		register(RandomModifier.INSTANCE);
+		register(HideAllModifier.INSTANCE);
+		register(EmptyModifier.INSTANCE);
+	}
 }

@@ -22,11 +22,12 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.internal;
+package net.smoofyuniverse.noxray.impl.internal;
 
 import net.minecraft.network.PacketBuffer;
+import net.smoofyuniverse.noxray.impl.network.NetworkBlockContainer;
 
-public interface InternalBlockStateContainer {
+public interface InternalBlockContainer {
 
 	int modifiedSize();
 

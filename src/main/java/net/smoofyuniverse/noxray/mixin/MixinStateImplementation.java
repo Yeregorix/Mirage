@@ -22,44 +22,42 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.mixin;
 
-import net.minecraft.world.World;
-import net.minecraft.world.WorldType;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.smoofyuniverse.noxray.api.NetworkChunk;
-import net.smoofyuniverse.noxray.modifications.internal.InternalBlockStateContainer;
-import net.smoofyuniverse.noxray.modifications.internal.InternalChunk;
-import net.smoofyuniverse.noxray.modifications.internal.NetworkBlockContainer;
+import com.google.common.collect.ImmutableMap;
+import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Chunk.class)
-public class MixinChunk implements InternalChunk {
+@Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
+public class MixinStateImplementation {
 	@Shadow
 	@Final
-	private World world;
+	private Block block;
 	@Shadow
 	@Final
-	private ExtendedBlockStorage[] storageArrays;
+	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
 
-	private NetworkChunk networkChunk;
+	private int hash;
 
+	@Inject(method = "<init>", at = @At("RETURN"))
+	public void onInit(CallbackInfo ci) {
+		this.hash = this.properties.hashCode();
+	}
+
+	/**
+	 * @author Yeregorix
+	 * @reason Caching the hash significantly improves HashSet and HashMap performances
+	 */
 	@Override
-	public NetworkChunk getNetworkChunk() {
-		if (this.networkChunk == null) {
-			WorldType type = this.world.getWorldType();
-			if (type != WorldType.FLAT && type != WorldType.DEBUG_ALL_BLOCK_STATES) {
-				NetworkBlockContainer[] containers = new NetworkBlockContainer[this.storageArrays.length];
-				for (int i = 0; i < this.storageArrays.length; i++) {
-					if (this.storageArrays[i] != null)
-						containers[i] = ((InternalBlockStateContainer) this.storageArrays[i].getData()).getNetworkBlockContainer();
-				}
-				this.networkChunk = new NetworkChunk(containers, (org.spongepowered.api.world.Chunk) this);
-			}
-		}
-		return this.networkChunk;
+	@Overwrite
+	public int hashCode() {
+		return this.hash;
 	}
 }

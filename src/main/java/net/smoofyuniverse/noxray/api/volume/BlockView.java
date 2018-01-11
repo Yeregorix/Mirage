@@ -22,28 +22,18 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.api;
+package net.smoofyuniverse.noxray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.world.extent.BlockVolume;
+import org.spongepowered.api.world.extent.MutableBlockVolume;
 
-public interface BlockStorage extends BlockVolume {
+public interface BlockView extends MutableBlockVolume {
+
+	BlockStorage getStorage();
 
 	default boolean isExposed(Vector3i pos) {
 		return isExposed(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	boolean isExposed(int x, int y, int z);
-
-	default int getBlockLightLevel(Vector3i pos) {
-		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	int getBlockLightLevel(int x, int y, int z);
-
-	default boolean canSeeTheSky(Vector3i pos) {
-		return canSeeTheSky(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	boolean canSeeTheSky(int x, int y, int z);
 }

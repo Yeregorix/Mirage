@@ -34,16 +34,16 @@ import org.spongepowered.api.block.BlockTypes;
 
 import java.util.Random;
 
-public class RandomModifier extends AbstractModifier {
-	public static final RandomModifier INSTANCE = new RandomModifier();
+public class HideAllModifier extends AbstractModifier {
+	public static final HideAllModifier INSTANCE = new HideAllModifier();
 
-	private RandomModifier() {
-		super(NoXray.get(), "Random");
+	private HideAllModifier() {
+		super(NoXray.get(), "HideAll");
 	}
 
 	@Override
 	public boolean isReady(ChunkView view) {
-		return view.isExpositionCheckReady();
+		return true;
 	}
 
 	@Override
@@ -55,11 +55,11 @@ public class RandomModifier extends AbstractModifier {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
 				for (int x = min.getX(); x <= max.getX(); x++) {
 					BlockState b = view.getBlock(x, y, z);
-					if (b == BlockTypes.AIR)
+					if (b == BlockTypes.AIR || b == options.ground)
 						continue;
 
-					if ((b == options.ground || options.oresSet.contains(b)) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, options.randomBlock(r));
+					if (options.oresSet.contains(b))
+						view.setBlock(x, y, z, options.ground);
 				}
 			}
 		}

@@ -22,14 +22,46 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray;
+package net.smoofyuniverse.noxray.api.volume;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import com.flowpowered.math.vector.Vector3i;
+import net.smoofyuniverse.noxray.api.ViewModifier;
+import net.smoofyuniverse.noxray.config.Options;
 
-public class NoXrayTimings {
-	public static final Timing OBFUSCATION = Timings.of(NoXray.get(), "Obfuscation");
-	public static final Timing DEOBFUSCATION = Timings.of(NoXray.get(), "Deobfuscation");
-	public static final Timing BLOCK_CHANGES_SENDING = Timings.of(NoXray.get(), "Block Changes Sending");
-	public static final Timing FAST_PRE_MODIFIER = Timings.of(NoXray.get(), "FastPreModifier");
+import java.util.Optional;
+
+public interface WorldView extends BlockView {
+
+	@Override
+	WorldStorage getStorage();
+
+	ViewModifier getModifier();
+
+	Options getOptions();
+
+	default boolean isChunkLoaded(Vector3i pos) {
+		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default boolean isChunkLoaded(int x, int y, int z) {
+		return getChunkView(x, y, z).isPresent();
+	}
+
+	Optional<ChunkView> getChunkView(int x, int y, int z);
+
+	default Optional<ChunkView> getChunkView(Vector3i pos) {
+		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default Optional<ChunkView> getChunkViewAt(Vector3i pos) {
+		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	Optional<ChunkView> getChunkViewAt(int x, int y, int z);
+
+	default boolean deobfuscate(Vector3i pos) {
+		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	boolean deobfuscate(int x, int y, int z);
 }

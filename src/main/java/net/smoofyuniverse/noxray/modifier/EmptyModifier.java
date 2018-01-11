@@ -22,11 +22,26 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.internal;
+package net.smoofyuniverse.noxray.modifier;
 
-import net.smoofyuniverse.noxray.api.NetworkWorld;
+import net.smoofyuniverse.noxray.NoXray;
+import net.smoofyuniverse.noxray.api.AbstractModifier;
+import net.smoofyuniverse.noxray.api.volume.ChunkView;
 
-public interface InternalWorld {
+import java.util.Random;
 
-	NetworkWorld getNetworkWorld();
+public class EmptyModifier extends AbstractModifier {
+	public static final EmptyModifier INSTANCE = new EmptyModifier();
+
+	private EmptyModifier() {
+		super(NoXray.get(), "Empty");
+	}
+
+	@Override
+	public boolean isReady(ChunkView view) {
+		return true;
+	}
+
+	@Override
+	public void modify(ChunkView view, Random r) {}
 }

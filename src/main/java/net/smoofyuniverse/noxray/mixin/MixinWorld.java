@@ -22,66 +22,68 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.modifications.mixins;
+package net.smoofyuniverse.noxray.mixin;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.smoofyuniverse.noxray.api.BlockStorage;
-import net.smoofyuniverse.noxray.api.NetworkWorld;
-import net.smoofyuniverse.noxray.modifications.internal.InternalWorld;
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.world.DimensionType;
+import net.smoofyuniverse.noxray.api.volume.ChunkStorage;
+import net.smoofyuniverse.noxray.impl.internal.InternalChunk;
+import net.smoofyuniverse.noxray.impl.internal.InternalWorld;
+import net.smoofyuniverse.noxray.impl.network.NetworkWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+import javax.annotation.Nullable;
+import java.util.Optional;
+
 @Mixin(World.class)
-public abstract class MixinWorld implements InternalWorld, BlockStorage {
+public abstract class MixinWorld implements InternalWorld {
 	@Shadow
 	protected IChunkProvider chunkProvider;
 
-	private final NetworkWorld networkWorld = new NetworkWorld((org.spongepowered.api.world.World) this);
-	private DimensionType dimensionType;
-	private BlockType groundType;
+	private NetworkWorld networkWorld = new NetworkWorld(this);
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			return false;
-
-		if (y != 256 && notFullCube(x, y + 1, z))
-			return true;
-		if (y != 0 && notFullCube(x, y - 1, z))
-			return true;
-
-		return notFullCube(x + 1, y, z) || notFullCube(x - 1, y, z) || notFullCube(x, y, z + 1) || notFullCube(x, y, z - 1);
-	}
-
-	private boolean notFullCube(int x, int y, int z) {
-		Chunk chunk = this.chunkProvider.getLoadedChunk(x >> 4, z >> 4);
-		return chunk != null && !chunk.getBlockState(x, y, z).isFullCube();
+		InternalChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk != null && chunk.isExposed(x & 15, y, z & 15);
 	}
 
 	@Override
 	public int getBlockLightLevel(int x, int y, int z) {
-		return getLightFor(EnumSkyBlock.BLOCK, new BlockPos(x, y, z));
-	}
-
-	@Shadow
-	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
-
-	@Override
-	public NetworkWorld getNetworkWorld() {
-		return this.networkWorld;
+		InternalChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk == null ? 0 : chunk.getBlockLightLevel(x & 15, y, z & 15);
 	}
 
 	@Override
 	public boolean canSeeTheSky(int x, int y, int z) {
-		return canSeeSky(new BlockPos(x, y, z));
+		InternalChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk != null && chunk.canSeeTheSky(x & 15, y, z & 15);
 	}
 
-	@Shadow
-	public abstract boolean canSeeSky(BlockPos pos);
+	@Override
+	public NetworkWorld getView() {
+		return this.networkWorld;
+	}
+
+	@Nullable
+	@Override
+	public InternalChunk getChunk(int x, int z) {
+		return (InternalChunk) this.chunkProvider.getLoadedChunk(x, z);
+	}
+
+	@Override
+	public Optional<ChunkStorage> getChunkStorage(int x, int y, int z) {
+		return Optional.ofNullable(getChunk(x, z));
+	}
+
+
+	@Override
+	public Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z) {
+		return getChunkStorage(x >> 4, 0, z >> 4);
+	}
+
+
+
+
 }

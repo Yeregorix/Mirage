@@ -22,25 +22,34 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.noxray.api;
+package net.smoofyuniverse.noxray.api.volume;
 
-import net.smoofyuniverse.noxray.config.Options;
-import org.spongepowered.api.block.BlockState;
+import com.flowpowered.math.vector.Vector3i;
 
-import javax.annotation.Nullable;
-import java.util.Random;
+import java.util.Optional;
 
-public interface BlockModifier {
-	BlockModifier EMPTY = (storage, options, r, x, y, z) -> null;
-	BlockModifier HIDE_ALL = (storage, options, r, x, y, z) -> options.oresSet.contains(storage.getBlock(x, y, z)) ? options.ground : null;
+public interface WorldStorage extends BlockStorage {
 
-	/**
-	 * This method gets called when a block gets read from the disk.
-	 * Not that this function should not trigger another chunkload operation since this could cause a stack overflow.
-	 * THIS METHOD IS ASYNC AND WE CAN'T CALL SPONGE API FUNCTIONS FROM HERE
-	 *
-	 * @return a BlockState if the block has been modified, null else.
-	 */
-	@Nullable
-	BlockState modify(BlockStorage storage, Options options, Random r, int x, int y, int z);
+	@Override
+	WorldView getView();
+
+	default boolean isChunkLoaded(Vector3i pos) {
+		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default boolean isChunkLoaded(int x, int y, int z) {
+		return getChunkStorage(x, y, z).isPresent();
+	}
+
+	Optional<ChunkStorage> getChunkStorage(int x, int y, int z);
+
+	default Optional<ChunkStorage> getChunkStorage(Vector3i pos) {
+		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default Optional<ChunkStorage> getChunkStorageAt(Vector3i pos) {
+		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z);
 }
