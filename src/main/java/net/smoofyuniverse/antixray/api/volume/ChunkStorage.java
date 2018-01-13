@@ -22,5 +22,31 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api.volume;
 
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.Direction;
+
+import java.util.Optional;
+
+public interface ChunkStorage extends BlockStorage {
+
+	@Override
+	ChunkView getView();
+
+	default boolean isNeighborLoaded(Direction dir) {
+		return getNeighborStorage(dir).isPresent();
+	}
+
+	default Optional<ChunkStorage> getNeighborStorage(Direction dir) {
+		if (dir.isSecondaryOrdinal())
+			throw new IllegalArgumentException("Direction");
+		return getWorld().getChunkStorage(getPosition().add(dir.asBlockOffset()));
+	}
+
+	WorldStorage getWorld();
+
+	Vector3i getPosition();
+
+	boolean isExpositionCheckReady();
+}

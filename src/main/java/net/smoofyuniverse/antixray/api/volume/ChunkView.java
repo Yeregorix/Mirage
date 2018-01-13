@@ -22,5 +22,39 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api.volume;
 
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.Direction;
+
+import java.util.Optional;
+
+public interface ChunkView extends BlockView {
+
+	@Override
+	ChunkStorage getStorage();
+
+	default boolean isNeighborLoaded(Direction dir) {
+		return getNeighborView(dir).isPresent();
+	}
+
+	default Optional<ChunkView> getNeighborView(Direction dir) {
+		if (dir.isSecondaryOrdinal())
+			throw new IllegalArgumentException("Direction");
+		return getWorld().getChunkView(getPosition().add(dir.asBlockOffset()));
+	}
+
+	WorldView getWorld();
+
+	Vector3i getPosition();
+
+	boolean isExpositionCheckReady();
+
+	boolean isObfuscated();
+
+	void obfuscate();
+
+	void deobfuscate();
+
+	boolean deobfuscate(int x, int y, int z);
+}

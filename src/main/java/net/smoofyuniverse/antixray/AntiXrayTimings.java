@@ -22,5 +22,14 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray;
 
+import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
+
+public class AntiXrayTimings {
+	public static final Timing OBFUSCATION = Timings.of(AntiXray.get(), "Obfuscation");
+	public static final Timing DEOBFUSCATION = Timings.of(AntiXray.get(), "Deobfuscation");
+	public static final Timing BLOCK_CHANGES_SENDING = Timings.of(AntiXray.get(), "Block Changes Sending");
+	public static final Timing FAST_PRE_MODIFIER = Timings.of(AntiXray.get(), "FastPreModifier");
+}

@@ -22,5 +22,20 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api;
 
+import co.aikar.timings.Timing;
+import net.smoofyuniverse.antixray.api.volume.ChunkView;
+
+import java.util.Random;
+
+public interface ViewModifier {
+
+	String getName();
+
+	Timing getTiming();
+
+	boolean isReady(ChunkView view);
+
+	void modify(ChunkView view, Random r);
+}

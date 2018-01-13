@@ -22,5 +22,38 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api;
 
+import net.smoofyuniverse.antixray.modifier.EmptyModifier;
+import net.smoofyuniverse.antixray.modifier.HideAllModifier;
+import net.smoofyuniverse.antixray.modifier.ObviousModifier;
+import net.smoofyuniverse.antixray.modifier.RandomModifier;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class ModifierRegistry {
+	private static final Map<String, ViewModifier> modifiers = new HashMap<>();
+
+	public static void register(ViewModifier modifier) {
+		if (contains(modifier.getName()))
+			throw new IllegalArgumentException("Name is already registered");
+		modifiers.put(modifier.getName().toLowerCase(), modifier);
+	}
+
+	public static boolean contains(String name) {
+		return modifiers.containsKey(name.toLowerCase());
+	}
+
+	public static Optional<ViewModifier> get(String name) {
+		return Optional.ofNullable(modifiers.get(name.toLowerCase()));
+	}
+
+	static {
+		register(ObviousModifier.INSTANCE);
+		register(RandomModifier.INSTANCE);
+		register(HideAllModifier.INSTANCE);
+		register(EmptyModifier.INSTANCE);
+	}
+}

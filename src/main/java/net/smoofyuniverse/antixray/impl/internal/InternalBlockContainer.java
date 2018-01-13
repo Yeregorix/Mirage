@@ -22,5 +22,18 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.impl.internal;
 
+import net.minecraft.network.PacketBuffer;
+import net.smoofyuniverse.antixray.impl.network.NetworkBlockContainer;
+
+public interface InternalBlockContainer {
+
+	int modifiedSize();
+
+	void writeModified(PacketBuffer buffer);
+
+	void setY(int y);
+
+	NetworkBlockContainer getNetworkBlockContainer();
+}

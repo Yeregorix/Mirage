@@ -22,5 +22,31 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api;
 
+import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
+
+public abstract class AbstractModifier implements ViewModifier {
+	private final Timing timing;
+	private final String name;
+
+	protected AbstractModifier(Object plugin, String name) {
+		this(Timings.of(plugin, "Modifier: " + name), name);
+	}
+
+	protected AbstractModifier(Timing timing, String name) {
+		this.timing = timing;
+		this.name = name;
+	}
+
+	@Override
+	public String getName() {
+		return this.name;
+	}
+
+	@Override
+	public Timing getTiming() {
+		return this.timing;
+	}
+}

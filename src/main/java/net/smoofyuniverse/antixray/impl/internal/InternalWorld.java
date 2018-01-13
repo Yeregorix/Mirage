@@ -22,5 +22,18 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.impl.internal;
 
+import net.smoofyuniverse.antixray.api.volume.WorldStorage;
+import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
+
+import javax.annotation.Nullable;
+
+public interface InternalWorld extends WorldStorage {
+
+	@Override
+	NetworkWorld getView();
+
+	@Nullable
+	InternalChunk getChunk(int x, int z);
+}

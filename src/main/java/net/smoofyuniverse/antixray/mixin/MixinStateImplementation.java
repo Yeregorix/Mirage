@@ -22,5 +22,42 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.mixin;
 
+import com.google.common.collect.ImmutableMap;
+import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
+public class MixinStateImplementation {
+	@Shadow
+	@Final
+	private Block block;
+	@Shadow
+	@Final
+	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
+
+	private int hash;
+
+	@Inject(method = "<init>", at = @At("RETURN"))
+	public void onInit(CallbackInfo ci) {
+		this.hash = this.properties.hashCode();
+	}
+
+	/**
+	 * @author Yeregorix
+	 * @reason Caching the hash significantly improves HashSet and HashMap performances
+	 */
+	@Override
+	@Overwrite
+	public int hashCode() {
+		return this.hash;
+	}
+}

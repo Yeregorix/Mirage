@@ -22,5 +22,30 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api.volume;
 
+import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.world.extent.ImmutableBlockVolume;
+
+public interface BlockStorage extends ImmutableBlockVolume {
+
+	BlockView getView();
+
+	default boolean isExposed(Vector3i pos) {
+		return isExposed(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	boolean isExposed(int x, int y, int z);
+
+	default int getBlockLightLevel(Vector3i pos) {
+		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	int getBlockLightLevel(int x, int y, int z);
+
+	default boolean canSeeTheSky(Vector3i pos) {
+		return canSeeTheSky(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	boolean canSeeTheSky(int x, int y, int z);
+}

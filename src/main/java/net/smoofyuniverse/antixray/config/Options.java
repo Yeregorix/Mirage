@@ -22,5 +22,33 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.config;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import org.spongepowered.api.block.BlockState;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+public class Options {
+	public final Set<BlockState> oresSet;
+	public final List<BlockState> oresList;
+	public final BlockState ground;
+	public final float density;
+	public final int ores;
+
+	public Options(Collection<BlockState> ores, BlockState ground, float density) {
+		this.oresSet = ImmutableSet.copyOf(ores);
+		this.oresList = ImmutableList.copyOf(ores);
+		this.ground = ground;
+		this.density = density;
+		this.ores = ores.size();
+	}
+
+	public BlockState randomBlock(Random r) {
+		return (this.ores == 0 || (this.density != 1 && r.nextFloat() > this.density)) ? this.ground : this.oresList.get(r.nextInt(this.ores));
+	}
+}

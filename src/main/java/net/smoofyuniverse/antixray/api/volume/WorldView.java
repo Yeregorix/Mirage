@@ -22,5 +22,46 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api.volume;
 
+import com.flowpowered.math.vector.Vector3i;
+import net.smoofyuniverse.antixray.api.ViewModifier;
+import net.smoofyuniverse.antixray.config.Options;
+
+import java.util.Optional;
+
+public interface WorldView extends BlockView {
+
+	@Override
+	WorldStorage getStorage();
+
+	ViewModifier getModifier();
+
+	Options getOptions();
+
+	default boolean isChunkLoaded(Vector3i pos) {
+		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default boolean isChunkLoaded(int x, int y, int z) {
+		return getChunkView(x, y, z).isPresent();
+	}
+
+	Optional<ChunkView> getChunkView(int x, int y, int z);
+
+	default Optional<ChunkView> getChunkView(Vector3i pos) {
+		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default Optional<ChunkView> getChunkViewAt(Vector3i pos) {
+		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	Optional<ChunkView> getChunkViewAt(int x, int y, int z);
+
+	default boolean deobfuscate(Vector3i pos) {
+		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	boolean deobfuscate(int x, int y, int z);
+}

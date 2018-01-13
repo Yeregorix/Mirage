@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Thomas Vanmellaerts, 2018 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -69,7 +69,7 @@ minecraft {
 
 sourceSets {
     main {
-        ext.refMap = "mixins.noxray.refmap.json"
+        ext.refMap = "mixins.antixray.refmap.json"
     }
 }
 
@@ -77,8 +77,8 @@ jar {
     manifest {
         attributes(
                 'tweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
-                'MixinConfigs': 'mixins.noxray.json',
-                'FMLAT': 'noxray_at.cfg',
+                'MixinConfigs': 'mixins.antixray.json',
+                'FMLAT': 'antixray_at.cfg',
                 'ForceLoadAsMod' : true
         )
     }
@@ -101,11 +101,11 @@ dependencies {
 
 task updatePlugin <<{
     copy {
-        from 'build/libs/NoXray.jar'
+        from 'build/libs/AntiXray.jar'
         into spongestart.forgeServerFolder + "/mods"
     }
     copy {
-        from 'build/libs/NoXray.jar'
+        from 'build/libs/AntiXray.jar'
         into spongestart.vanillaServerFolder + "/mods"
     }
 }

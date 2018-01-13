@@ -22,5 +22,16 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.impl.internal;
 
+import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+
+public interface InternalChunk extends ChunkStorage {
+
+	@Override
+	NetworkChunk getView();
+
+	@Override
+	InternalWorld getWorld();
+}

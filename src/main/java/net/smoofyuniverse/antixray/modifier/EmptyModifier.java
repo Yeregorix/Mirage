@@ -22,5 +22,26 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.modifier;
 
+import net.smoofyuniverse.antixray.AntiXray;
+import net.smoofyuniverse.antixray.api.AbstractModifier;
+import net.smoofyuniverse.antixray.api.volume.ChunkView;
+
+import java.util.Random;
+
+public class EmptyModifier extends AbstractModifier {
+	public static final EmptyModifier INSTANCE = new EmptyModifier();
+
+	private EmptyModifier() {
+		super(AntiXray.get(), "Empty");
+	}
+
+	@Override
+	public boolean isReady(ChunkView view) {
+		return true;
+	}
+
+	@Override
+	public void modify(ChunkView view, Random r) {}
+}

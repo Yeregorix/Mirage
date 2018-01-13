@@ -22,5 +22,34 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'AntiXray'
+package net.smoofyuniverse.antixray.api.volume;
 
+import com.flowpowered.math.vector.Vector3i;
+
+import java.util.Optional;
+
+public interface WorldStorage extends BlockStorage {
+
+	@Override
+	WorldView getView();
+
+	default boolean isChunkLoaded(Vector3i pos) {
+		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default boolean isChunkLoaded(int x, int y, int z) {
+		return getChunkStorage(x, y, z).isPresent();
+	}
+
+	Optional<ChunkStorage> getChunkStorage(int x, int y, int z);
+
+	default Optional<ChunkStorage> getChunkStorage(Vector3i pos) {
+		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	default Optional<ChunkStorage> getChunkStorageAt(Vector3i pos) {
+		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z);
+}

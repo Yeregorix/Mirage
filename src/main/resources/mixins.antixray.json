@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.7.4",
+  "package": "net.smoofyuniverse.antixray.mixin",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "mixins.antixray.refmap.json",
+  "server": [
+    "MixinBlockStateContainer",
+    "MixinChunk",
+    "MixinExtendedBlockStorage",
+    "MixinPacketChunkData",
+    "MixinStateImplementation",
+    "MixinWorld"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
