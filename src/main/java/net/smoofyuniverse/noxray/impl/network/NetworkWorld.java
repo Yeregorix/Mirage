@@ -25,6 +25,7 @@
 package net.smoofyuniverse.noxray.impl.network;
 
 import com.flowpowered.math.vector.Vector3i;
+import net.minecraft.world.WorldType;
 import net.smoofyuniverse.noxray.NoXray;
 import net.smoofyuniverse.noxray.api.ModifierRegistry;
 import net.smoofyuniverse.noxray.api.ViewModifier;
@@ -67,19 +68,24 @@ public class NetworkWorld implements WorldView {
 	private ViewModifier modifier;
 	private Options options;
 	private InternalWorld world;
+	private boolean enabled;
 
 	public NetworkWorld(InternalWorld w) {
 		this.world = w;
 	}
 
 	public void loadConfig() throws IOException, ObjectMappingException {
+		if (this.enabled)
+			throw new IllegalStateException("Already loaded");
+
 		if (this.loader == null)
 			this.loader = NoXray.get().createConfigLoader(((World) this.world).getName());
 
-		CommentedConfigurationNode node = this.loader.load();
-		this.config = node.getValue(WorldConfig.TOKEN, new WorldConfig());
-
 		DimensionType dimType = ((World) this.world).getDimension().getType();
+		WorldType wType = ((net.minecraft.world.World) this.world).getWorldType();
+
+		CommentedConfigurationNode node = this.loader.load();
+		this.config = node.getValue(WorldConfig.TOKEN, new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END));
 
 		if (this.config.ground == null) {
 			if (dimType == DimensionTypes.NETHER)
@@ -119,22 +125,37 @@ public class NetworkWorld implements WorldView {
 			this.config.seed = ThreadLocalRandom.current().nextLong();
 
 		this.config.modifier = this.config.modifier.toLowerCase();
-		ViewModifier mod = ModifierRegistry.get(this.config.modifier).orElse(null);
-		if (mod == null) {
-			NoXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists.");
+		Optional<ViewModifier> mod = ModifierRegistry.get(this.config.modifier);
+		if (mod.isPresent())
+			this.modifier = mod.get();
+		else {
+			if (this.config.enabled)
+				NoXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists. Obfuscation in world " + ((World) this.world).getName() + " will be disabled.");
 			this.modifier = EmptyModifier.INSTANCE;
 			this.config.modifier = "empty";
-		} else
-			this.modifier = mod;
+			this.config.enabled = false;
+		}
+
+		if (this.config.enabled) {
+			if (wType == WorldType.DEBUG_ALL_BLOCK_STATES) {
+				NoXray.LOGGER.warn("Obfuscation is not available in a debug_all_block_states world. Obfuscation in world " + ((World) this.world).getName() + " will be disabled.");
+				this.config.enabled = false;
+			}
+		}
 
 		node.setValue(WorldConfig.TOKEN, this.config);
 		this.loader.save(node);
 
 		this.options = this.config.asOptions();
+		this.enabled = this.config.enabled;
 	}
 
 	public WorldConfig getConfig() {
 		return this.config;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
 	}
 
 	@Override

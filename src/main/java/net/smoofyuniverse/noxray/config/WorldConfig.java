@@ -35,6 +35,8 @@ import java.util.List;
 public class WorldConfig {
 	public static final TypeToken<WorldConfig> TOKEN = TypeToken.of(WorldConfig.class);
 
+	@Setting(value = "Enabled", comment = "Enable or disable NoXray in this world")
+	public boolean enabled = true;
 	@Setting(value = "Ores", comment = "Ores that will be hidden by the modifier")
 	public List<BlockState> ores;
 	@Setting(value = "Ground", comment = "The block used to replace hidden ores")
@@ -51,4 +53,10 @@ public class WorldConfig {
 	public Options asOptions() {
 		return new Options(this.ores, this.ground, this.density);
 	}
+
+	public WorldConfig(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public WorldConfig() {}
 }

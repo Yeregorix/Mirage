@@ -29,7 +29,6 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.noxray.impl.internal.InternalBlockContainer;
@@ -37,11 +36,14 @@ import net.smoofyuniverse.noxray.impl.internal.InternalChunk;
 import net.smoofyuniverse.noxray.impl.internal.InternalWorld;
 import net.smoofyuniverse.noxray.impl.network.NetworkBlockContainer;
 import net.smoofyuniverse.noxray.impl.network.NetworkChunk;
+import net.smoofyuniverse.noxray.impl.network.NetworkWorld;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+
+import javax.annotation.Nullable;
 
 @Mixin(Chunk.class)
 public abstract class MixinChunk implements InternalChunk {
@@ -59,17 +61,18 @@ public abstract class MixinChunk implements InternalChunk {
 	private World world;
 	private NetworkChunk networkChunk;
 
+	@Nullable
 	@Override
 	public NetworkChunk getView() {
 		if (this.networkChunk == null) {
-			WorldType type = this.world.getWorldType();
-			if (type != WorldType.FLAT && type != WorldType.DEBUG_ALL_BLOCK_STATES) {
+			NetworkWorld netWorld = ((InternalWorld) this.world).getView();
+			if (netWorld.isEnabled()) {
 				NetworkBlockContainer[] containers = new NetworkBlockContainer[this.storageArrays.length];
 				for (int i = 0; i < this.storageArrays.length; i++) {
 					if (this.storageArrays[i] != null)
 						containers[i] = ((InternalBlockContainer) this.storageArrays[i].getData()).getNetworkBlockContainer();
 				}
-				this.networkChunk = new NetworkChunk(containers, this, ((InternalWorld) this.world).getView());
+				this.networkChunk = new NetworkChunk(containers, this, netWorld);
 			}
 		}
 		return this.networkChunk;

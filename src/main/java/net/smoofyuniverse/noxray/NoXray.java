@@ -47,6 +47,8 @@ import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.World;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Plugin(id = "noxray", name = "NoXray", version = "1.0.0", authors = {"thomas15v", "Yeregorix"}, description = "A simple but powerful Anti-Xray")
@@ -73,6 +75,10 @@ public class NoXray {
 
 	@Listener
 	public void onLoadComplete(GamePreInitializationEvent e) {
+		try {
+			Files.createDirectory(this.configDir);
+		} catch (IOException ignored) {
+		}
 		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true);
 		this.game.getEventManager().registerListeners(this, new WorldEventListener());
 	}
