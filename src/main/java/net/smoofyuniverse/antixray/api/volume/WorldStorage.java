@@ -28,8 +28,14 @@ import com.flowpowered.math.vector.Vector3i;
 
 import java.util.Optional;
 
+/**
+ * Represents an immutable server-side world.
+ */
 public interface WorldStorage extends BlockStorage {
 
+	/**
+	 * @return The WorldView which is associated with this WorldStorage
+	 */
 	@Override
 	WorldView getView();
 

@@ -35,7 +35,7 @@ import org.spongepowered.api.block.BlockTypes;
 import java.util.Random;
 
 /**
- * Only modifies the obviously ore blocks, And is the less lagiest solution
+ * This modifier only hides ores which are not exposed to the view of normal users.
  */
 public class ObviousModifier extends AbstractModifier {
 	public static final ObviousModifier INSTANCE = new ObviousModifier();

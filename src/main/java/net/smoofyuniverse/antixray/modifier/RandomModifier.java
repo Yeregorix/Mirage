@@ -34,6 +34,9 @@ import org.spongepowered.api.block.BlockTypes;
 
 import java.util.Random;
 
+/**
+ * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
+ */
 public class RandomModifier extends AbstractModifier {
 	public static final RandomModifier INSTANCE = new RandomModifier();
 

@@ -27,14 +27,25 @@ package net.smoofyuniverse.antixray.api;
 import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 
+/**
+ * An abstract class that partially implements ViewModifier.
+ */
 public abstract class AbstractModifier implements ViewModifier {
 	private final Timing timing;
 	private final String name;
 
+	/**
+	 * @param plugin The plugin owning this modifier
+	 * @param name   The name of this modifier
+	 */
 	protected AbstractModifier(Object plugin, String name) {
 		this(Timings.of(plugin, "Modifier: " + name), name);
 	}
 
+	/**
+	 * @param timing The Timing associated with this modifier
+	 * @param name The name of this modifier
+	 */
 	protected AbstractModifier(Timing timing, String name) {
 		this.timing = timing;
 		this.name = name;

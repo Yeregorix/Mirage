@@ -29,8 +29,14 @@ import org.spongepowered.api.util.Direction;
 
 import java.util.Optional;
 
+/**
+ * Represents a mutable client-side chunk.
+ */
 public interface ChunkView extends BlockView {
 
+	/**
+	 * @return The ChunkStorage which is associated with this ChunkView
+	 */
 	@Override
 	ChunkStorage getStorage();
 
@@ -44,12 +50,27 @@ public interface ChunkView extends BlockView {
 		return getWorld().getChunkView(getPosition().add(dir.asBlockOffset()));
 	}
 
+	/**
+	 * Gets the world the chunk is in.
+	 * @return The world
+	 */
 	WorldView getWorld();
 
+	/**
+	 * Gets the position of the chunk.
+	 * @return The position
+	 */
 	Vector3i getPosition();
 
+	/**
+	 * Checks if surrounding chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}
+	 * @return Whether exposition check is ready
+	 */
 	boolean isExpositionCheckReady();
 
+	/**
+	 * @return Whether this chunk is marked as obfuscated
+	 */
 	boolean isObfuscated();
 
 	void obfuscate();

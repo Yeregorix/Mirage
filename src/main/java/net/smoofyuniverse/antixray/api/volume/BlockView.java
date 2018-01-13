@@ -27,13 +27,35 @@ package net.smoofyuniverse.antixray.api.volume;
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 
+/**
+ * A BlockView is a MutableBlockVolume associated with immutable BlockStorage. This object is used to represent a client-side BlockVolume.
+ */
 public interface BlockView extends MutableBlockVolume {
 
+	/**
+	 * @return The BlockStorage which is associated with this BlockView
+	 */
 	BlockStorage getStorage();
 
+	/**
+	 * Checks if the block at the given position is exposed to the view of normal users.
+	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
+	 *
+	 * @param pos The position
+	 * @return Whether the block is exposed
+	 */
 	default boolean isExposed(Vector3i pos) {
 		return isExposed(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * Checks if the block at the given position is exposed to the view of normal users.
+	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block is exposed
+	 */
 	boolean isExposed(int x, int y, int z);
 }

@@ -25,7 +25,6 @@
 package net.smoofyuniverse.antixray.mixin;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,9 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
 public class MixinStateImplementation {
-	@Shadow
-	@Final
-	private Block block;
 	@Shadow
 	@Final
 	private ImmutableMap<IProperty<?>, Comparable<?>> properties;

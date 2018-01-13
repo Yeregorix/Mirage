@@ -34,6 +34,9 @@ import org.spongepowered.api.block.BlockTypes;
 
 import java.util.Random;
 
+/**
+ * This modifier hides all ores.
+ */
 public class HideAllModifier extends AbstractModifier {
 	public static final HideAllModifier INSTANCE = new HideAllModifier();
 

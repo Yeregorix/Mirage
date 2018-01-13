@@ -29,8 +29,14 @@ import org.spongepowered.api.util.Direction;
 
 import java.util.Optional;
 
+/**
+ * Represents an immutable server-side chunk.
+ */
 public interface ChunkStorage extends BlockStorage {
 
+	/**
+	 * @return The ChunkView which is associated with this ChunkStorage
+	 */
 	@Override
 	ChunkView getView();
 
@@ -44,9 +50,21 @@ public interface ChunkStorage extends BlockStorage {
 		return getWorld().getChunkStorage(getPosition().add(dir.asBlockOffset()));
 	}
 
+	/**
+	 * Gets the world the chunk is in.
+	 * @return The world
+	 */
 	WorldStorage getWorld();
 
+	/**
+	 * Gets the position of the chunk.
+	 * @return The position
+	 */
 	Vector3i getPosition();
 
+	/**
+	 * Checks if surrounding chunks are loaded to be sure that we can call {@link BlockStorage#isExposed(int, int, int)}
+	 * @return Whether exposition check is ready
+	 */
 	boolean isExpositionCheckReady();
 }

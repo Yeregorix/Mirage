@@ -30,6 +30,9 @@ import net.smoofyuniverse.antixray.api.volume.ChunkView;
 
 import java.util.Random;
 
+/**
+ * This modifier does not modify anything.
+ */
 public class EmptyModifier extends AbstractModifier {
 	public static final EmptyModifier INSTANCE = new EmptyModifier();
 

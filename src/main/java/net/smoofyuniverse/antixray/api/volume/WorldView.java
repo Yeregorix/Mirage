@@ -30,8 +30,14 @@ import net.smoofyuniverse.antixray.config.Options;
 
 import java.util.Optional;
 
+/**
+ * Represents a mutable client-side world.
+ */
 public interface WorldView extends BlockView {
 
+	/**
+	 * @return The WorldStorage which is associated with this WorldView
+	 */
 	@Override
 	WorldStorage getStorage();
 

@@ -29,13 +29,34 @@ import net.smoofyuniverse.antixray.api.volume.ChunkView;
 
 import java.util.Random;
 
+/**
+ * This object is used to modify chunk per chunk the view of the world sent to players.
+ */
 public interface ViewModifier {
 
+	/**
+	 * @return The name of this modifier
+	 */
 	String getName();
 
+	/**
+	 * @return A Timing that will be used to monitor performances of this modifier
+	 */
 	Timing getTiming();
 
+	/**
+	 * A fast method to check whether this modifier is ready to modify a chunk.
+	 * Some modifiers might need to check whether neighboring chunks are loaded.
+	 * @param view The ChunkView to modify
+	 * @return true if this modifier is ready to modify the chunk
+	 */
 	boolean isReady(ChunkView view);
 
+	/**
+	 * Modifies the ChunkView that will be send to players.
+	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
+	 * @param view The ChunkView to modify
+	 * @param r The Random object that should be used by the modifier
+	 */
 	void modify(ChunkView view, Random r);
 }

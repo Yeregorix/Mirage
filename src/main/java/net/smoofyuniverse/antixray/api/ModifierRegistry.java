@@ -33,19 +33,35 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * A registry used to map modifiers by name
+ */
 public class ModifierRegistry {
 	private static final Map<String, ViewModifier> modifiers = new HashMap<>();
 
+	/**
+	 * Registers a new modifier in this registry.
+	 *
+	 * @param modifier The ViewModifier
+	 */
 	public static void register(ViewModifier modifier) {
 		if (contains(modifier.getName()))
 			throw new IllegalArgumentException("Name is already registered");
 		modifiers.put(modifier.getName().toLowerCase(), modifier);
 	}
 
+	/**
+	 * @param name The name of the modifier
+	 * @return Whether this registry contains a modifier with the specified name
+	 */
 	public static boolean contains(String name) {
 		return modifiers.containsKey(name.toLowerCase());
 	}
 
+	/**
+	 * @param name The name of the modifier
+	 * @return The modifier registered in this registry with the specified name
+	 */
 	public static Optional<ViewModifier> get(String name) {
 		return Optional.ofNullable(modifiers.get(name.toLowerCase()));
 	}

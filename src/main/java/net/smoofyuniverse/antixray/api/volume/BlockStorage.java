@@ -27,14 +27,36 @@ package net.smoofyuniverse.antixray.api.volume;
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 
+/**
+ * A BlockStorage is an ImmutableBlockVolume associated with mutable BlockView. This object is used to represent a server-side BlockVolume.
+ */
 public interface BlockStorage extends ImmutableBlockVolume {
 
+	/**
+	 * @return The BlockView which is associated with this BlockStorage
+	 */
 	BlockView getView();
 
+	/**
+	 * Checks if the block at the given position is exposed to the view of normal users.
+	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
+	 *
+	 * @param pos The position
+	 * @return Whether the block is exposed
+	 */
 	default boolean isExposed(Vector3i pos) {
 		return isExposed(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * Checks if the block at the given position is exposed to the view of normal users.
+	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block is exposed
+	 */
 	boolean isExposed(int x, int y, int z);
 
 	default int getBlockLightLevel(Vector3i pos) {
