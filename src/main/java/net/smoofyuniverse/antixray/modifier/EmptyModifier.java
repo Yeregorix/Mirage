@@ -26,7 +26,9 @@ package net.smoofyuniverse.antixray.modifier;
 
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.AbstractModifier;
+import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
+import net.smoofyuniverse.antixray.config.Options;
 
 import java.util.Random;
 
@@ -38,6 +40,11 @@ public class EmptyModifier extends AbstractModifier {
 
 	private EmptyModifier() {
 		super(AntiXray.get(), "Empty");
+	}
+
+	@Override
+	public Signature getCacheSignature(Options options) {
+		return Signature.empty();
 	}
 
 	@Override

@@ -26,14 +26,17 @@ package net.smoofyuniverse.antixray.impl.internal;
 
 import net.minecraft.network.PacketBuffer;
 import net.smoofyuniverse.antixray.impl.network.NetworkBlockContainer;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 
 public interface InternalBlockContainer {
 
-	int modifiedSize();
+	int getModifiedSize();
 
 	void writeModified(PacketBuffer buffer);
 
 	void setY(int y);
+
+	void setNetworkChunk(NetworkChunk chunk);
 
 	NetworkBlockContainer getNetworkBlockContainer();
 }

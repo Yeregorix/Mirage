@@ -24,36 +24,34 @@
 
 package net.smoofyuniverse.antixray.mixin;
 
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketChunkData;
-import net.minecraft.world.chunk.BlockStateContainer;
+import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.world.chunk.Chunk;
-import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(SPacketChunkData.class)
-public abstract class MixinPacketChunkData {
+@Mixin(PlayerChunkMapEntry.class)
+public class MixinPlayerChunkMapEntry {
 
-	@Inject(method = "calculateChunkSize", at = @At("HEAD"))
-	public void onCalculateChunkSize(Chunk chunk, boolean skyLight, int sections, CallbackInfoReturnable<Integer> ci) {
-		NetworkChunk netChunk = ((InternalChunk) chunk).getView();
-		if (netChunk != null)
-			netChunk.obfuscate();
+	@Shadow
+	private Chunk chunk;
+
+	@Inject(method = "sendToPlayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/play/server/SPacketChunkData;<init>(Lnet/minecraft/world/chunk/Chunk;I)V", shift = Shift.AFTER))
+	public void onSendToPlayers(CallbackInfoReturnable<Boolean> ci) {
+		if (this.chunk != null)
+			((InternalChunk) this.chunk).getView().getListener().clearChanges();
 	}
 
-	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
-	public void writeModified(BlockStateContainer container, PacketBuffer buffer) {
-		((InternalBlockContainer) container).writeModified(buffer);
-	}
-
-	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
-	public int calculateModifiedSize(BlockStateContainer container) {
-		return ((InternalBlockContainer) container).getModifiedSize();
+	@Inject(method = "sendPacket", at = @At("HEAD"))
+	public void onSendPacket(Packet<?> packet, CallbackInfo ci) {
+		if (this.chunk != null && packet instanceof SPacketChunkData && ((SPacketChunkData) packet).isFullChunk())
+			((InternalChunk) this.chunk).getView().getListener().clearChanges();
 	}
 }

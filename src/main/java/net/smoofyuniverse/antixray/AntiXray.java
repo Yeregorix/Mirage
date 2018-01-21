@@ -37,6 +37,7 @@ import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
@@ -66,6 +67,7 @@ public class AntiXray {
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
+	private Path cacheDir;
 
 	public AntiXray() {
 		if (instance != null)
@@ -74,7 +76,8 @@ public class AntiXray {
 	}
 
 	@Listener
-	public void onLoadComplete(GamePreInitializationEvent e) {
+	public void onGamePreInit(GamePreInitializationEvent e) {
+		this.cacheDir = Sponge.getGame().getGameDirectory().resolve("antixray-cache");
 		try {
 			Files.createDirectory(this.configDir);
 		} catch (IOException ignored) {
@@ -92,7 +95,7 @@ public class AntiXray {
 					if (netChunk != null) {
 						if (netChunk.getState() == State.NEED_REOBFUSCATION)
 							netChunk.obfuscate();
-						netChunk.sendBlockChanges();
+						netChunk.getListener().sendChanges();
 					}
 				}
 			}
@@ -108,6 +111,10 @@ public class AntiXray {
 
 	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(String worldName) {
 		return HoconConfigurationLoader.builder().setPath(this.configDir.resolve(worldName + ".conf")).setDefaultOptions(this.configOptions).build();
+	}
+
+	public Path getCacheDirectory() {
+		return this.cacheDir;
 	}
 
 	public static AntiXray get() {

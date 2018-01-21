@@ -28,12 +28,19 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.BitArray;
+import net.minecraft.util.ObjectIntIdentityMap;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.*;
+import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
+import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
+import org.spongepowered.api.block.BlockState;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 public class NetworkBlockContainer implements IBlockStatePaletteResizer {
+	@SuppressWarnings("deprecation")
+	private static final ObjectIntIdentityMap<IBlockState> BLOCK_STATE_IDS = Block.BLOCK_STATE_IDS;
 	private static final IBlockStatePalette REGISTRY_BASED_PALETTE = BlockStateContainer.REGISTRY_BASED_PALETTE;
 	private static final IBlockState AIR_BLOCK_STATE = BlockStateContainer.AIR_BLOCK_STATE;
 
@@ -47,12 +54,16 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		this.container = container;
 	}
 
+	public InternalBlockContainer getInternalBlockContainer() {
+		return (InternalBlockContainer) this.container;
+	}
+
 	public void deobfuscate(ChunkChangeListener listener) {
 		for (int i = 0; i < 4096; i++) {
 			IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
 			if (fakeBlock != realBlock) {
 				set(i, realBlock);
-				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, realBlock);
+				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, (BlockState) realBlock);
 			}
 		}
 	}
@@ -67,7 +78,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
 		if (fakeBlock != realBlock) {
 			set(i, realBlock);
-			listener.addChange(x, this.y + y, z, realBlock);
+			listener.addChange(x, this.y + y, z, (BlockState) realBlock);
 			return true;
 		}
 		return false;
@@ -86,7 +97,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			IBlockState block = this.container.get(i);
 			if (ores.contains(block)) {
 				set(i, ground);
-				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, ground);
+				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, (BlockState) ground);
 			}
 		}
 	}
@@ -102,7 +113,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 				this.palette = new BlockStatePaletteHashMap(this.bits, this);
 			} else {
 				this.palette = REGISTRY_BASED_PALETTE;
-				this.bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
+				this.bits = MathHelper.log2DeBruijn(BLOCK_STATE_IDS.size());
 			}
 
 			this.palette.idFor(AIR_BLOCK_STATE);
@@ -146,6 +157,58 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		buf.writeByte(this.bits);
 		this.palette.write(buf);
 		buf.writeLongArray(this.storage.getBackingLongArray());
+	}
+
+	public void save(BlockContainerSnapshot out) {
+		byte[] blockIds = new byte[4096];
+		NibbleArray data = new NibbleArray();
+		NibbleArray extension = getDataForNBT(blockIds, data);
+
+		out.setSection(this.y >> 4);
+		out.setBlockIds(blockIds);
+		out.setData(data.getData());
+		out.setExtension(extension == null ? null : extension.getData());
+	}
+
+	@Nullable
+	private NibbleArray getDataForNBT(byte[] blockIds, NibbleArray data) {
+		NibbleArray extension = null;
+
+		for (int i = 0; i < 4096; i++) {
+			int id = BLOCK_STATE_IDS.get(get(i));
+			int x = i & 15;
+			int y = i >> 8 & 15;
+			int z = i >> 4 & 15;
+
+			if ((id >> 12 & 15) != 0) {
+				if (extension == null)
+					extension = new NibbleArray();
+
+				extension.set(x, y, z, id >> 12 & 15);
+			}
+
+			blockIds[i] = (byte) (id >> 4 & 255);
+			data.set(x, y, z, id & 15);
+		}
+
+		return extension;
+	}
+
+	public void load(BlockContainerSnapshot in) {
+		if (in.getSection() != this.y >> 4)
+			throw new IllegalArgumentException("Section");
+		setDataFromNBT(in.getBlockIds(), new NibbleArray(in.getData()), in.getExtension() == null ? null : new NibbleArray(in.getExtension()));
+	}
+
+	private void setDataFromNBT(byte[] blockIds, NibbleArray data, @Nullable NibbleArray extension) {
+		for (int i = 0; i < 4096; i++) {
+			int x = i & 15;
+			int y = i >> 8 & 15;
+			int z = i >> 4 & 15;
+			int ext = extension == null ? 0 : extension.get(x, y, z);
+			int id = ext << 12 | (blockIds[i] & 255) << 4 | data.get(x, y, z);
+			set(i, BLOCK_STATE_IDS.getByValue(id));
+		}
 	}
 
 	public int getSerializedSize() {

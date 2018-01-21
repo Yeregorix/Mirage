@@ -31,21 +31,23 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
-import net.smoofyuniverse.antixray.impl.network.NetworkBlockContainer;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
 
-@Mixin(Chunk.class)
+@Mixin(value = Chunk.class, priority = 1100)
 public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	@Final
@@ -59,28 +61,47 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	@Final
 	private World world;
-	private NetworkChunk networkChunk;
+
+	private NetworkChunk netChunk;
+	private long cacheDate;
+
+	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
+	public void onInit(World world, int x, int z, CallbackInfo ci) {
+		NetworkWorld netWorld = ((InternalWorld) this.world).getView();
+		if (netWorld.isEnabled()) {
+			this.netChunk = new NetworkChunk(this, netWorld);
+			this.netChunk.setContainers(this.storageArrays);
+		}
+	}
 
 	@Nullable
 	@Override
 	public NetworkChunk getView() {
-		if (this.networkChunk == null) {
-			NetworkWorld netWorld = ((InternalWorld) this.world).getView();
-			if (netWorld.isEnabled()) {
-				NetworkBlockContainer[] containers = new NetworkBlockContainer[this.storageArrays.length];
-				for (int i = 0; i < this.storageArrays.length; i++) {
-					if (this.storageArrays[i] != null)
-						containers[i] = ((InternalBlockContainer) this.storageArrays[i].getData()).getNetworkBlockContainer();
-				}
-				this.networkChunk = new NetworkChunk(containers, this, netWorld);
-			}
-		}
-		return this.networkChunk;
+		return this.netChunk;
+	}
+
+	@Override
+	public long getValidCacheDate() {
+		return this.cacheDate;
 	}
 
 	@Override
 	public InternalWorld getWorld() {
 		return (InternalWorld) this.world;
+	}
+
+	@Override
+	public void setValidCacheDate(long value) {
+		this.cacheDate = value;
+	}
+
+	@Inject(method = "setStorageArrays", at = @At("RETURN"))
+	public void onSetStorageArrays(ExtendedBlockStorage[] newStorageArrays, CallbackInfo ci) {
+		if (this.netChunk != null) {
+			this.netChunk.setContainers(this.storageArrays);
+			if (this.netChunk.getState() != State.OBFUSCATED)
+				this.netChunk.loadFromCacheNow();
+		}
 	}
 
 	@Override

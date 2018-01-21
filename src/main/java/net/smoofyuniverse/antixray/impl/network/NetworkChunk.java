@@ -28,11 +28,15 @@ import co.aikar.timings.Timing;
 import com.flowpowered.math.vector.Vector3i;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
 import net.smoofyuniverse.antixray.api.ViewModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
+import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
+import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -45,10 +49,12 @@ import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
- * Represent a chunk viewed for the network (akka online players)
+ * Represents a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk implements ChunkView {
 	public static final Vector3i BLOCK_MIN = Vector3i.ZERO, BLOCK_MAX = new Vector3i(15, 255, 15), BLOCK_SIZE = new Vector3i(16, 256, 16);
@@ -60,10 +66,10 @@ public class NetworkChunk implements ChunkView {
 	private NetworkWorld world;
 	private final int x, z;
 	private Random random = new Random();
+	private boolean saved = true;
 	private long seed;
 
-	public NetworkChunk(NetworkBlockContainer[] containers, InternalChunk chunk, NetworkWorld world) {
-		this.containers = containers;
+	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
 		this.world = world;
 		this.listener = new ChunkChangeListener((Chunk) this.chunk);
@@ -78,13 +84,111 @@ public class NetworkChunk implements ChunkView {
 		this.seed = (long) this.x * k + (long) this.z * l ^ wSeed;
 	}
 
+	public void setContainers(ExtendedBlockStorage[] storages) {
+		NetworkBlockContainer[] containers = new NetworkBlockContainer[storages.length];
+		for (int i = 0; i < storages.length; i++) {
+			if (storages[i] != null)
+				containers[i] = ((InternalBlockContainer) storages[i].getData()).getNetworkBlockContainer();
+		}
+		setContainers(containers);
+	}
+
+	public void setContainers(NetworkBlockContainer[] containers) {
+		if (this.containers != null) {
+			for (NetworkBlockContainer c : this.containers) {
+				if (c != null)
+					c.getInternalBlockContainer().setNetworkChunk(null);
+			}
+		}
+		if (containers != null) {
+			for (NetworkBlockContainer c : containers) {
+				if (c != null)
+					c.getInternalBlockContainer().setNetworkChunk(this);
+			}
+		}
+		this.containers = containers;
+	}
+
 	public State getState() {
 		return this.state;
 	}
 
-	public void onSending() {
-		obfuscate();
-		this.listener.clearChanges();
+	public boolean isSaved() {
+		return this.saved;
+	}
+
+	public void setSaved(boolean value) {
+		this.saved = value;
+	}
+
+	public void saveToCacheLater() {
+		if (shouldSave()) {
+			long date;
+			if (this.world.useCache()) {
+				ChunkSnapshot chunk = save(new ChunkSnapshot());
+				this.world.addPendingSave(this.x, this.z, chunk);
+				date = chunk.getDate();
+			} else
+				date = System.currentTimeMillis();
+			this.chunk.setValidCacheDate(date);
+			((Chunk) this.chunk).markDirty();
+			this.saved = true;
+		}
+	}
+
+	public boolean shouldSave() {
+		return !this.saved && this.state == State.OBFUSCATED;
+	}
+
+	public ChunkSnapshot save(ChunkSnapshot out) {
+		List<BlockContainerSnapshot> list = new ArrayList<>(this.containers.length);
+		for (NetworkBlockContainer container : this.containers) {
+			if (container != null) {
+				BlockContainerSnapshot data = new BlockContainerSnapshot();
+				container.save(data);
+				list.add(data);
+			}
+		}
+		out.setContainers(list.toArray(new BlockContainerSnapshot[list.size()]));
+		out.setDate(System.currentTimeMillis());
+		return out;
+	}
+
+	public void saveToCacheNow() {
+		if (shouldSave()) {
+			long date;
+			if (this.world.useCache()) {
+				ChunkSnapshot chunk = save(new ChunkSnapshot());
+				this.world.removePendingSave(this.x, this.z);
+				this.world.saveToCache(this.x, this.z, chunk);
+				date = chunk.getDate();
+			} else
+				date = System.currentTimeMillis();
+			this.chunk.setValidCacheDate(date);
+			((Chunk) this.chunk).markDirty();
+			this.saved = true;
+		}
+	}
+
+	public void loadFromCacheNow() {
+		if (this.world.useCache()) {
+			ChunkSnapshot chunk = this.world.readFromCache(this.x, this.z);
+			if (chunk != null && chunk.getDate() == this.chunk.getValidCacheDate()) {
+				this.world.removePendingSave(this.x, this.z);
+				load(chunk);
+
+				this.state = State.OBFUSCATED;
+				this.saved = true;
+			}
+		}
+	}
+
+	public void load(ChunkSnapshot in) {
+		for (BlockContainerSnapshot data : in.getContainers()) {
+			NetworkBlockContainer container = this.containers[data.getSection()];
+			if (container != null)
+				container.load(data);
+		}
 	}
 
 	@Override
@@ -145,10 +249,11 @@ public class NetworkChunk implements ChunkView {
 
 		NetworkBlockContainer container = this.containers[y >> 4];
 		if (container == null)
-			return false;
+			return false; // AntiXray is designed to replace already existing blocks, not to create new ones
 
 		container.set(x, y & 15, z, (IBlockState) block);
-		this.listener.addChange(x, y, z, (IBlockState) block);
+		this.listener.addChange(x, y, z, block);
+		this.saved = false;
 		return true;
 	}
 
@@ -167,8 +272,8 @@ public class NetworkChunk implements ChunkView {
 		throw new UnsupportedOperationException();
 	}
 
-	public void sendBlockChanges() {
-		this.listener.sendChanges();
+	public ChunkChangeListener getListener() {
+		return this.listener;
 	}
 
 	@Override
@@ -201,8 +306,6 @@ public class NetworkChunk implements ChunkView {
 		if (this.state == State.OBFUSCATED)
 			return;
 
-		// TODO cache
-
 		AntiXrayTimings.OBFUSCATION.startTiming();
 
 		ViewModifier mod = this.world.getModifier();
@@ -213,8 +316,10 @@ public class NetworkChunk implements ChunkView {
 		timing.stopTiming();
 
 		if (this.state == State.NEED_REOBFUSCATION) {
-			if (!ready)
+			if (!ready) {
+				AntiXrayTimings.OBFUSCATION.stopTiming();
 				return;
+			}
 
 			deobfuscate();
 		}
@@ -228,7 +333,7 @@ public class NetworkChunk implements ChunkView {
 
 			this.state = State.OBFUSCATED;
 		} else {
-			AntiXrayTimings.FAST_PRE_MODIFIER.startTiming();
+			AntiXrayTimings.PREOBFUSCATION.startTiming();
 
 			Options options = this.world.getOptions();
 			for (NetworkBlockContainer c : this.containers) {
@@ -236,7 +341,7 @@ public class NetworkChunk implements ChunkView {
 					c.obfuscate(this.listener, options.oresSet, (IBlockState) options.ground);
 			}
 
-			AntiXrayTimings.FAST_PRE_MODIFIER.stopTiming();
+			AntiXrayTimings.PREOBFUSCATION.stopTiming();
 			this.state = State.NEED_REOBFUSCATION;
 		}
 
@@ -267,7 +372,11 @@ public class NetworkChunk implements ChunkView {
 			return false;
 
 		NetworkBlockContainer container = this.containers[y >> 4];
-		return container != null && container.deobfuscate(this.listener, x, y & 15, z);
+		if (container != null && container.deobfuscate(this.listener, x, y & 15, z)) {
+			this.saved = false;
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -313,5 +422,9 @@ public class NetworkChunk implements ChunkView {
 
 	public enum State {
 		NOT_OBFUSCATED, NEED_REOBFUSCATION, OBFUSCATED
+	}
+
+	public static long asLong(int x, int z) {
+		return (long) x & 4294967295L | ((long) z & 4294967295L) << 32;
 	}
 }

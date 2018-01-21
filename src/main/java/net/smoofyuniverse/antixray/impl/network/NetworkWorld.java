@@ -25,16 +25,22 @@
 package net.smoofyuniverse.antixray.impl.network;
 
 import com.flowpowered.math.vector.Vector3i;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.world.WorldType;
 import net.smoofyuniverse.antixray.AntiXray;
+import net.smoofyuniverse.antixray.AntiXrayTimings;
 import net.smoofyuniverse.antixray.api.ModifierRegistry;
 import net.smoofyuniverse.antixray.api.ViewModifier;
+import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.api.volume.WorldView;
 import net.smoofyuniverse.antixray.config.Options;
 import net.smoofyuniverse.antixray.config.WorldConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
+import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
+import net.smoofyuniverse.antixray.impl.network.cache.NetworkRegionCache;
 import net.smoofyuniverse.antixray.modifier.EmptyModifier;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -53,6 +59,8 @@ import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 
 import javax.annotation.Nullable;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,10 +68,12 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Represent the world viewed for the network (akka online players)
+ * Represents the world viewed for the network (akka online players)
  */
 public class NetworkWorld implements WorldView {
-	private ConfigurationLoader<CommentedConfigurationNode> loader;
+	private Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
+	private NetworkRegionCache regionCache;
+	private Signature signature;
 	private WorldConfig config;
 	private ViewModifier modifier;
 	private Options options;
@@ -75,16 +85,16 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public void loadConfig() throws IOException, ObjectMappingException {
-		if (this.enabled)
-			throw new IllegalStateException("Already loaded");
+		if (this.config != null)
+			throw new IllegalStateException("Config already loaded");
 
-		if (this.loader == null)
-			this.loader = AntiXray.get().createConfigLoader(((World) this.world).getName());
+		String name = this.world.getName();
+		ConfigurationLoader<CommentedConfigurationNode> loader = AntiXray.get().createConfigLoader(name);
 
 		DimensionType dimType = ((World) this.world).getDimension().getType();
 		WorldType wType = ((net.minecraft.world.World) this.world).getWorldType();
 
-		CommentedConfigurationNode node = this.loader.load();
+		CommentedConfigurationNode node = loader.load();
 		this.config = node.getValue(WorldConfig.TOKEN, new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END));
 
 		if (this.config.ground == null) {
@@ -130,7 +140,7 @@ public class NetworkWorld implements WorldView {
 			this.modifier = mod.get();
 		else {
 			if (this.config.enabled)
-				AntiXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists. Obfuscation in world " + ((World) this.world).getName() + " will be disabled.");
+				AntiXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists. Obfuscation in world " + name + " will be disabled.");
 			this.modifier = EmptyModifier.INSTANCE;
 			this.config.modifier = "empty";
 			this.config.enabled = false;
@@ -138,16 +148,35 @@ public class NetworkWorld implements WorldView {
 
 		if (this.config.enabled) {
 			if (wType == WorldType.DEBUG_ALL_BLOCK_STATES) {
-				AntiXray.LOGGER.warn("Obfuscation is not available in a debug_all_block_states world. Obfuscation in world " + ((World) this.world).getName() + " will be disabled.");
+				AntiXray.LOGGER.warn("Obfuscation is not available in a debug_all_block_states world. Obfuscation in world " + name + " will be disabled.");
 				this.config.enabled = false;
 			}
 		}
 
 		node.setValue(WorldConfig.TOKEN, this.config);
-		this.loader.save(node);
+		loader.save(node);
 
 		this.options = this.config.asOptions();
 		this.enabled = this.config.enabled;
+
+		if (this.config.cache) {
+			String cacheName = this.world.getUniqueId() + "/" + this.config.modifier;
+			this.regionCache = new NetworkRegionCache(AntiXray.get().getCacheDirectory().resolve(cacheName));
+			try {
+				if (this.regionCache.isVersionSupported()) {
+					this.regionCache.updateVersion();
+					this.regionCache.saveVersion();
+
+					this.signature = this.modifier.getCacheSignature(this.options);
+				} else {
+					AntiXray.LOGGER.warn("Region cache version in directory " + cacheName + "/ is not supported. Caching in world " + name + " will be disabled.");
+					this.regionCache = null;
+				}
+			} catch (Exception e) {
+				AntiXray.LOGGER.warn("Failed to load region cache in directory " + cacheName + "/. Caching in world " + name + " will be disabled.");
+				this.regionCache = null;
+			}
+		}
 	}
 
 	public WorldConfig getConfig() {
@@ -156,6 +185,67 @@ public class NetworkWorld implements WorldView {
 
 	public boolean isEnabled() {
 		return this.enabled;
+	}
+
+	public boolean useCache() {
+		return this.regionCache != null;
+	}
+
+	@Nullable
+	public Signature getSignature() {
+		return this.signature;
+	}
+
+	public void addPendingSave(int x, int z, ChunkSnapshot chunk) {
+		if (this.regionCache != null)
+			this.chunksToSave.put(NetworkChunk.asLong(x, z), chunk);
+	}
+
+	public void removePendingSave(int x, int z) {
+		this.chunksToSave.remove(NetworkChunk.asLong(x, z));
+	}
+
+	public void savePendingChunk(int x, int z) {
+		if (this.regionCache != null) {
+			ChunkSnapshot chunk = this.chunksToSave.remove(NetworkChunk.asLong(x, z));
+			if (chunk != null)
+				saveToCache(x, z, chunk);
+		}
+	}
+
+	public void saveToCache(int x, int z, ChunkSnapshot chunk) {
+		if (this.regionCache == null)
+			throw new IllegalStateException();
+
+		AntiXrayTimings.WRITING_CACHE.startTimingIfSync();
+
+		try (DataOutputStream out = this.regionCache.getChunkOutputStream(x, z)) {
+			this.signature.write(out);
+			chunk.write(out);
+		} catch (Exception e) {
+			AntiXray.LOGGER.warn("Failed to save chunk data " + x + " " + z + " to cache in world " + this.world.getName() + ".", e);
+		}
+
+		AntiXrayTimings.WRITING_CACHE.stopTimingIfSync();
+	}
+
+	@Nullable
+	public ChunkSnapshot readFromCache(int x, int z) {
+		if (this.regionCache == null)
+			throw new IllegalStateException();
+
+		AntiXrayTimings.READING_CACHE.startTimingIfSync();
+
+		try (DataInputStream in = this.regionCache.getChunkInputStream(x, z)) {
+			if (in != null && Signature.read(in).equals(this.signature))
+				return new ChunkSnapshot().read(in);
+		} catch (Exception e) {
+			AntiXray.LOGGER.warn("Failed to read chunk data " + x + " " + z + " from cache in world " + this.world.getName() + ".", e);
+		} finally {
+			AntiXrayTimings.READING_CACHE.stopTimingIfSync();
+		}
+
+		return null;
 	}
 
 	@Override

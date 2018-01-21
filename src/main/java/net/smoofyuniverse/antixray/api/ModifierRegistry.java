@@ -41,7 +41,6 @@ public class ModifierRegistry {
 
 	/**
 	 * Registers a new modifier in this registry.
-	 *
 	 * @param modifier The ViewModifier
 	 */
 	public static void register(ViewModifier modifier) {

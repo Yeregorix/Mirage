@@ -25,19 +25,25 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.Identifiable;
 
 import java.util.Optional;
 
 /**
  * Represents an immutable server-side world.
  */
-public interface WorldStorage extends BlockStorage {
+public interface WorldStorage extends BlockStorage, Identifiable {
 
 	/**
 	 * @return The WorldView which is associated with this WorldStorage
 	 */
 	@Override
 	WorldView getView();
+
+	/**
+	 * @return The name of this world
+	 */
+	String getName();
 
 	default boolean isChunkLoaded(Vector3i pos) {
 		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());

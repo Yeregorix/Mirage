@@ -38,9 +38,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
+import org.spongepowered.api.block.BlockState;
 
 public class ChunkChangeListener {
-	private Short2ObjectMap<IBlockState> changesMap = new Short2ObjectOpenHashMap<>();
+	private Short2ObjectMap<IBlockState> changesMap = new Short2ObjectOpenHashMap<>(64);
 	private int changedSections, changes;
 
 	private PlayerChunkMap playerChunkMap;
@@ -51,12 +52,12 @@ public class ChunkChangeListener {
 		this.playerChunkMap = ((WorldServer) chunk.getWorld()).getPlayerChunkMap();
 	}
 
-	public void addChange(int x, int y, int z, IBlockState newBlock) {
+	public void addChange(int x, int y, int z, BlockState newBlock) {
 		this.changes++;
 		if (this.changes == 64)
 			this.changesMap.clear();
 		if (this.changes < 64)
-			this.changesMap.put((short) (x << 12 | z << 8 | y), newBlock);
+			this.changesMap.put((short) (x << 12 | z << 8 | y), (IBlockState) newBlock);
 		this.changedSections |= 1 << (y >> 4);
 	}
 
@@ -64,10 +65,10 @@ public class ChunkChangeListener {
 		if (this.changes == 0)
 			return;
 
-		AntiXrayTimings.BLOCK_CHANGES_SENDING.startTiming();
+		PlayerChunkMapEntry entry = getEntry();
+		if (entry != null && entry.isSentToPlayers()) {
+			AntiXrayTimings.SENDING_CHANGES.startTiming();
 
-		PlayerChunkMapEntry entry = this.playerChunkMap.getEntry(this.chunk.x, this.chunk.z);
-		if (entry != null) {
 			if (this.changes == 1) {
 				SPacketBlockChange packet = new SPacketBlockChange();
 				Entry<IBlockState> e = this.changesMap.short2ObjectEntrySet().iterator().next();
@@ -88,16 +89,25 @@ public class ChunkChangeListener {
 			} else {
 				entry.sendPacket(new SPacketChunkData(this.chunk, this.changedSections));
 			}
+
+			AntiXrayTimings.SENDING_CHANGES.stopTiming();
 		}
 
-		AntiXrayTimings.BLOCK_CHANGES_SENDING.stopTiming();
-
 		clearChanges();
+	}
+
+	private PlayerChunkMapEntry getEntry() {
+		return this.playerChunkMap.getEntry(this.chunk.x, this.chunk.z);
 	}
 
 	public void clearChanges() {
 		this.changes = 0;
 		this.changesMap.clear();
 		this.changedSections = 0;
+	}
+
+	public boolean isChunkSent() {
+		PlayerChunkMapEntry entry = getEntry();
+		return entry != null && entry.isSentToPlayers();
 	}
 }

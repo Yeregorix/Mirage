@@ -37,6 +37,8 @@ public class WorldConfig {
 
 	@Setting(value = "Enabled", comment = "Enable or disable AntiXray in this world")
 	public boolean enabled = true;
+	@Setting(value = "Cache", comment = "Enable or disable caching fake chunks on disk")
+	public boolean cache = false;
 	@Setting(value = "Ores", comment = "Ores that will be hidden by the modifier")
 	public List<BlockState> ores;
 	@Setting(value = "Ground", comment = "The block used to replace hidden ores")
@@ -51,7 +53,7 @@ public class WorldConfig {
 	public long seed = 0;
 
 	public Options asOptions() {
-		return new Options(this.ores, this.ground, this.density);
+		return new Options(this.ores, this.ground, this.density, this.seed);
 	}
 
 	public WorldConfig(boolean enabled) {

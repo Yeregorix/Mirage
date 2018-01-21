@@ -25,7 +25,9 @@
 package net.smoofyuniverse.antixray.api;
 
 import co.aikar.timings.Timing;
+import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
+import net.smoofyuniverse.antixray.config.Options;
 
 import java.util.Random;
 
@@ -43,6 +45,14 @@ public interface ViewModifier {
 	 * @return A Timing that will be used to monitor performances of this modifier
 	 */
 	Timing getTiming();
+
+	/**
+	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
+	 * A different signature from the cached one will cause the cached object to be invalidated.
+	 *
+	 * @return The cache signature
+	 */
+	Signature getCacheSignature(Options options);
 
 	/**
 	 * A fast method to check whether this modifier is ready to modify a chunk.

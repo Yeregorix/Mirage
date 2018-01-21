@@ -27,6 +27,7 @@ package net.smoofyuniverse.antixray.modifier;
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.AbstractModifier;
+import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
 import org.spongepowered.api.block.BlockState;
@@ -42,6 +43,11 @@ public class HideAllModifier extends AbstractModifier {
 
 	private HideAllModifier() {
 		super(AntiXray.get(), "HideAll");
+	}
+
+	@Override
+	public Signature getCacheSignature(Options options) {
+		return Signature.builder().append(options.ground).append(options.oresSet).build();
 	}
 
 	@Override

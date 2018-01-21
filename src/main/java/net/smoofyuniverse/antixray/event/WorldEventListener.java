@@ -25,12 +25,9 @@
 package net.smoofyuniverse.antixray.event;
 
 import com.flowpowered.math.vector.Vector3i;
-import com.google.common.collect.ImmutableSet;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
@@ -43,10 +40,8 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.util.List;
-import java.util.Set;
 
 public class WorldEventListener {
-	private static final Set<BlockType> whitelist = ImmutableSet.of(BlockTypes.AIR, BlockTypes.PISTON, BlockTypes.PISTON_EXTENSION, BlockTypes.PISTON_HEAD, BlockTypes.STICKY_PISTON);
 
 	@Listener(order = Order.POST)
 	public void onWorldLoad(LoadWorldEvent e) {
@@ -58,9 +53,9 @@ public class WorldEventListener {
 	}
 
 	@Listener(order = Order.POST)
-	public void onBlockBreak(ChangeBlockEvent.Break e) {
+	public void onBlockChange(ChangeBlockEvent e) {
 		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
-			if (t.isValid() && !whitelist.contains(t.getFinal().getState().getType()))
+			if (t.isValid())
 				t.getOriginal().getLocation().ifPresent(WorldEventListener::updateSurroundingBlocks);
 		}
 	}
@@ -105,12 +100,8 @@ public class WorldEventListener {
 
 		for (int dx = -r; dx <= r; dx++) {
 			for (int dy = -r; dy <= r; dy++) {
-				for (int dz = -r; dz <= r; dz++) {
-					if (dx == 0 && dy == 0 && dz == 0)
-						continue;
-
+				for (int dz = -r; dz <= r; dz++)
 					updateBlock(w, x + dx, y + dy, z + dz);
-				}
 			}
 		}
 	}
