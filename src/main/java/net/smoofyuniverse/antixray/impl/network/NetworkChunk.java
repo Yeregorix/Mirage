@@ -94,6 +94,9 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	public void setContainers(NetworkBlockContainer[] containers) {
+		if (this.state != State.NOT_OBFUSCATED)
+			throw new IllegalStateException();
+
 		if (this.containers != null) {
 			for (NetworkBlockContainer c : this.containers) {
 				if (c != null)

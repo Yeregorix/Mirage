@@ -115,6 +115,7 @@ public class WorldEventListener {
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {
-		((InternalWorld) w).getView().deobfuscate(x, y, z);
+		if (y >= 0 && y < 256)
+			((InternalWorld) w).getView().deobfuscate(x, y, z);
 	}
 }

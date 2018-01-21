@@ -160,7 +160,7 @@ public class NetworkWorld implements WorldView {
 		this.enabled = this.config.enabled;
 
 		if (this.config.cache) {
-			String cacheName = this.world.getUniqueId() + "/" + this.config.modifier;
+			String cacheName = this.world.getUniqueId() + "/" + this.modifier.getId().replace(':', '_');
 			this.regionCache = new NetworkRegionCache(AntiXray.get().getCacheDirectory().resolve(cacheName));
 			try {
 				if (this.regionCache.isVersionSupported()) {

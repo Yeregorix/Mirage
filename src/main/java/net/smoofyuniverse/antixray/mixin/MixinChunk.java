@@ -66,12 +66,16 @@ public abstract class MixinChunk implements InternalChunk {
 	private long cacheDate;
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
-	public void onInit(World world, int x, int z, CallbackInfo ci) {
+	public void onInit(CallbackInfo ci) {
 		NetworkWorld netWorld = ((InternalWorld) this.world).getView();
-		if (netWorld.isEnabled()) {
+		if (netWorld.isEnabled())
 			this.netChunk = new NetworkChunk(this, netWorld);
+	}
+
+	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
+	public void onInitWithPrimer(CallbackInfo ci) {
+		if (this.netChunk != null)
 			this.netChunk.setContainers(this.storageArrays);
-		}
 	}
 
 	@Nullable
@@ -96,7 +100,7 @@ public abstract class MixinChunk implements InternalChunk {
 	}
 
 	@Inject(method = "setStorageArrays", at = @At("RETURN"))
-	public void onSetStorageArrays(ExtendedBlockStorage[] newStorageArrays, CallbackInfo ci) {
+	public void onSetStorageArrays(CallbackInfo ci) {
 		if (this.netChunk != null) {
 			this.netChunk.setContainers(this.storageArrays);
 			if (this.netChunk.getState() != State.OBFUSCATED)
