@@ -30,7 +30,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
-import net.smoofyuniverse.antixray.api.ViewModifier;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
@@ -308,7 +308,7 @@ public class NetworkChunk implements ChunkView {
 
 		AntiXrayTimings.OBFUSCATION.startTiming();
 
-		ViewModifier mod = this.world.getModifier();
+		ChunkModifier mod = this.world.getModifier();
 		Timing timing = mod.getTiming();
 
 		timing.startTiming();

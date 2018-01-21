@@ -26,8 +26,8 @@ package net.smoofyuniverse.antixray.modifier;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.AbstractModifier;
 import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
 import org.spongepowered.api.block.BlockState;
@@ -38,10 +38,9 @@ import java.util.Random;
 /**
  * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
  */
-public class RandomModifier extends AbstractModifier {
-	public static final RandomModifier INSTANCE = new RandomModifier();
+public class RandomModifier extends ChunkModifier {
 
-	private RandomModifier() {
+	public RandomModifier() {
 		super(AntiXray.get(), "Random");
 	}
 

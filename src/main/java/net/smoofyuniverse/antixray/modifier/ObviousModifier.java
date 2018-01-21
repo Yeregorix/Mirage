@@ -26,8 +26,8 @@ package net.smoofyuniverse.antixray.modifier;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.AbstractModifier;
 import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
 import org.spongepowered.api.block.BlockState;
@@ -38,10 +38,9 @@ import java.util.Random;
 /**
  * This modifier only hides ores which are not exposed to the view of normal users.
  */
-public class ObviousModifier extends AbstractModifier {
-	public static final ObviousModifier INSTANCE = new ObviousModifier();
+public class ObviousModifier extends ChunkModifier {
 
-	private ObviousModifier() {
+	public ObviousModifier() {
 		super(AntiXray.get(), "Obvious");
 	}
 

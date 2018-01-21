@@ -22,42 +22,19 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.api;
+package net.smoofyuniverse.antixray.api.modifier;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import net.smoofyuniverse.antixray.modifier.EmptyModifier;
+import net.smoofyuniverse.antixray.modifier.HideAllModifier;
+import net.smoofyuniverse.antixray.modifier.ObviousModifier;
+import net.smoofyuniverse.antixray.modifier.RandomModifier;
 
 /**
- * An abstract class that partially implements ViewModifier.
+ * An enumeration of all modifiers included by default
  */
-public abstract class AbstractModifier implements ViewModifier {
-	private final Timing timing;
-	private final String name;
-
-	/**
-	 * @param plugin The plugin owning this modifier
-	 * @param name   The name of this modifier
-	 */
-	protected AbstractModifier(Object plugin, String name) {
-		this(Timings.of(plugin, "Modifier: " + name), name);
-	}
-
-	/**
-	 * @param timing The Timing associated with this modifier
-	 * @param name The name of this modifier
-	 */
-	protected AbstractModifier(Timing timing, String name) {
-		this.timing = timing;
-		this.name = name;
-	}
-
-	@Override
-	public String getName() {
-		return this.name;
-	}
-
-	@Override
-	public Timing getTiming() {
-		return this.timing;
-	}
+public class ChunkModifiers {
+	public static final ChunkModifier EMPTY = new EmptyModifier();
+	public static final ChunkModifier HIDEALL = new HideAllModifier();
+	public static final ChunkModifier OBVIOUS = new ObviousModifier();
+	public static final ChunkModifier RANDOM = new RandomModifier();
 }

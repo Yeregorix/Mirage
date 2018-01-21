@@ -25,7 +25,7 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.antixray.api.ViewModifier;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.config.Options;
 
 import java.util.Optional;
@@ -41,7 +41,7 @@ public interface WorldView extends BlockView {
 	@Override
 	WorldStorage getStorage();
 
-	ViewModifier getModifier();
+	ChunkModifier getModifier();
 
 	Options getOptions();
 

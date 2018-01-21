@@ -30,9 +30,10 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.world.WorldType;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
-import net.smoofyuniverse.antixray.api.ModifierRegistry;
-import net.smoofyuniverse.antixray.api.ViewModifier;
 import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.api.volume.WorldView;
 import net.smoofyuniverse.antixray.config.Options;
@@ -41,7 +42,6 @@ import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.antixray.impl.network.cache.NetworkRegionCache;
-import net.smoofyuniverse.antixray.modifier.EmptyModifier;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -75,7 +75,7 @@ public class NetworkWorld implements WorldView {
 	private NetworkRegionCache regionCache;
 	private Signature signature;
 	private WorldConfig config;
-	private ViewModifier modifier;
+	private ChunkModifier modifier;
 	private Options options;
 	private InternalWorld world;
 	private boolean enabled;
@@ -135,13 +135,13 @@ public class NetworkWorld implements WorldView {
 			this.config.seed = ThreadLocalRandom.current().nextLong();
 
 		this.config.modifier = this.config.modifier.toLowerCase();
-		Optional<ViewModifier> mod = ModifierRegistry.get(this.config.modifier);
+		Optional<ChunkModifier> mod = ChunkModifierRegistryModule.get().getById(this.config.modifier);
 		if (mod.isPresent())
 			this.modifier = mod.get();
 		else {
 			if (this.config.enabled)
 				AntiXray.LOGGER.warn("Modifier '" + this.config.modifier + "' does not exists. Obfuscation in world " + name + " will be disabled.");
-			this.modifier = EmptyModifier.INSTANCE;
+			this.modifier = ChunkModifiers.EMPTY;
 			this.config.modifier = "empty";
 			this.config.enabled = false;
 		}
@@ -173,7 +173,7 @@ public class NetworkWorld implements WorldView {
 					this.regionCache = null;
 				}
 			} catch (Exception e) {
-				AntiXray.LOGGER.warn("Failed to load region cache in directory " + cacheName + "/. Caching in world " + name + " will be disabled.");
+				AntiXray.LOGGER.warn("Failed to load region cache in directory " + cacheName + "/. Caching in world " + name + " will be disabled.", e);
 				this.regionCache = null;
 			}
 		}
@@ -254,7 +254,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public ViewModifier getModifier() {
+	public ChunkModifier getModifier() {
 		return this.modifier;
 	}
 

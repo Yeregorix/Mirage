@@ -22,29 +22,57 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.api;
+package net.smoofyuniverse.antixray.api.modifier;
 
 import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
 import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.Options;
+import org.spongepowered.api.CatalogType;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.util.annotation.CatalogedBy;
 
 import java.util.Random;
 
 /**
  * This object is used to modify chunk per chunk the view of the world sent to players.
  */
-public interface ViewModifier {
+@CatalogedBy(ChunkModifiers.class)
+public abstract class ChunkModifier implements CatalogType {
+	private final Timing timing;
+	private final String id, name;
 
 	/**
-	 * @return The name of this modifier
+	 * @param plugin The plugin owning this modifier
+	 * @param name   The name of this modifier
 	 */
-	String getName();
+	public ChunkModifier(Object plugin, String name) {
+		if (name == null || name.isEmpty())
+			throw new IllegalArgumentException("Name");
+		PluginContainer container = Sponge.getGame().getPluginManager().fromInstance(plugin).orElseThrow(() -> new IllegalArgumentException("Provided object is not a plugin instance"));
+		this.timing = Timings.of(container, "Modifier: " + name);
+		this.id = container.getId() + ":" + name.toLowerCase();
+		this.name = name;
+	}
+
+	@Override
+	public final String getId() {
+		return this.id;
+	}
+
+	@Override
+	public final String getName() {
+		return this.name;
+	}
 
 	/**
 	 * @return A Timing that will be used to monitor performances of this modifier
 	 */
-	Timing getTiming();
+	public final Timing getTiming() {
+		return this.timing;
+	}
 
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
@@ -52,7 +80,7 @@ public interface ViewModifier {
 	 *
 	 * @return The cache signature
 	 */
-	Signature getCacheSignature(Options options);
+	public abstract Signature getCacheSignature(Options options);
 
 	/**
 	 * A fast method to check whether this modifier is ready to modify a chunk.
@@ -60,7 +88,7 @@ public interface ViewModifier {
 	 * @param view The ChunkView to modify
 	 * @return true if this modifier is ready to modify the chunk
 	 */
-	boolean isReady(ChunkView view);
+	public abstract boolean isReady(ChunkView view);
 
 	/**
 	 * Modifies the ChunkView that will be send to players.
@@ -68,5 +96,5 @@ public interface ViewModifier {
 	 * @param view The ChunkView to modify
 	 * @param r The Random object that should be used by the modifier
 	 */
-	void modify(ChunkView view, Random r);
+	public abstract void modify(ChunkView view, Random r);
 }

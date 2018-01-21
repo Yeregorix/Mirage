@@ -25,6 +25,8 @@
 package net.smoofyuniverse.antixray;
 
 import com.google.inject.Inject;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
@@ -37,9 +39,9 @@ import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
-import org.spongepowered.api.Sponge;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.game.state.GameConstructionEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
@@ -76,8 +78,13 @@ public class AntiXray {
 	}
 
 	@Listener
+	public void onGameConstruction(GameConstructionEvent e) {
+		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
+	}
+
+	@Listener
 	public void onGamePreInit(GamePreInitializationEvent e) {
-		this.cacheDir = Sponge.getGame().getGameDirectory().resolve("antixray-cache");
+		this.cacheDir = this.game.getGameDirectory().resolve("antixray-cache");
 		try {
 			Files.createDirectory(this.configDir);
 		} catch (IOException ignored) {
