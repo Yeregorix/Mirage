@@ -324,7 +324,8 @@ public class NetworkChunk implements ChunkView {
 				return;
 			}
 
-			deobfuscate();
+			if (this.world.getConfig().usePreobf)
+				deobfuscate();
 		}
 
 		if (ready) {
@@ -336,15 +337,17 @@ public class NetworkChunk implements ChunkView {
 
 			this.state = State.OBFUSCATED;
 		} else {
-			AntiXrayTimings.PREOBFUSCATION.startTiming();
+			if (this.world.getConfig().usePreobf) {
+				AntiXrayTimings.PREOBFUSCATION.startTiming();
 
-			Options options = this.world.getOptions();
-			for (NetworkBlockContainer c : this.containers) {
-				if (c != null)
-					c.obfuscate(this.listener, options.oresSet, (IBlockState) options.ground);
+				Options options = this.world.getOptions();
+				for (NetworkBlockContainer c : this.containers) {
+					if (c != null)
+						c.obfuscate(this.listener, options.oresSet, (IBlockState) options.ground);
+				}
+
+				AntiXrayTimings.PREOBFUSCATION.stopTiming();
 			}
-
-			AntiXrayTimings.PREOBFUSCATION.stopTiming();
 			this.state = State.NEED_REOBFUSCATION;
 		}
 

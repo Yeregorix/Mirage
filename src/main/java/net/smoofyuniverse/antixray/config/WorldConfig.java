@@ -38,7 +38,9 @@ public class WorldConfig {
 	@Setting(value = "Enabled", comment = "Enable or disable AntiXray in this world")
 	public boolean enabled = true;
 	@Setting(value = "Cache", comment = "Enable or disable caching fake chunks on disk")
-	public boolean cache = false;
+	public boolean cache = true;
+	@Setting(value = "UsePreobf", comment = "Enable or disable temporarily hiding all ores when the modifier is not ready yet")
+	public boolean usePreobf = false;
 	@Setting(value = "Ores", comment = "Ores that will be hidden by the modifier")
 	public List<BlockState> ores;
 	@Setting(value = "Ground", comment = "The block used to replace hidden ores")
