@@ -75,6 +75,13 @@ public abstract class ChunkModifier implements CatalogType {
 	}
 
 	/**
+	 * @return false if this modifier is very light and caching is useless, true otherwise
+	 */
+	public boolean allowCaching() {
+		return true;
+	}
+
+	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
 	 * A different signature from the cached one will cause the cached object to be invalidated.
 	 *

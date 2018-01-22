@@ -42,6 +42,11 @@ public class EmptyModifier extends ChunkModifier {
 	}
 
 	@Override
+	public boolean allowCaching() {
+		return false;
+	}
+
+	@Override
 	public Signature getCacheSignature(Options options) {
 		return Signature.empty();
 	}
