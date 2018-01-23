@@ -31,6 +31,7 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
@@ -74,8 +75,13 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
 	public void onInitWithPrimer(CallbackInfo ci) {
-		if (this.netChunk != null)
-			this.netChunk.setContainers(this.storageArrays);
+		if (this.netChunk != null) {
+			try {
+				this.netChunk.setContainers(this.storageArrays);
+			} catch (Exception e) {
+				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
+			}
+		}
 	}
 
 	@Nullable
@@ -102,9 +108,13 @@ public abstract class MixinChunk implements InternalChunk {
 	@Inject(method = "setStorageArrays", at = @At("RETURN"))
 	public void onSetStorageArrays(CallbackInfo ci) {
 		if (this.netChunk != null) {
-			this.netChunk.setContainers(this.storageArrays);
-			if (this.netChunk.getState() != State.OBFUSCATED)
-				this.netChunk.loadFromCacheNow();
+			try {
+				this.netChunk.setContainers(this.storageArrays);
+				if (this.netChunk.getState() != State.OBFUSCATED)
+					this.netChunk.loadFromCacheNow();
+			} catch (Exception e) {
+				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
+			}
 		}
 	}
 

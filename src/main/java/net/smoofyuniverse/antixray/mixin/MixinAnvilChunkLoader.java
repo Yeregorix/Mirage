@@ -29,8 +29,10 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -47,11 +49,17 @@ public class MixinAnvilChunkLoader {
 		if (this.world == null)
 			this.world = (InternalWorld) world;
 		else if (this.world != world)
-			throw new IllegalStateException(); // Should never happen
+			AntiXray.LOGGER.warn("World change detected in an AnvilChunkLoader! This is going to generate caching errors");
 
-		if (this.world.getView().isEnabled()) {
-			((InternalChunk) chunk).getView().saveToCacheLater();
-			compound.setLong("AntiXrayCacheDate", ((InternalChunk) chunk).getValidCacheDate());
+		try {
+			if (this.world.getView().isEnabled()) {
+				NetworkChunk netChunk = ((InternalChunk) chunk).getView();
+				if (netChunk != null)
+					netChunk.saveToCacheLater();
+				compound.setLong("AntiXrayCacheDate", ((InternalChunk) chunk).getValidCacheDate());
+			}
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to serialize a network chunk for caching", e);
 		}
 	}
 
@@ -62,6 +70,10 @@ public class MixinAnvilChunkLoader {
 
 	@Inject(method = "writeChunkData", at = @At("RETURN"))
 	public void onWriteChunkData(ChunkPos pos, NBTTagCompound compound, CallbackInfo ci) {
-		this.world.getView().savePendingChunk(pos.x, pos.z);
+		try {
+			this.world.getView().savePendingChunk(pos.x, pos.z);
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to save a pending network chunk", e);
+		}
 	}
 }

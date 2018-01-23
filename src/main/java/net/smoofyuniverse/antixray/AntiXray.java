@@ -54,7 +54,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Plugin(id = "antixray", name = "AntiXray", version = "1.1.0", authors = "Yeregorix", description = "A simple but powerful Anti-Xray")
+@Plugin(id = "antixray", name = "AntiXray", version = "1.1.1", authors = "Yeregorix", description = "A simple but powerful Anti-Xray")
 public class AntiXray {
 	public static final Logger LOGGER = LoggerFactory.getLogger("AntiXray");
 	private static AntiXray instance;

@@ -28,7 +28,9 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.world.chunk.Chunk;
+import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,13 +47,24 @@ public class MixinPlayerChunkMapEntry {
 
 	@Inject(method = "sendToPlayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/play/server/SPacketChunkData;<init>(Lnet/minecraft/world/chunk/Chunk;I)V", shift = Shift.AFTER))
 	public void onSendToPlayers(CallbackInfoReturnable<Boolean> ci) {
-		if (this.chunk != null)
-			((InternalChunk) this.chunk).getView().getListener().clearChanges();
+		clearChanges();
+	}
+
+	private void clearChanges() {
+		if (this.chunk != null) {
+			try {
+				NetworkChunk netChunk = ((InternalChunk) this.chunk).getView();
+				if (netChunk != null)
+					netChunk.getListener().clearChanges();
+			} catch (Exception e) {
+				AntiXray.LOGGER.error("Failed to clear changes of a network chunk", e);
+			}
+		}
 	}
 
 	@Inject(method = "sendPacket", at = @At("HEAD"))
 	public void onSendPacket(Packet<?> packet, CallbackInfo ci) {
-		if (this.chunk != null && packet instanceof SPacketChunkData && ((SPacketChunkData) packet).isFullChunk())
-			((InternalChunk) this.chunk).getView().getListener().clearChanges();
+		if (packet instanceof SPacketChunkData && ((SPacketChunkData) packet).isFullChunk())
+			clearChanges();
 	}
 }
