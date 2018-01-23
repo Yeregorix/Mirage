@@ -25,6 +25,7 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.util.Direction;
 
 import java.util.Optional;
@@ -78,4 +79,12 @@ public interface ChunkView extends BlockView {
 	void deobfuscate();
 
 	boolean deobfuscate(int x, int y, int z);
+
+	/**
+	 * Gets the block location with the highest x, y and z that is still a valid
+	 * position for {@link #setBlock(Vector3i, BlockState)}.
+	 *
+	 * @return The highest block location
+	 */
+	Vector3i getMutableMax();
 }

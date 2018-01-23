@@ -62,6 +62,7 @@ public class NetworkChunk implements ChunkView {
 	private State state = State.NOT_OBFUSCATED;
 	private NetworkBlockContainer[] containers;
 	private ChunkChangeListener listener;
+	private Vector3i mutableMax = BLOCK_MIN;
 	private InternalChunk chunk;
 	private NetworkWorld world;
 	private final int x, z;
@@ -103,13 +104,20 @@ public class NetworkChunk implements ChunkView {
 					c.getInternalBlockContainer().setNetworkChunk(null);
 			}
 		}
+
+		int maxY = 0;
 		if (containers != null) {
 			for (NetworkBlockContainer c : containers) {
-				if (c != null)
+				if (c != null) {
 					c.getInternalBlockContainer().setNetworkChunk(this);
+					int y = c.getY() + 15;
+					if (maxY < y)
+						maxY = y;
+				}
 			}
 		}
 		this.containers = containers;
+		this.mutableMax = new Vector3i(15, maxY, 15);
 	}
 
 	public State getState() {
@@ -383,6 +391,11 @@ public class NetworkChunk implements ChunkView {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public Vector3i getMutableMax() {
+		return this.mutableMax;
 	}
 
 	@Override

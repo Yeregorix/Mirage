@@ -56,7 +56,7 @@ public class ObviousModifier extends ChunkModifier {
 
 	@Override
 	public void modify(ChunkView view, Random r) {
-		Vector3i min = view.getBlockMin(), max = view.getBlockMax();
+		Vector3i min = view.getBlockMin(), max = view.getMutableMax();
 		Options options = view.getWorld().getOptions();
 
 		for (int y = min.getY(); y <= max.getY(); y++) {
