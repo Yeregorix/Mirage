@@ -26,14 +26,17 @@ package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
-import net.smoofyuniverse.antixray.config.Options;
+import net.smoofyuniverse.antixray.config.WorldConfig;
+import org.spongepowered.api.util.Identifiable;
+import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Represents a mutable client-side world.
  */
-public interface WorldView extends BlockView {
+public interface WorldView extends BlockView, Identifiable {
 
 	/**
 	 * @return The WorldStorage which is associated with this WorldView
@@ -41,9 +44,19 @@ public interface WorldView extends BlockView {
 	@Override
 	WorldStorage getStorage();
 
-	ChunkModifier getModifier();
+	/**
+	 * @return The name of this world
+	 */
+	String getName();
 
-	Options getOptions();
+	/**
+	 * @return The properties of this world
+	 */
+	WorldProperties getProperties();
+
+	Map<ChunkModifier, Object> getModifiers();
+
+	WorldConfig.Immutable getConfig();
 
 	default boolean isChunkLoaded(Vector3i pos) {
 		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());

@@ -25,15 +25,23 @@
 package net.smoofyuniverse.antixray.modifier;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.util.ModifierUtil;
+import net.smoofyuniverse.antixray.api.util.WeightedList;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.Options;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.util.Random;
+import java.util.*;
 
 /**
  * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
@@ -45,19 +53,37 @@ public class RandomModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Signature getCacheSignature(Options options) {
-		return Signature.builder().append(options.ground).append(options.oresSet).append(options.density).append(options.seed).build();
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
+		Config cfg = node.getValue(Config.TOKEN, new Config());
+		if (cfg.blocks == null) {
+			cfg.blocks = ModifierUtil.getCommonOres(world.getDimensionType());
+			cfg.blocks.add(ModifierUtil.getCommonGround(world.getDimensionType()));
+		}
+		if (cfg.replacements == null) {
+			cfg.replacements = new HashMap<>();
+			for (BlockState b : cfg.blocks)
+				cfg.replacements.put(b, 1d);
+			cfg.replacements.put(ModifierUtil.getCommonGround(world.getDimensionType()), (double) cfg.blocks.size());
+		}
+		node.setValue(Config.TOKEN, cfg);
+		return cfg.toImmutable();
 	}
 
 	@Override
-	public boolean isReady(ChunkView view) {
+	public void appendSignature(Builder builder, Object config) {
+		Config.Immutable cfg = (Config.Immutable) config;
+		builder.append(cfg.blocks).append(cfg.replacements);
+	}
+
+	@Override
+	public boolean isReady(ChunkView view, Object config) {
 		return view.isExpositionCheckReady();
 	}
 
 	@Override
-	public void modify(ChunkView view, Random r) {
+	public void modify(ChunkView view, Random r, Object config) {
 		Vector3i min = view.getBlockMin(), max = view.getMutableMax();
-		Options options = view.getWorld().getOptions();
+		Config.Immutable cfg = (Config.Immutable) config;
 
 		for (int y = min.getY(); y <= max.getY(); y++) {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -66,9 +92,33 @@ public class RandomModifier extends ChunkModifier {
 					if (b == BlockTypes.AIR)
 						continue;
 
-					if ((b == options.ground || options.oresSet.contains(b)) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, options.randomBlock(r));
+					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
+						view.setBlock(x, y, z, cfg.replacements.get(r));
 				}
+			}
+		}
+	}
+
+	@ConfigSerializable
+	public static final class Config {
+		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
+
+		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
+		public List<BlockState> blocks;
+		@Setting(value = "Replacements", comment = "Blocks and their weight used to randomly replace hidden blocks")
+		public Map<BlockState, Double> replacements;
+
+		public Immutable toImmutable() {
+			return new Immutable(this.blocks, WeightedList.of(this.replacements));
+		}
+
+		public static final class Immutable {
+			public final Set<BlockState> blocks;
+			public final WeightedList<BlockState> replacements;
+
+			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements) {
+				this.blocks = ImmutableSet.copyOf(blocks);
+				this.replacements = replacements;
 			}
 		}
 	}

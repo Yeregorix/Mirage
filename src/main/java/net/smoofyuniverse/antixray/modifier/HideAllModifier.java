@@ -25,15 +25,25 @@
 package net.smoofyuniverse.antixray.modifier;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.util.ModifierUtil;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.Options;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * This modifier hides all ores.
@@ -45,30 +55,66 @@ public class HideAllModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Signature getCacheSignature(Options options) {
-		return Signature.builder().append(options.ground).append(options.oresSet).build();
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
+		Config cfg = node.getValue(Config.TOKEN, new Config());
+		if (cfg.blocks == null)
+			cfg.blocks = ModifierUtil.getCommonOres(world.getDimensionType());
+		if (cfg.replacement == null)
+			cfg.replacement = ModifierUtil.getCommonGround(world.getDimensionType());
+		node.setValue(Config.TOKEN, cfg);
+		return cfg.toImmutable();
 	}
 
 	@Override
-	public boolean isReady(ChunkView view) {
+	public void appendSignature(Builder builder, Object config) {
+		Config.Immutable cfg = (Config.Immutable) config;
+		builder.append(cfg.blocks).append(cfg.replacement);
+	}
+
+	@Override
+	public boolean isReady(ChunkView view, Object config) {
 		return true;
 	}
 
 	@Override
-	public void modify(ChunkView view, Random r) {
+	public void modify(ChunkView view, Random r, Object config) {
 		Vector3i min = view.getBlockMin(), max = view.getMutableMax();
-		Options options = view.getWorld().getOptions();
+		Config.Immutable cfg = (Config.Immutable) config;
 
 		for (int y = min.getY(); y <= max.getY(); y++) {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
 				for (int x = min.getX(); x <= max.getX(); x++) {
 					BlockState b = view.getBlock(x, y, z);
-					if (b == BlockTypes.AIR || b == options.ground)
+					if (b == BlockTypes.AIR || b == cfg.replacement)
 						continue;
 
-					if (options.oresSet.contains(b))
-						view.setBlock(x, y, z, options.ground);
+					if (cfg.blocks.contains(b))
+						view.setBlock(x, y, z, cfg.replacement);
 				}
+			}
+		}
+	}
+
+	@ConfigSerializable
+	public static final class Config {
+		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
+
+		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
+		public List<BlockState> blocks;
+		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
+		public BlockState replacement;
+
+		public Immutable toImmutable() {
+			return new Immutable(this.blocks, this.replacement);
+		}
+
+		public static final class Immutable {
+			public final Set<BlockState> blocks;
+			public final BlockState replacement;
+
+			public Immutable(Collection<BlockState> blocks, BlockState replacement) {
+				this.blocks = ImmutableSet.copyOf(blocks);
+				this.replacement = replacement;
 			}
 		}
 	}

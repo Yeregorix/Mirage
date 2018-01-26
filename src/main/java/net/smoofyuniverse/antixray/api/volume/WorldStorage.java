@@ -26,6 +26,7 @@ package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.Identifiable;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Optional;
 
@@ -44,6 +45,11 @@ public interface WorldStorage extends BlockStorage, Identifiable {
 	 * @return The name of this world
 	 */
 	String getName();
+
+	/**
+	 * @return The properties of this world
+	 */
+	WorldProperties getProperties();
 
 	default boolean isChunkLoaded(Vector3i pos) {
 		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());

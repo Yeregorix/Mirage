@@ -24,10 +24,7 @@
 
 package net.smoofyuniverse.antixray.api.modifier;
 
-import net.smoofyuniverse.antixray.modifier.EmptyModifier;
-import net.smoofyuniverse.antixray.modifier.HideAllModifier;
-import net.smoofyuniverse.antixray.modifier.ObviousModifier;
-import net.smoofyuniverse.antixray.modifier.RandomModifier;
+import net.smoofyuniverse.antixray.modifier.*;
 
 /**
  * An enumeration of all modifiers included by default
@@ -37,4 +34,5 @@ public class ChunkModifiers {
 	public static final ChunkModifier HIDEALL = new HideAllModifier();
 	public static final ChunkModifier OBVIOUS = new ObviousModifier();
 	public static final ChunkModifier RANDOM = new RandomModifier();
+	public static final ChunkModifier BEDROCK = new BedrockModifier();
 }

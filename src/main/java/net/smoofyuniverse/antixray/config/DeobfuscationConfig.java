@@ -24,33 +24,26 @@
 
 package net.smoofyuniverse.antixray.config;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import org.spongepowered.api.block.BlockState;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+@ConfigSerializable
+public class DeobfuscationConfig {
+	@Setting(value = "NaturalRadius", comment = "Radius to deobfuscate on natural block update, between 1 and 4")
+	public int naturalRadius = 1;
+	@Setting(value = "PlayerRadius", comment = "Radius to deobfuscate on player block update, between 1 and 4")
+	public int playerRadius = 2;
 
-public class Options {
-	public final Set<BlockState> oresSet;
-	public final List<BlockState> oresList;
-	public final BlockState ground;
-	public final float density;
-	public final long seed;
-	public final int ores;
-
-	public Options(Collection<BlockState> ores, BlockState ground, float density, long seed) {
-		this.oresSet = ImmutableSet.copyOf(ores);
-		this.oresList = ImmutableList.copyOf(ores);
-		this.ground = ground;
-		this.density = density;
-		this.seed = seed;
-		this.ores = ores.size();
+	public Immutable toImmutable() {
+		return new Immutable(this.naturalRadius, this.playerRadius);
 	}
 
-	public BlockState randomBlock(Random r) {
-		return (this.ores == 0 || (this.density != 1 && r.nextFloat() > this.density)) ? this.ground : this.oresList.get(r.nextInt(this.ores));
+	public static class Immutable {
+		public final int naturalRadius, playerRadius;
+
+		public Immutable(int naturalRadius, int playerRadius) {
+			this.naturalRadius = naturalRadius;
+			this.playerRadius = playerRadius;
+		}
 	}
 }

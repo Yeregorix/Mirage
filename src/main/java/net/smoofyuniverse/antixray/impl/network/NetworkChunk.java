@@ -29,10 +29,11 @@ import com.flowpowered.math.vector.Vector3i;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.Options;
+import net.smoofyuniverse.antixray.config.PreobfuscationConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
@@ -51,6 +52,7 @@ import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -319,12 +321,19 @@ public class NetworkChunk implements ChunkView {
 
 		AntiXrayTimings.OBFUSCATION.startTiming();
 
-		ChunkModifier mod = this.world.getModifier();
-		Timing timing = mod.getTiming();
+		boolean ready = true;
+		for (Entry<ChunkModifier, Object> e : this.world.getModifiers().entrySet()) {
+			ChunkModifier mod = e.getKey();
+			Timing timing = mod.getTiming();
 
-		timing.startTiming();
-		boolean ready = mod.isReady(this);
-		timing.stopTiming();
+			timing.startTiming();
+			if (!mod.isReady(this, e.getValue())) {
+				ready = false;
+				timing.stopTiming();
+				break;
+			}
+			timing.stopTiming();
+		}
 
 		if (this.state == State.NEED_REOBFUSCATION) {
 			if (!ready) {
@@ -332,26 +341,35 @@ public class NetworkChunk implements ChunkView {
 				return;
 			}
 
-			if (this.world.getConfig().usePreobf)
+			if (this.world.getConfig().preobf.enabled)
 				deobfuscate();
 		}
 
 		if (ready) {
 			this.random.setSeed(this.seed);
 
-			timing.startTiming();
-			mod.modify(this, this.random);
-			timing.stopTiming();
+			for (Entry<ChunkModifier, Object> e : this.world.getModifiers().entrySet()) {
+				ChunkModifier mod = e.getKey();
+				Timing timing = mod.getTiming();
+
+				timing.startTiming();
+				try {
+					mod.modify(this, this.random, e.getValue());
+				} catch (Exception ex) {
+					AntiXray.LOGGER.error("Modifier " + mod.getId() + " has thrown an exception while modifying a network chunk", ex);
+				}
+				timing.stopTiming();
+			}
 
 			this.state = State.OBFUSCATED;
 		} else {
-			if (this.world.getConfig().usePreobf) {
+			if (this.world.getConfig().preobf.enabled) {
 				AntiXrayTimings.PREOBFUSCATION.startTiming();
 
-				Options options = this.world.getOptions();
+				PreobfuscationConfig.Immutable cfg = this.world.getConfig().preobf;
 				for (NetworkBlockContainer c : this.containers) {
 					if (c != null)
-						c.obfuscate(this.listener, options.oresSet, (IBlockState) options.ground);
+						c.obfuscate(this.listener, cfg.blocks, (IBlockState) cfg.replacement);
 				}
 
 				AntiXrayTimings.PREOBFUSCATION.stopTiming();

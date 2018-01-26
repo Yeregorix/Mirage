@@ -25,10 +25,11 @@
 package net.smoofyuniverse.antixray.modifier;
 
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.Options;
+import ninja.leaping.configurate.ConfigurationNode;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Random;
 
@@ -42,20 +43,23 @@ public class EmptyModifier extends ChunkModifier {
 	}
 
 	@Override
-	public boolean allowCaching() {
+	public boolean shouldCache() {
 		return false;
 	}
 
 	@Override
-	public Signature getCacheSignature(Options options) {
-		return Signature.empty();
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) {
+		return new Object();
 	}
 
 	@Override
-	public boolean isReady(ChunkView view) {
+	public void appendSignature(Builder builder, Object config) {}
+
+	@Override
+	public boolean isReady(ChunkView view, Object config) {
 		return true;
 	}
 
 	@Override
-	public void modify(ChunkView view, Random r) {}
+	public void modify(ChunkView view, Random r, Object config) {}
 }

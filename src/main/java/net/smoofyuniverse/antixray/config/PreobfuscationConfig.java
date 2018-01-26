@@ -24,47 +24,37 @@
 
 package net.smoofyuniverse.antixray.config;
 
-import com.google.common.reflect.TypeToken;
+import com.google.common.collect.ImmutableSet;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import org.spongepowered.api.block.BlockState;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 @ConfigSerializable
-public class WorldConfig {
-	public static final TypeToken<WorldConfig> TOKEN = TypeToken.of(WorldConfig.class);
-
-	@Setting(value = "Enabled", comment = "Enable or disable AntiXray in this world")
-	public boolean enabled = true;
-	@Setting(value = "Cache", comment = "Enable or disable caching fake chunks on disk")
-	public boolean cache = true;
-	@Setting(value = "Seed", comment = "The seed used by the modifier, shouldn't be modified")
-	public long seed = 0;
-	@Setting(value = "Deobfuscation")
-	public DeobfuscationConfig deobf = new DeobfuscationConfig();
-	@Setting(value = "Preobfuscation", comment = "Temporary obfuscation when modifiers are not ready yet")
-	public PreobfuscationConfig preobf = new PreobfuscationConfig();
-
-	public WorldConfig(boolean enabled) {
-		this.enabled = enabled;
-	}
-
-	public WorldConfig() {}
+public class PreobfuscationConfig {
+	@Setting(value = "Enabled", comment = "Enable or disable preobfuscation in this world")
+	public boolean enabled = false;
+	@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
+	public List<BlockState> blocks;
+	@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
+	public BlockState replacement;
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.cache, this.seed, this.deobf.toImmutable(), this.preobf.toImmutable());
+		return new Immutable(this.enabled, this.blocks, this.replacement);
 	}
 
 	public static class Immutable {
-		public final boolean enabled, cache;
-		public final long seed;
-		public final DeobfuscationConfig.Immutable deobf;
-		public final PreobfuscationConfig.Immutable preobf;
+		public final boolean enabled;
+		public final Set<BlockState> blocks;
+		public final BlockState replacement;
 
-		public Immutable(boolean enabled, boolean cache, long seed, DeobfuscationConfig.Immutable deobf, PreobfuscationConfig.Immutable preobf) {
+		public Immutable(boolean enabled, Collection<BlockState> blocks, BlockState replacement) {
 			this.enabled = enabled;
-			this.cache = cache;
-			this.seed = seed;
-			this.deobf = deobf;
-			this.preobf = preobf;
+			this.blocks = ImmutableSet.copyOf(blocks);
+			this.replacement = replacement;
 		}
 	}
 }

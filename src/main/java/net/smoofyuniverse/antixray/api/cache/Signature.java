@@ -24,6 +24,7 @@
 
 package net.smoofyuniverse.antixray.api.cache;
 
+import net.smoofyuniverse.antixray.api.util.WeightedList;
 import org.spongepowered.api.CatalogType;
 
 import java.io.DataInputStream;
@@ -34,11 +35,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public class Signature {
-	private static final String DIGEST_ALGORITHM = "sha-1";
+	public static final String DEFAULT_DIGEST_ALGORITHM = "sha-1";
+
 	private static final Signature EMPTY = new Signature(new byte[0]);
+	private static final char[] hexchars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
 	private final byte[] bytes;
 
-	private Signature(byte[] bytes) {
+	public Signature(byte[] bytes) {
 		if (bytes.length > Short.MAX_VALUE)
 			throw new IllegalArgumentException("Max length: " + Short.MAX_VALUE);
 		this.bytes = bytes;
@@ -54,6 +58,11 @@ public class Signature {
 		return obj instanceof Signature && Arrays.equals(this.bytes, ((Signature) obj).bytes);
 	}
 
+	@Override
+	public String toString() {
+		return toHexString(this.bytes);
+	}
+
 	public static Signature read(DataInputStream in) throws IOException {
 		byte[] bytes = new byte[in.readShort()];
 		in.readFully(bytes);
@@ -64,17 +73,28 @@ public class Signature {
 		return EMPTY;
 	}
 
+	public static String toHexString(byte[] bytes) {
+		StringBuilder s = new StringBuilder(bytes.length * 2);
+		for (byte b : bytes)
+			s.append(hexchars[(b & 0xF0) >> 4]).append(hexchars[b & 0x0F]);
+		return s.toString();
+	}
+
 	public static Builder builder() {
-		return new Builder();
+		return builder(DEFAULT_DIGEST_ALGORITHM);
+	}
+
+	public static Builder builder(String algorithm) {
+		return new Builder(algorithm);
 	}
 
 	public static class Builder {
 		private MessageDigest message;
 		private byte[] buffer = new byte[8];
 
-		private Builder() {
+		private Builder(String algorithm) {
 			try {
-				this.message = MessageDigest.getInstance(DIGEST_ALGORITHM);
+				this.message = MessageDigest.getInstance(algorithm);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e);
 			}
@@ -185,6 +205,11 @@ public class Signature {
 
 		public Builder append(byte[] bytes, int offset, int length) {
 			this.message.update(bytes, offset, length);
+			return this;
+		}
+
+		public Builder append(WeightedList<? extends CatalogType> list) {
+			list.forEach((b, w) -> append(b).append(w));
 			return this;
 		}
 

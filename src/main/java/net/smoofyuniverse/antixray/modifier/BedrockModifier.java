@@ -25,7 +25,6 @@
 package net.smoofyuniverse.antixray.modifier;
 
 import com.flowpowered.math.vector.Vector3i;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
@@ -38,29 +37,34 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
-/**
- * This modifier only hides ores which are not exposed to the view of normal users.
- */
-public class ObviousModifier extends ChunkModifier {
+public class BedrockModifier extends ChunkModifier {
 
-	public ObviousModifier() {
-		super(AntiXray.get(), "Obvious");
+	public BedrockModifier() {
+		super(AntiXray.get(), "Bedrock");
+	}
+
+	@Override
+	public boolean shouldCache() {
+		return false;
+	}
+
+	@Override
+	public boolean isCompatible(WorldProperties world) {
+		return world.getDimensionType() != DimensionTypes.THE_END;
 	}
 
 	@Override
 	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
-		if (cfg.blocks == null)
-			cfg.blocks = ModifierUtil.getCommonOres(world.getDimensionType());
-		if (cfg.replacement == null)
-			cfg.replacement = ModifierUtil.getCommonGround(world.getDimensionType());
+		if (cfg.ground == null)
+			cfg.ground = ModifierUtil.getCommonGround(world.getDimensionType());
+		if (cfg.height < 0)
+			cfg.height = 0;
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
 	}
@@ -68,7 +72,7 @@ public class ObviousModifier extends ChunkModifier {
 	@Override
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		builder.append(cfg.blocks).append(cfg.replacement);
+		builder.append(cfg.ground).append(cfg.height);
 	}
 
 	@Override
@@ -81,15 +85,21 @@ public class ObviousModifier extends ChunkModifier {
 		Vector3i min = view.getBlockMin(), max = view.getMutableMax();
 		Config.Immutable cfg = (Config.Immutable) config;
 
-		for (int y = min.getY(); y <= max.getY(); y++) {
+		int height = Math.min(max.getY(), cfg.height);
+		if (height == 0)
+			return;
+
+		for (int x = min.getX(); x <= max.getX(); x++) {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
-				for (int x = min.getX(); x <= max.getX(); x++) {
-					BlockState b = view.getBlock(x, y, z);
-					if (b == BlockTypes.AIR || b == cfg.replacement)
+				for (int y = height; y >= 0; --y) {
+					if (view.isExposed(x, y, z))
 						continue;
 
-					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, cfg.replacement);
+					if (y <= r.nextInt(height)) {
+						view.setBlockType(x, y, z, BlockTypes.BEDROCK);
+					} else if (view.getBlockType(x, y, z) == BlockTypes.BEDROCK) {
+						view.setBlock(x, y, z, cfg.ground);
+					}
 				}
 			}
 		}
@@ -99,22 +109,22 @@ public class ObviousModifier extends ChunkModifier {
 	public static final class Config {
 		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
 
-		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-		public List<BlockState> blocks;
-		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
-		public BlockState replacement;
+		@Setting(value = "Ground", comment = "The ground type used to hide real bedrock")
+		public BlockState ground;
+		@Setting(value = "Height", comment = "The maximum layer where bedrock can be generated")
+		public int height = 5;
 
-		public Immutable toImmutable() {
-			return new Immutable(this.blocks, this.replacement);
+		public Config.Immutable toImmutable() {
+			return new Config.Immutable(this.ground, this.height);
 		}
 
 		public static final class Immutable {
-			public final Set<BlockState> blocks;
-			public final BlockState replacement;
+			public final BlockState ground;
+			public final int height;
 
-			public Immutable(Collection<BlockState> blocks, BlockState replacement) {
-				this.blocks = ImmutableSet.copyOf(blocks);
-				this.replacement = replacement;
+			public Immutable(BlockState ground, int height) {
+				this.ground = ground;
+				this.height = height;
 			}
 		}
 	}

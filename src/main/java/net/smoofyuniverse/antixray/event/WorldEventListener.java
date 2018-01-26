@@ -26,6 +26,7 @@ package net.smoofyuniverse.antixray.event;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
+import net.smoofyuniverse.antixray.config.DeobfuscationConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
@@ -67,23 +68,54 @@ public class WorldEventListener {
 
 	@Listener(order = Order.POST)
 	public void onBlockChange(ChangeBlockEvent e) {
+		boolean player = e.getCause().containsType(Player.class);
 		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
 			if (t.isValid())
-				t.getOriginal().getLocation().ifPresent(WorldEventListener::updateSurroundingBlocks);
+				t.getOriginal().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, player));
+		}
+	}
+
+	public static void updateSurroundingBlocks(Location<World> loc, boolean player) {
+		updateSurroundingBlocks(loc.getExtent(), loc.getBlockPosition(), player);
+	}
+
+	public static void updateSurroundingBlocks(World w, Vector3i pos, boolean player) {
+		updateSurroundingBlocks(w, pos.getX(), pos.getY(), pos.getZ(), player);
+	}
+
+	public static void updateBlock(Location<World> loc) {
+		updateBlock(loc.getExtent(), loc.getBlockPosition());
+	}
+
+	public static void updateBlock(World w, Vector3i pos) {
+		updateBlock(w, pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	public static void updateSurroundingBlocks(World w, int x, int y, int z, boolean player) {
+		DeobfuscationConfig.Immutable cfg = ((InternalWorld) w).getView().getConfig().deobf;
+		int r = player ? cfg.playerRadius : cfg.naturalRadius;
+
+		for (int dx = -r; dx <= r; dx++) {
+			for (int dy = -r; dy <= r; dy++) {
+				for (int dz = -r; dz <= r; dz++)
+					updateBlock(w, x + dx, y + dy, z + dz);
+			}
 		}
 	}
 
 	@Listener(order = Order.POST)
 	public void onBlockInteract(InteractBlockEvent e) {
 		if (e.getCause().containsType(Player.class))
-			e.getTargetBlock().getLocation().ifPresent(WorldEventListener::updateSurroundingBlocks);
+			e.getTargetBlock().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, true));
 	}
 
 	@Listener(order = Order.POST)
 	public void onExplosionDetonate(ExplosionEvent.Detonate e) {
+		boolean player = e.getCause().containsType(Player.class);
 		List<Location<World>> list = e.getAffectedLocations();
 		for (Location<World> loc : list) {
-			int r = ((InternalWorld) loc.getExtent()).getView().getConfig().deobfRadius;
+			DeobfuscationConfig.Immutable cfg = ((InternalWorld) loc.getExtent()).getView().getConfig().deobf;
+			int r = player ? cfg.playerRadius : cfg.naturalRadius;
 
 			for (int dx = -r; dx <= r; dx++) {
 				for (int dy = -r; dy <= r; dy++) {
@@ -98,33 +130,6 @@ public class WorldEventListener {
 				}
 			}
 		}
-	}
-
-	public static void updateBlock(Location<World> loc) {
-		updateBlock(loc.getExtent(), loc.getBlockPosition());
-	}
-
-	public static void updateBlock(World w, Vector3i pos) {
-		updateBlock(w, pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	public static void updateSurroundingBlocks(World w, int x, int y, int z) {
-		int r = ((InternalWorld) w).getView().getConfig().deobfRadius;
-
-		for (int dx = -r; dx <= r; dx++) {
-			for (int dy = -r; dy <= r; dy++) {
-				for (int dz = -r; dz <= r; dz++)
-					updateBlock(w, x + dx, y + dy, z + dz);
-			}
-		}
-	}
-
-	public static void updateSurroundingBlocks(Location<World> loc) {
-		updateSurroundingBlocks(loc.getExtent(), loc.getBlockPosition());
-	}
-
-	public static void updateSurroundingBlocks(World w, Vector3i pos) {
-		updateSurroundingBlocks(w, pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {

@@ -28,11 +28,13 @@ import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.Options;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.CatalogType;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.util.annotation.CatalogedBy;
+import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Random;
 
@@ -77,17 +79,34 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * @return false if this modifier is very light and caching is useless, true otherwise
 	 */
-	public boolean allowCaching() {
+	public boolean shouldCache() {
 		return true;
 	}
 
 	/**
+	 * @param world The world
+	 * @return true if this modifier is compatible with this world
+	 */
+	public boolean isCompatible(WorldProperties world) {
+		return true;
+	}
+
+	/**
+	 * Generates a config object from the given node.
+	 *
+	 * @param node  The configuration node (mutable)
+	 * @param world The world where this config object will be applicable
+	 * @return Your config object
+	 */
+	public abstract Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException;
+
+	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
 	 * A different signature from the cached one will cause the cached object to be invalidated.
-	 *
-	 * @return The cache signature
+	 * @param builder The signature builder
+	 * @param config Your config object
 	 */
-	public abstract Signature getCacheSignature(Options options);
+	public abstract void appendSignature(Signature.Builder builder, Object config);
 
 	/**
 	 * A fast method to check whether this modifier is ready to modify a chunk.
@@ -95,7 +114,7 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param view The ChunkView to modify
 	 * @return true if this modifier is ready to modify the chunk
 	 */
-	public abstract boolean isReady(ChunkView view);
+	public abstract boolean isReady(ChunkView view, Object config);
 
 	/**
 	 * Modifies the ChunkView that will be send to players.
@@ -103,5 +122,5 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param view The ChunkView to modify
 	 * @param r The Random object that should be used by the modifier
 	 */
-	public abstract void modify(ChunkView view, Random r);
+	public abstract void modify(ChunkView view, Random r, Object config);
 }

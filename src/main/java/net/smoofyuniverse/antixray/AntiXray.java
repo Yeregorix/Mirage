@@ -120,6 +120,21 @@ public class AntiXray {
 		return HoconConfigurationLoader.builder().setPath(this.configDir.resolve(worldName + ".conf")).setDefaultOptions(this.configOptions).build();
 	}
 
+	public boolean backupConfig(String worldName) throws IOException {
+		Path cfg = this.configDir.resolve(worldName + ".conf");
+		if (!Files.exists(cfg))
+			return false;
+
+		Path backup;
+		int i = 0;
+		do {
+			backup = this.configDir.resolve(worldName + ".conf.backup" + i);
+			i++;
+		} while (Files.exists(backup));
+		Files.move(cfg, backup);
+		return true;
+	}
+
 	public Path getCacheDirectory() {
 		return this.cacheDir;
 	}
