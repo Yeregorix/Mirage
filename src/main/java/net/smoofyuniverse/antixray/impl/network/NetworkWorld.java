@@ -63,6 +63,7 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -94,16 +95,16 @@ public class NetworkWorld implements WorldView {
 		String name = getName();
 		AntiXray.LOGGER.info("Loading configuration for world " + name + " ..");
 
-		ConfigurationLoader<CommentedConfigurationNode> loader = AntiXray.get().createConfigLoader(name);
+		Path file = AntiXray.get().getWorldConfigsDirectory().resolve(name + ".conf");
+		ConfigurationLoader<CommentedConfigurationNode> loader = AntiXray.get().createConfigLoader(file);
 
 		WorldProperties properties = getProperties();
 		DimensionType dimType = properties.getDimensionType();
 		WorldType wType = ((net.minecraft.world.World) this.world).getWorldType();
 
 		CommentedConfigurationNode root = loader.load();
-		ConfigurationNode versionNode = root.getNode("Version");
-		int version = versionNode.getInt();
-		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && AntiXray.get().backupConfig(name)) {
+		int version = root.getNode("Version").getInt();
+		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && AntiXray.get().backupFile(file)) {
 			AntiXray.LOGGER.info("Your config version is not supported. A new one will be generated.");
 			root = loader.createEmptyNode();
 		}
@@ -212,7 +213,7 @@ public class NetworkWorld implements WorldView {
 		}
 
 		version = CURRENT_CONFIG_VERSION;
-		versionNode.setValue(version);
+		root.getNode("Version").setValue(version);
 		cfgNode.setValue(WorldConfig.TOKEN, cfg);
 		loader.save(root);
 

@@ -69,7 +69,7 @@ public class AntiXray {
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
-	private Path cacheDir;
+	private Path cacheDir, worldConfigsDir;
 
 	public AntiXray() {
 		if (instance != null)
@@ -85,8 +85,9 @@ public class AntiXray {
 	@Listener
 	public void onGamePreInit(GamePreInitializationEvent e) {
 		this.cacheDir = this.game.getGameDirectory().resolve("antixray-cache");
+		this.worldConfigsDir = this.configDir.resolve("worlds");
 		try {
-			Files.createDirectory(this.configDir);
+			Files.createDirectories(this.worldConfigsDir);
 		} catch (IOException ignored) {
 		}
 		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true);
@@ -116,23 +117,27 @@ public class AntiXray {
 		this.updateTask.cancel();
 	}
 
-	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(String worldName) {
-		return HoconConfigurationLoader.builder().setPath(this.configDir.resolve(worldName + ".conf")).setDefaultOptions(this.configOptions).build();
+	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {
+		return HoconConfigurationLoader.builder().setPath(file).setDefaultOptions(this.configOptions).build();
 	}
 
-	public boolean backupConfig(String worldName) throws IOException {
-		Path cfg = this.configDir.resolve(worldName + ".conf");
-		if (!Files.exists(cfg))
+	public boolean backupFile(Path file) throws IOException {
+		if (!Files.exists(file))
 			return false;
 
-		Path backup;
-		int i = 0;
-		do {
-			backup = this.configDir.resolve(worldName + ".conf.backup" + i);
-			i++;
-		} while (Files.exists(backup));
-		Files.move(cfg, backup);
+		String fn = file.getFileName() + ".backup";
+		Path backup = null;
+		for (int i = 0; i < 100; i++) {
+			backup = file.resolveSibling(fn + i);
+			if (!Files.exists(backup))
+				break;
+		}
+		Files.move(file, backup);
 		return true;
+	}
+
+	public Path getWorldConfigsDirectory() {
+		return this.worldConfigsDir;
 	}
 
 	public Path getCacheDirectory() {
