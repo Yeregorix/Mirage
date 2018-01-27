@@ -24,21 +24,24 @@
 
 package net.smoofyuniverse.antixray.api.util;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 
 public final class WeightedList<T> {
 	private final T[] objects;
 	private final double[] weights;
+	private final double total;
 	private final int size;
-	private final double totalWeight;
 
 	private WeightedList(T[] objects, double[] weights, double total) {
 		this.objects = objects;
 		this.weights = weights;
+		this.total = total;
 		this.size = objects.length;
-		this.totalWeight = total;
 	}
 
 	public int getSize() {
@@ -46,7 +49,7 @@ public final class WeightedList<T> {
 	}
 
 	public T get(Random r) {
-		double d = r.nextDouble() * this.totalWeight;
+		double d = r.nextDouble() * this.total;
 		int i = -1;
 		while (d >= 0) {
 			i++;
@@ -61,39 +64,68 @@ public final class WeightedList<T> {
 	}
 
 	public static <T> WeightedList<T> of(T[] objects, double[] weights) {
-		if (objects.length != weights.length || objects.length == 0)
+		if (objects.length != weights.length)
 			throw new IllegalArgumentException("Size");
+		if (objects.length == 0)
+			throw new IllegalArgumentException("Empty arrays");
 
-		double total = 0;
-		for (double w : weights)
-			total += w;
+		List<Entry<T>> list = new ArrayList<>();
+		for (int i = 0; i < objects.length; i++)
+			list.add(new Entry<>(objects[i], weights[i]));
 
-		return new WeightedList<>(objects.clone(), weights.clone(), total);
+		return of(list);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> WeightedList<T> of(Map<T, Double> map) {
-		if (map.isEmpty())
-			throw new IllegalArgumentException("Size");
+	public static <T> WeightedList<T> of(Iterable<Entry<T>> it) {
+		List<Entry<T>> list = ImmutableList.sortedCopyOf(it);
+		if (list.isEmpty())
+			throw new IllegalArgumentException("Empty iterator");
 
-		T[] objects = (T[]) new Object[map.size()];
-		double[] weights = new double[map.size()];
+		T[] objects = (T[]) new Object[list.size()];
+		double[] weights = new double[list.size()];
 
 		int i = 0;
-		for (Entry<T, Double> e : map.entrySet()) {
-			objects[i] = e.getKey();
-			weights[i] = e.getValue();
+		double total = 0;
+		for (Entry<T> e : list) {
+			objects[i] = e.object;
+			weights[i] = e.weight;
+			total += e.weight;
 			i++;
 		}
-
-		double total = 0;
-		for (double w : weights)
-			total += w;
 
 		return new WeightedList<>(objects, weights, total);
 	}
 
+	public static <T> WeightedList<T> of(Map<T, Double> map) {
+		if (map.isEmpty())
+			throw new IllegalArgumentException("Empty map");
+
+		List<Entry<T>> list = new ArrayList<>();
+		for (Map.Entry<T, Double> e : map.entrySet())
+			list.add(new Entry<>(e.getKey(), e.getValue()));
+
+		return of(list);
+	}
+
 	public interface Consumer<T> {
 		void accept(T object, double weight);
+	}
+
+	public static final class Entry<T> implements Comparable<Entry<T>> {
+		public final T object;
+		public final double weight;
+
+		public Entry(T object, double weight) {
+			if (Double.isNaN(weight) || weight <= 0)
+				throw new IllegalArgumentException("Weight");
+			this.object = object;
+			this.weight = weight;
+		}
+
+		@Override
+		public int compareTo(Entry<T> o) {
+			return Double.compare(o.weight, this.weight);
+		}
 	}
 }

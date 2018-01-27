@@ -158,7 +158,7 @@ public class Signature {
 		}
 
 		public Builder append(CatalogType type) {
-			return append(type.getId());
+			return type == null ? append(0) : append(type.getId());
 		}
 
 		public Builder append(String value) {
