@@ -64,10 +64,10 @@ public interface ChunkView extends BlockView {
 	Vector3i getPosition();
 
 	/**
-	 * Checks if surrounding chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}
-	 * @return Whether exposition check is ready
+	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}
+	 * @return Whether neighbor chunks are loaded
 	 */
-	boolean isExpositionCheckReady();
+	boolean areNeighborsLoaded();
 
 	/**
 	 * @return Whether this chunk is marked as obfuscated

@@ -73,6 +73,11 @@ public abstract class MixinWorld implements InternalWorld {
 	}
 
 	@Override
+	public boolean isChunkLoaded(int x, int z) {
+		return getChunk(x, z) != null;
+	}
+
+	@Override
 	public Optional<ChunkStorage> getChunkStorage(int x, int y, int z) {
 		return Optional.ofNullable(getChunk(x, z));
 	}

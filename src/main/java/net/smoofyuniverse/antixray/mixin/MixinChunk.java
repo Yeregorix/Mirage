@@ -37,7 +37,6 @@ import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
-import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -182,7 +181,8 @@ public abstract class MixinChunk implements InternalChunk {
 	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
 	@Override
-	public boolean isExpositionCheckReady() {
-		return isNeighborLoaded(Direction.NORTH) && isNeighborLoaded(Direction.SOUTH) && isNeighborLoaded(Direction.EAST) && isNeighborLoaded(Direction.WEST);
+	public boolean areNeighborsLoaded() {
+		InternalWorld w = (InternalWorld) this.world;
+		return w.isChunkLoaded(this.x + 1, this.z) && w.isChunkLoaded(this.x, this.z + 1) && w.isChunkLoaded(this.x - 1, this.z) && w.isChunkLoaded(this.x, this.z - 1);
 	}
 }

@@ -66,7 +66,7 @@ public interface WorldStorage extends BlockStorage, Identifiable {
 	}
 
 	default Optional<ChunkStorage> getChunkStorageAt(Vector3i pos) {
-		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
+		return getChunkStorageAt(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z);

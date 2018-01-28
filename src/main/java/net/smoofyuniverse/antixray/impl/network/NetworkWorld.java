@@ -327,6 +327,10 @@ public class NetworkWorld implements WorldView {
 		return chunk == null ? null : chunk.getView();
 	}
 
+	public boolean isChunkLoaded(int x, int z) {
+		return getChunk(x, z) != null;
+	}
+
 	@Override
 	public boolean deobfuscate(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);

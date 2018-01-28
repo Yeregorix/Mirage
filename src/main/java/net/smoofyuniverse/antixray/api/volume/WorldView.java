@@ -73,7 +73,7 @@ public interface WorldView extends BlockView, Identifiable {
 	}
 
 	default Optional<ChunkView> getChunkViewAt(Vector3i pos) {
-		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
+		return getChunkViewAt(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	Optional<ChunkView> getChunkViewAt(int x, int y, int z);

@@ -41,7 +41,6 @@ import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.DiscreteTransform3;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.ImmutableBlockVolume;
@@ -305,8 +304,8 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public boolean isExpositionCheckReady() {
-		return isNeighborLoaded(Direction.NORTH) && isNeighborLoaded(Direction.SOUTH) && isNeighborLoaded(Direction.EAST) && isNeighborLoaded(Direction.WEST);
+	public boolean areNeighborsLoaded() {
+		return this.world.isChunkLoaded(this.x + 1, this.z) && this.world.isChunkLoaded(this.x, this.z + 1) && this.world.isChunkLoaded(this.x - 1, this.z) && this.world.isChunkLoaded(this.x, this.z - 1);
 	}
 
 	@Override

@@ -77,7 +77,7 @@ public class BedrockModifier extends ChunkModifier {
 
 	@Override
 	public boolean isReady(ChunkView view, Object config) {
-		return view.isExpositionCheckReady();
+		return view.areNeighborsLoaded();
 	}
 
 	@Override
