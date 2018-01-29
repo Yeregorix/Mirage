@@ -29,6 +29,7 @@ import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
 import ninja.leaping.configurate.ConfigurationOptions;
@@ -46,6 +47,7 @@ import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.World;
@@ -66,6 +68,8 @@ public class AntiXray {
 	private Path configDir;
 	@Inject
 	private GuiceObjectMapperFactory factory;
+	@Inject
+	private PluginContainer container;
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
@@ -96,25 +100,30 @@ public class AntiXray {
 
 	@Listener
 	public void onServerStarted(GameStartedServerEvent e) {
-		this.updateTask = Task.builder().execute(() -> {
-			for (World w : this.game.getServer().getWorlds()) {
-				for (Chunk c : w.getLoadedChunks()) {
-					NetworkChunk netChunk = ((InternalChunk) c).getView();
-					if (netChunk != null) {
-						if (netChunk.getState() == State.NEED_REOBFUSCATION)
-							netChunk.obfuscate();
-						netChunk.getListener().sendChanges();
+		if (this.game.getServer().getWorlds().iterator().next() instanceof InternalWorld) {
+			this.updateTask = Task.builder().execute(() -> {
+				for (World w : this.game.getServer().getWorlds()) {
+					for (Chunk c : w.getLoadedChunks()) {
+						NetworkChunk netChunk = ((InternalChunk) c).getView();
+						if (netChunk != null) {
+							if (netChunk.getState() == State.NEED_REOBFUSCATION)
+								netChunk.obfuscate();
+							netChunk.getListener().sendChanges();
+						}
 					}
 				}
-			}
-		}).intervalTicks(1).submit(this);
+			}).intervalTicks(1).submit(this);
 
-		LOGGER.info("Loaded successfully.");
+			LOGGER.info("AntiXray " + this.container.getVersion().orElse("?") + " was loaded successfully.");
+		} else {
+			LOGGER.error("!!WARNING!! AntiXray was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
+		}
 	}
 
 	@Listener
 	public void onServerStopping(GameStoppingServerEvent e) {
-		this.updateTask.cancel();
+		if (this.updateTask != null)
+			this.updateTask.cancel();
 	}
 
 	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {

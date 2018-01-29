@@ -194,7 +194,7 @@ public class NetworkWorld implements WorldView {
 						this.regionCache.updateVersion();
 						this.regionCache.saveVersion();
 
-						Signature.Builder b = Signature.builder();
+						Signature.Builder b = Signature.builder().append(cfg.seed);
 						for (Entry<ChunkModifier, Object> e : this.modifiers.entrySet())
 							e.getKey().appendSignature(b, e.getValue());
 						this.signature = b.build();
