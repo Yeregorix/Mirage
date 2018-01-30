@@ -303,11 +303,15 @@ public class NetworkWorld implements WorldView {
 
 	@Override
 	public Map<ChunkModifier, Object> getModifiers() {
+		if (this.config == null)
+			throw new IllegalStateException("Config not loaded");
 		return this.modifiers;
 	}
 
 	@Override
 	public WorldConfig.Immutable getConfig() {
+		if (this.config == null)
+			throw new IllegalStateException("Config not loaded");
 		return this.config;
 	}
 

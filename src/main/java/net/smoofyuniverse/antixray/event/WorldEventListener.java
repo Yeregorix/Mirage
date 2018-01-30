@@ -30,6 +30,7 @@ import net.smoofyuniverse.antixray.config.DeobfuscationConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -37,14 +38,11 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
-import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
-
-import java.util.List;
 
 public class WorldEventListener {
 
@@ -92,7 +90,11 @@ public class WorldEventListener {
 	}
 
 	public static void updateSurroundingBlocks(World w, int x, int y, int z, boolean player) {
-		DeobfuscationConfig.Immutable cfg = ((InternalWorld) w).getView().getConfig().deobf;
+		NetworkWorld netWorld = ((InternalWorld) w).getView();
+		if (!netWorld.isEnabled())
+			return;
+
+		DeobfuscationConfig.Immutable cfg = netWorld.getConfig().deobf;
 		int r = player ? cfg.playerRadius : cfg.naturalRadius;
 
 		for (int dx = -r; dx <= r; dx++) {
@@ -107,29 +109,6 @@ public class WorldEventListener {
 	public void onBlockInteract(InteractBlockEvent e) {
 		if (e.getCause().containsType(Player.class))
 			e.getTargetBlock().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, true));
-	}
-
-	@Listener(order = Order.POST)
-	public void onExplosionDetonate(ExplosionEvent.Detonate e) {
-		boolean player = e.getCause().containsType(Player.class);
-		List<Location<World>> list = e.getAffectedLocations();
-		for (Location<World> loc : list) {
-			DeobfuscationConfig.Immutable cfg = ((InternalWorld) loc.getExtent()).getView().getConfig().deobf;
-			int r = player ? cfg.playerRadius : cfg.naturalRadius;
-
-			for (int dx = -r; dx <= r; dx++) {
-				for (int dy = -r; dy <= r; dy++) {
-					for (int dz = -r; dz <= r; dz++) {
-						if (dx == 0 && dy == 0 && dz == 0)
-							continue;
-
-						Location<World> loc2 = loc.add(dx, dy, dz);
-						if (!list.contains(loc2))
-							updateBlock(loc2);
-					}
-				}
-			}
-		}
 	}
 
 	public static void updateBlock(World w, int x, int y, int z) {
