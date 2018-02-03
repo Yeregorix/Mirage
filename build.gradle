@@ -42,7 +42,7 @@ buildscript {
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
         classpath 'org.spongepowered:mixingradle:0.4+'
-        classpath "gradle.plugin.com.qixalite:SpongeStart:1.6.0"
+        classpath "gradle.plugin.com.qixalite:SpongeStart:1.6.2"
     }
 }
 
