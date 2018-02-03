@@ -27,16 +27,19 @@ package net.smoofyuniverse.antixray;
 import com.google.inject.Inject;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.antixray.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
+import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
@@ -84,6 +87,7 @@ public class AntiXray {
 	@Listener
 	public void onGameConstruction(GameConstructionEvent e) {
 		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
+		TypeSerializers.getDefaultSerializers().registerType(BlockSet.TOKEN, new BlockSetSerializer());
 	}
 
 	@Listener

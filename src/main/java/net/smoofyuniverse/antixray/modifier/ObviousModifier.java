@@ -30,8 +30,9 @@ import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
-import net.smoofyuniverse.antixray.api.util.ModifierUtil;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
+import net.smoofyuniverse.antixray.util.ModifierUtil;
+import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -41,7 +42,6 @@ import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -100,12 +100,12 @@ public class ObviousModifier extends ChunkModifier {
 		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
 
 		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-		public List<BlockState> blocks;
+		public BlockSet blocks;
 		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
 		public BlockState replacement;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks, this.replacement);
+			return new Immutable(this.blocks.toSet(), this.replacement);
 		}
 
 		public static final class Immutable {

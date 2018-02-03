@@ -22,39 +22,34 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.config;
+package net.smoofyuniverse.antixray.config.serializer;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.util.collection.BlockSet;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import org.spongepowered.api.block.BlockState;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 
-import java.util.Collection;
-import java.util.Set;
+public class BlockSetSerializer implements TypeSerializer<BlockSet> {
+	private static final TypeToken<String> STRING = TypeToken.of(String.class);
 
-@ConfigSerializable
-public class PreobfuscationConfig {
-	@Setting(value = "Enabled", comment = "Enable or disable preobfuscation in this world")
-	public boolean enabled = false;
-	@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-	public BlockSet blocks;
-	@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
-	public BlockState replacement;
-
-	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.blocks.toSet(), this.replacement);
+	@Override
+	public BlockSet deserialize(TypeToken<?> type, ConfigurationNode value) throws ObjectMappingException {
+		try {
+			BlockSet set = new BlockSet();
+			set.fromStringList(value.getList(STRING));
+			return set;
+		} catch (IllegalArgumentException e) {
+			throw new ObjectMappingException(e.getMessage());
+		}
 	}
 
-	public static class Immutable {
-		public final boolean enabled;
-		public final Set<BlockState> blocks;
-		public final BlockState replacement;
-
-		public Immutable(boolean enabled, Collection<BlockState> blocks, BlockState replacement) {
-			this.enabled = enabled;
-			this.blocks = ImmutableSet.copyOf(blocks);
-			this.replacement = replacement;
+	@Override
+	public void serialize(TypeToken<?> type, BlockSet set, ConfigurationNode value) throws ObjectMappingException {
+		try {
+			value.setValue(set.toStringList());
+		} catch (IllegalArgumentException e) {
+			throw new ObjectMappingException(e.getMessage());
 		}
 	}
 }

@@ -24,7 +24,7 @@
 
 package net.smoofyuniverse.antixray.api.cache;
 
-import net.smoofyuniverse.antixray.api.util.WeightedList;
+import net.smoofyuniverse.antixray.util.collection.WeightedList;
 import org.spongepowered.api.CatalogType;
 
 import java.io.DataInputStream;

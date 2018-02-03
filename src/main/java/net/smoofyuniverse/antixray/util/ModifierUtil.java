@@ -22,32 +22,30 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.api.util;
+package net.smoofyuniverse.antixray.util;
 
+import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ModifierUtil {
 
-	public static List<BlockState> getCommonOres(DimensionType dimType) {
-		List<BlockState> ores = new ArrayList<>();
+	public static BlockSet getCommonOres(DimensionType dimType) {
+		BlockSet set = new BlockSet();
 		if (dimType == DimensionTypes.NETHER) {
-			ores.add(BlockTypes.QUARTZ_ORE.getDefaultState());
+			set.add(BlockTypes.QUARTZ_ORE);
 		} else if (dimType == DimensionTypes.OVERWORLD) {
-			ores.add(BlockTypes.REDSTONE_ORE.getDefaultState());
-			ores.add(BlockTypes.EMERALD_ORE.getDefaultState());
-			ores.add(BlockTypes.DIAMOND_ORE.getDefaultState());
-			ores.add(BlockTypes.COAL_ORE.getDefaultState());
-			ores.add(BlockTypes.IRON_ORE.getDefaultState());
-			ores.add(BlockTypes.LAPIS_ORE.getDefaultState());
-			ores.add(BlockTypes.GOLD_ORE.getDefaultState());
+			set.add(BlockTypes.REDSTONE_ORE);
+			set.add(BlockTypes.EMERALD_ORE);
+			set.add(BlockTypes.DIAMOND_ORE);
+			set.add(BlockTypes.COAL_ORE);
+			set.add(BlockTypes.IRON_ORE);
+			set.add(BlockTypes.LAPIS_ORE);
+			set.add(BlockTypes.GOLD_ORE);
 		}
-		return ores;
+		return set;
 	}
 
 	public static BlockState getCommonGround(DimensionType dimType) {

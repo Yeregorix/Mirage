@@ -27,17 +27,20 @@ package net.smoofyuniverse.antixray.modifier;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
-import net.smoofyuniverse.antixray.api.util.ModifierUtil;
-import net.smoofyuniverse.antixray.api.util.WeightedList;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
+import net.smoofyuniverse.antixray.util.ModifierUtil;
+import net.smoofyuniverse.antixray.util.collection.BlockSet;
+import net.smoofyuniverse.antixray.util.collection.WeightedList;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -57,14 +60,24 @@ public class RandomModifier extends ChunkModifier {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
 		if (cfg.blocks == null) {
 			cfg.blocks = ModifierUtil.getCommonOres(world.getDimensionType());
-			cfg.blocks.add(ModifierUtil.getCommonGround(world.getDimensionType()));
+			cfg.blocks.add(ModifierUtil.getCommonGround(world.getDimensionType()).getType());
 		}
+
 		if (cfg.replacements == null) {
 			cfg.replacements = new HashMap<>();
-			for (BlockState b : cfg.blocks)
-				cfg.replacements.put(b, 1d);
-			cfg.replacements.put(ModifierUtil.getCommonGround(world.getDimensionType()), (double) cfg.blocks.size());
+			for (BlockType type : cfg.blocks.getInternalTypes())
+				cfg.replacements.put(type.getDefaultState(), 1d);
+			for (Object2BooleanMap.Entry<BlockState> e : cfg.blocks.getInternalStates().object2BooleanEntrySet()) {
+				if (e.getBooleanValue())
+					cfg.replacements.put(e.getKey(), 1d);
+				else
+					cfg.replacements.remove(e.getKey());
+			}
+			BlockState ground = ModifierUtil.getCommonGround(world.getDimensionType());
+			cfg.replacements.remove(ground);
+			cfg.replacements.put(ground, (double) cfg.replacements.size());
 		}
+
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
 	}
@@ -104,12 +117,12 @@ public class RandomModifier extends ChunkModifier {
 		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
 
 		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-		public List<BlockState> blocks;
+		public BlockSet blocks;
 		@Setting(value = "Replacements", comment = "Blocks and their weight used to randomly replace hidden blocks")
 		public Map<BlockState, Double> replacements;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks, WeightedList.of(this.replacements));
+			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements));
 		}
 
 		public static final class Immutable {

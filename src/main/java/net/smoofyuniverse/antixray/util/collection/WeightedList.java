@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.api.util;
+package net.smoofyuniverse.antixray.util.collection;
 
 import com.google.common.collect.ImmutableList;
 
