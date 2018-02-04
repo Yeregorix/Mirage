@@ -34,6 +34,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+/**
+ * This object is used to hold a bytes array as a signature
+ */
 public class Signature {
 	public static final String DEFAULT_DIGEST_ALGORITHM = "sha-1";
 

@@ -55,43 +55,113 @@ public interface WorldView extends BlockView, Identifiable {
 	 */
 	WorldProperties getProperties();
 
+	/**
+	 * @return The modifiers applied to this world and their configurations
+	 */
 	Map<ChunkModifier, Object> getModifiers();
 
+	/**
+	 * @return The configuration of this world
+	 */
 	WorldConfig.Immutable getConfig();
 
+	/**
+	 * @return Whether obfuscation is enabled in this world
+	 */
 	boolean isEnabled();
 
+	/**
+	 * @param pos The position
+	 * @return Whether the ChunkView at the given <strong>chunk</strong> position is loaded
+	 */
 	default boolean isChunkLoaded(Vector3i pos) {
 		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the ChunkView at the given <strong>chunk</strong> position is loaded
+	 */
 	default boolean isChunkLoaded(int x, int y, int z) {
 		return getChunkView(x, y, z).isPresent();
 	}
 
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return The ChunkView at the given <strong>chunk</strong> position
+	 */
 	Optional<ChunkView> getChunkView(int x, int y, int z);
 
+	/**
+	 * @param pos The position
+	 * @return The ChunkView at the given <strong>chunk</strong> position
+	 */
 	default Optional<ChunkView> getChunkView(Vector3i pos) {
 		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * @param pos The position
+	 * @return The ChunkView at the given <strong>block</strong> position
+	 */
 	default Optional<ChunkView> getChunkViewAt(Vector3i pos) {
 		return getChunkViewAt(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return The ChunkView at the given <strong>block</strong> position
+	 */
 	Optional<ChunkView> getChunkViewAt(int x, int y, int z);
 
+	/**
+	 * @return A collection of all loaded ChunkViews in this world
+	 */
 	Collection<? extends ChunkView> getLoadedChunkViews();
 
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param pos The position
+	 * @return Whether the block was different before being deobfuscated
+	 */
 	default boolean deobfuscate(Vector3i pos) {
 		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block was different before being deobfuscated
+	 */
 	boolean deobfuscate(int x, int y, int z);
 
+	/**
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param pos The position
+	 * @param player Whether the player deobfuscation radius should be used instead of the natural radius
+	 */
 	default void deobfuscateSurrounding(Vector3i pos, boolean player) {
 		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
 	}
 
+	/**
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @param player Whether the player deobfuscation radius should be used instead of the natural radius
+	 */
 	void deobfuscateSurrounding(int x, int y, int z, boolean player);
 }

@@ -41,10 +41,18 @@ public interface ChunkView extends BlockView {
 	@Override
 	ChunkStorage getStorage();
 
+	/**
+	 * @param dir The direction
+	 * @return Whether neighbor chunk according to the given direction is loaded
+	 */
 	default boolean isNeighborLoaded(Direction dir) {
 		return getNeighborView(dir).isPresent();
 	}
 
+	/**
+	 * @param dir The direction
+	 * @return The neighbor chunk according to the given direction
+	 */
 	default Optional<ChunkView> getNeighborView(Direction dir) {
 		if (dir.isSecondaryOrdinal())
 			throw new IllegalArgumentException("Direction");
@@ -64,20 +72,44 @@ public interface ChunkView extends BlockView {
 	Vector3i getPosition();
 
 	/**
-	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}
+	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}.
 	 * @return Whether neighbor chunks are loaded
 	 */
 	boolean areNeighborsLoaded();
 
 	/**
-	 * @return Whether this chunk is marked as obfuscated
+	 * @return Whether this chunk is marked as obfuscated.
 	 */
 	boolean isObfuscated();
 
+	/**
+	 * If not already done and if all modifiers are ready, this method obfuscates all blocks inside this chunk.
+	 */
 	void obfuscate();
 
+	/**
+	 * If the chunk marked as obfuscated, this method deofuscates all blocks inside this chunk.
+	 */
 	void deobfuscate();
 
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param pos The position
+	 * @return Whether the block was different before being deobfuscated
+	 */
+	default boolean deobfuscate(Vector3i pos) {
+		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block was different before being deobfuscated
+	 */
 	boolean deobfuscate(int x, int y, int z);
 
 	/**

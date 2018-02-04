@@ -36,16 +36,29 @@ public interface ChunkStorage extends BlockStorage {
 
 	/**
 	 * @return The ChunkView which is associated with this ChunkStorage
+	 * @throws IllegalStateException if the ChunkView is not available
+	 * @see ChunkStorage#isViewAvailable
 	 */
 	@Override
 	ChunkView getView();
 
+	/**
+	 * @return Whether the ChunkView associated with this ChunkStorage is available
+	 */
 	boolean isViewAvailable();
 
+	/**
+	 * @param dir The direction
+	 * @return Whether neighbor chunk according to the given direction is loaded
+	 */
 	default boolean isNeighborLoaded(Direction dir) {
 		return getNeighborStorage(dir).isPresent();
 	}
 
+	/**
+	 * @param dir The direction
+	 * @return The neighbor chunk according to the given direction
+	 */
 	default Optional<ChunkStorage> getNeighborStorage(Direction dir) {
 		if (dir.isSecondaryOrdinal())
 			throw new IllegalArgumentException("Direction");
@@ -65,7 +78,7 @@ public interface ChunkStorage extends BlockStorage {
 	Vector3i getPosition();
 
 	/**
-	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockStorage#isExposed(int, int, int)}
+	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockStorage#isExposed(int, int, int)}.
 	 * @return Whether neighbor chunks are loaded
 	 */
 	boolean areNeighborsLoaded();

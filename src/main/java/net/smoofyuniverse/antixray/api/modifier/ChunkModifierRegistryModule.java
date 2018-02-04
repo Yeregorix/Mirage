@@ -34,6 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * An AdditionalCatalogRegistryModule used to get or register ChunkModifiers
+ */
 public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryModule<ChunkModifier> {
 	private static final ChunkModifierRegistryModule INSTANCE = new ChunkModifierRegistryModule();
 
@@ -73,6 +76,9 @@ public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryMod
 		register(modifier);
 	}
 
+	/**
+	 * @return The default ChunkModifierRegistryModule instance
+	 */
 	public static ChunkModifierRegistryModule get() {
 		return INSTANCE;
 	}

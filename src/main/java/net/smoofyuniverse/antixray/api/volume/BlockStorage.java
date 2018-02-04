@@ -59,15 +59,35 @@ public interface BlockStorage extends ImmutableBlockVolume {
 	 */
 	boolean isExposed(int x, int y, int z);
 
+	/**
+	 * @param pos The position
+	 * @return The block light level at the given position
+	 */
 	default int getBlockLightLevel(Vector3i pos) {
 		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return The block light level at the given position
+	 */
 	int getBlockLightLevel(int x, int y, int z);
 
+	/**
+	 * @param pos The position
+	 * @return Whether the block at the given position is directly exposed to the sky
+	 */
 	default boolean canSeeTheSky(Vector3i pos) {
 		return canSeeTheSky(pos.getX(), pos.getY(), pos.getZ());
 	}
 
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block at the given position is directly exposed to the sky
+	 */
 	boolean canSeeTheSky(int x, int y, int z);
 }
