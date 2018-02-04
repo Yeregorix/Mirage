@@ -25,6 +25,7 @@
 package net.smoofyuniverse.antixray.impl.network;
 
 import com.flowpowered.math.vector.Vector3i;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -64,6 +65,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -221,6 +223,7 @@ public class NetworkWorld implements WorldView {
 		this.enabled = cfg.enabled;
 	}
 
+	@Override
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -325,10 +328,36 @@ public class NetworkWorld implements WorldView {
 		return getChunkView(x >> 4, 0, z >> 4);
 	}
 
-	@Nullable
-	public NetworkChunk getChunk(int x, int z) {
-		InternalChunk chunk = this.world.getChunk(x, z);
-		return chunk == null ? null : chunk.getView();
+	@Override
+	public Collection<NetworkChunk> getLoadedChunkViews() {
+		if (!this.enabled)
+			return ImmutableList.of();
+
+		ImmutableList.Builder<NetworkChunk> b = ImmutableList.builder();
+		for (InternalChunk c : this.world.getLoadedChunkStorages()) {
+			if (c.isViewAvailable())
+				b.add(c.getView());
+		}
+		return b.build();
+	}
+
+	@Override
+	public void deobfuscateSurrounding(int x, int y, int z, boolean player) {
+		if (!this.enabled)
+			return;
+
+		int r = player ? this.config.deobf.playerRadius : this.config.deobf.naturalRadius;
+
+		for (int dy = -r; dy <= r; dy++) {
+			int cy = y + dy;
+			if (cy < 0 || cy >= 256)
+				continue;
+
+			for (int dx = -r; dx <= r; dx++) {
+				for (int dz = -r; dz <= r; dz++)
+					deobfuscate(x + dx, cy, z + dz);
+			}
+		}
 	}
 
 	public boolean isChunkLoaded(int x, int z) {
@@ -339,6 +368,12 @@ public class NetworkWorld implements WorldView {
 	public boolean deobfuscate(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
 		return chunk != null && chunk.deobfuscate(x & 15, y, z & 15);
+	}
+
+	@Nullable
+	public NetworkChunk getChunk(int x, int z) {
+		InternalChunk chunk = this.world.getChunk(x, z);
+		return chunk != null && chunk.isViewAvailable() ? chunk.getView() : null;
 	}
 
 	@Override

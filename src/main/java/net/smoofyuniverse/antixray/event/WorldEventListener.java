@@ -24,13 +24,9 @@
 
 package net.smoofyuniverse.antixray.event;
 
-import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.config.DeobfuscationConfig;
-import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
-import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -40,7 +36,6 @@ import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
-import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -57,11 +52,7 @@ public class WorldEventListener {
 
 	@Listener
 	public void onWorldSave(SaveWorldEvent.Pre e) {
-		for (Chunk c : e.getTargetWorld().getLoadedChunks()) {
-			NetworkChunk netChunk = ((InternalChunk) c).getView();
-			if (netChunk != null)
-				netChunk.saveToCacheLater();
-		}
+		((InternalWorld) e.getTargetWorld()).getView().getLoadedChunkViews().forEach(NetworkChunk::saveToCacheLater);
 	}
 
 	@Listener(order = Order.POST)
@@ -73,46 +64,13 @@ public class WorldEventListener {
 		}
 	}
 
-	public static void updateSurroundingBlocks(Location<World> loc, boolean player) {
-		updateSurroundingBlocks(loc.getExtent(), loc.getBlockPosition(), player);
-	}
-
-	public static void updateSurroundingBlocks(World w, Vector3i pos, boolean player) {
-		updateSurroundingBlocks(w, pos.getX(), pos.getY(), pos.getZ(), player);
-	}
-
-	public static void updateBlock(Location<World> loc) {
-		updateBlock(loc.getExtent(), loc.getBlockPosition());
-	}
-
-	public static void updateBlock(World w, Vector3i pos) {
-		updateBlock(w, pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	public static void updateSurroundingBlocks(World w, int x, int y, int z, boolean player) {
-		NetworkWorld netWorld = ((InternalWorld) w).getView();
-		if (!netWorld.isEnabled())
-			return;
-
-		DeobfuscationConfig.Immutable cfg = netWorld.getConfig().deobf;
-		int r = player ? cfg.playerRadius : cfg.naturalRadius;
-
-		for (int dx = -r; dx <= r; dx++) {
-			for (int dy = -r; dy <= r; dy++) {
-				for (int dz = -r; dz <= r; dz++)
-					updateBlock(w, x + dx, y + dy, z + dz);
-			}
-		}
-	}
-
 	@Listener(order = Order.POST)
 	public void onBlockInteract(InteractBlockEvent e) {
 		if (e.getCause().containsType(Player.class))
 			e.getTargetBlock().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, true));
 	}
 
-	public static void updateBlock(World w, int x, int y, int z) {
-		if (y >= 0 && y < 256)
-			((InternalWorld) w).getView().deobfuscate(x, y, z);
+	private static void updateSurroundingBlocks(Location<World> loc, boolean player) {
+		((InternalWorld) loc.getExtent()).getView().deobfuscateSurrounding(loc.getBlockPosition(), player);
 	}
 }

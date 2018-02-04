@@ -28,6 +28,7 @@ import net.smoofyuniverse.antixray.api.volume.WorldStorage;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 
 public interface InternalWorld extends WorldStorage {
 
@@ -38,4 +39,7 @@ public interface InternalWorld extends WorldStorage {
 	InternalChunk getChunk(int x, int z);
 
 	boolean isChunkLoaded(int x, int z);
+
+	@Override
+	Collection<InternalChunk> getLoadedChunkStorages();
 }

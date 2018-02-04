@@ -32,7 +32,6 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -52,11 +51,10 @@ public class MixinAnvilChunkLoader {
 			AntiXray.LOGGER.warn("World change detected in an AnvilChunkLoader! This is going to generate caching errors");
 
 		try {
-			if (this.world.getView().isEnabled()) {
-				NetworkChunk netChunk = ((InternalChunk) chunk).getView();
-				if (netChunk != null)
-					netChunk.saveToCacheLater();
-				compound.setLong("AntiXrayCacheDate", ((InternalChunk) chunk).getValidCacheDate());
+			InternalChunk internalChunk = (InternalChunk) chunk;
+			if (internalChunk.isViewAvailable()) {
+				internalChunk.getView().saveToCacheLater();
+				compound.setLong("AntiXrayCacheDate", internalChunk.getValidCacheDate());
 			}
 		} catch (Exception e) {
 			AntiXray.LOGGER.error("Failed to serialize a network chunk for caching", e);

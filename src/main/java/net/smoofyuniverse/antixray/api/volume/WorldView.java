@@ -30,6 +30,7 @@ import net.smoofyuniverse.antixray.config.WorldConfig;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,6 +59,8 @@ public interface WorldView extends BlockView, Identifiable {
 
 	WorldConfig.Immutable getConfig();
 
+	boolean isEnabled();
+
 	default boolean isChunkLoaded(Vector3i pos) {
 		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
 	}
@@ -78,9 +81,17 @@ public interface WorldView extends BlockView, Identifiable {
 
 	Optional<ChunkView> getChunkViewAt(int x, int y, int z);
 
+	Collection<? extends ChunkView> getLoadedChunkViews();
+
 	default boolean deobfuscate(Vector3i pos) {
 		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	boolean deobfuscate(int x, int y, int z);
+
+	default void deobfuscateSurrounding(Vector3i pos, boolean player) {
+		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
+	}
+
+	void deobfuscateSurrounding(int x, int y, int z, boolean player);
 }

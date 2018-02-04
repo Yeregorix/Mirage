@@ -30,7 +30,6 @@ import net.minecraft.world.chunk.BlockStateContainer;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,9 +41,8 @@ public abstract class MixinPacketChunkData {
 
 	@Inject(method = "calculateChunkSize", at = @At("HEAD"))
 	public void onCalculateChunkSize(Chunk chunk, boolean skyLight, int sections, CallbackInfoReturnable<Integer> ci) {
-		NetworkChunk netChunk = ((InternalChunk) chunk).getView();
-		if (netChunk != null)
-			netChunk.obfuscate();
+		if (((InternalChunk) chunk).isViewAvailable())
+			((InternalChunk) chunk).getView().obfuscate();
 	}
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))

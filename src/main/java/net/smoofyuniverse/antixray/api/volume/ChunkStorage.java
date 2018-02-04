@@ -40,6 +40,8 @@ public interface ChunkStorage extends BlockStorage {
 	@Override
 	ChunkView getView();
 
+	boolean isViewAvailable();
+
 	default boolean isNeighborLoaded(Direction dir) {
 		return getNeighborStorage(dir).isPresent();
 	}

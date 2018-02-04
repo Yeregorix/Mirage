@@ -45,8 +45,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.Nullable;
-
 @Mixin(value = Chunk.class, priority = 1100)
 public abstract class MixinChunk implements InternalChunk {
 	@Shadow
@@ -83,10 +81,16 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	@Nullable
 	@Override
 	public NetworkChunk getView() {
+		if (this.netChunk == null)
+			throw new IllegalStateException("NetworkChunk not available");
 		return this.netChunk;
+	}
+
+	@Override
+	public boolean isViewAvailable() {
+		return this.netChunk != null;
 	}
 
 	@Override

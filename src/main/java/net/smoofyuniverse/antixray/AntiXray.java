@@ -30,7 +30,6 @@ import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.antixray.bstats.Metrics;
 import net.smoofyuniverse.antixray.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
-import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
@@ -53,7 +52,6 @@ import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.World;
 
 import java.io.IOException;
@@ -111,13 +109,10 @@ public class AntiXray {
 		if (this.game.getServer().getWorlds().iterator().next() instanceof InternalWorld) {
 			this.updateTask = Task.builder().execute(() -> {
 				for (World w : this.game.getServer().getWorlds()) {
-					for (Chunk c : w.getLoadedChunks()) {
-						NetworkChunk netChunk = ((InternalChunk) c).getView();
-						if (netChunk != null) {
-							if (netChunk.getState() == State.NEED_REOBFUSCATION)
-								netChunk.obfuscate();
-							netChunk.getListener().sendChanges();
-						}
+					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
+						if (chunk.getState() == State.NEED_REOBFUSCATION)
+							chunk.obfuscate();
+						chunk.getListener().sendChanges();
 					}
 				}
 			}).intervalTicks(1).submit(this);

@@ -28,6 +28,7 @@ import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
 
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -70,4 +71,6 @@ public interface WorldStorage extends BlockStorage, Identifiable {
 	}
 
 	Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z);
+
+	Collection<? extends ChunkStorage> getLoadedChunkStorages();
 }

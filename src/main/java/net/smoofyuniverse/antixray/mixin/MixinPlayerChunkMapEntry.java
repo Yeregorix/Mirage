@@ -30,7 +30,6 @@ import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -53,9 +52,8 @@ public class MixinPlayerChunkMapEntry {
 	private void clearChanges() {
 		if (this.chunk != null) {
 			try {
-				NetworkChunk netChunk = ((InternalChunk) this.chunk).getView();
-				if (netChunk != null)
-					netChunk.getListener().clearChanges();
+				if (((InternalChunk) this.chunk).isViewAvailable())
+					((InternalChunk) this.chunk).getView().getListener().clearChanges();
 			} catch (Exception e) {
 				AntiXray.LOGGER.error("Failed to clear changes of a network chunk", e);
 			}

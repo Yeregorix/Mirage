@@ -24,16 +24,20 @@
 
 package net.smoofyuniverse.antixray.mixin;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Optional;
 
 @Mixin(World.class)
@@ -41,6 +45,9 @@ public abstract class MixinWorld implements InternalWorld {
 	@Shadow
 	protected IChunkProvider chunkProvider;
 
+	@Shadow
+	@Final
+	public boolean isRemote;
 	private NetworkWorld networkWorld = new NetworkWorld(this);
 
 	@Override
@@ -88,7 +95,11 @@ public abstract class MixinWorld implements InternalWorld {
 		return getChunkStorage(x >> 4, 0, z >> 4);
 	}
 
-
-
-
+	@SuppressWarnings("unchecked")
+	@Override
+	public Collection<InternalChunk> getLoadedChunkStorages() {
+		if (this.isRemote)
+			return ImmutableList.of();
+		return ImmutableList.copyOf((Collection) ((ChunkProviderServer) this.chunkProvider).getLoadedChunks());
+	}
 }
