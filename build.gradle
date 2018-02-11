@@ -41,7 +41,7 @@ buildscript {
 
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
-        classpath 'org.spongepowered:mixingradle:0.4+'
+        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
         classpath "gradle.plugin.com.qixalite:SpongeStart:1.6.2"
     }
 }
@@ -53,7 +53,7 @@ apply plugin: "com.qixalite.spongestart"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-spongestart{
+spongestart {
     eula true
     minecraft '1.12.2'
     type 'stable'
