@@ -48,6 +48,14 @@ import org.spongepowered.api.world.extent.MutableBlockVolume;
 import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
+import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
+import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
+import org.spongepowered.common.world.extent.ExtentBufferUtil;
+import org.spongepowered.common.world.extent.MutableBlockViewDownsize;
+import org.spongepowered.common.world.extent.MutableBlockViewTransform;
+import org.spongepowered.common.world.extent.UnmodifiableBlockVolumeWrapper;
+import org.spongepowered.common.world.extent.worker.SpongeMutableBlockVolumeWorker;
+import org.spongepowered.common.world.schematic.GlobalPalette;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -237,17 +245,23 @@ public class NetworkChunk implements ChunkView {
 
 	@Override
 	public UnmodifiableBlockVolume getUnmodifiableBlockView() {
-		throw new UnsupportedOperationException();
+		return new UnmodifiableBlockVolumeWrapper(this);
 	}
 
 	@Override
 	public MutableBlockVolume getBlockCopy(StorageType type) {
-		throw new UnsupportedOperationException();
+		switch (type) {
+			case STANDARD:
+				return new ArrayMutableBlockBuffer(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
+			case THREAD_SAFE:
+			default:
+				throw new UnsupportedOperationException(type.name());
+		}
 	}
 
 	@Override
 	public ImmutableBlockVolume getImmutableBlockCopy() {
-		throw new UnsupportedOperationException();
+		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
 	}
 
 	private void checkBounds(int x, int y, int z) {
@@ -271,17 +285,17 @@ public class NetworkChunk implements ChunkView {
 
 	@Override
 	public MutableBlockVolume getBlockView(Vector3i newMin, Vector3i newMax) {
-		throw new UnsupportedOperationException();
+		return new MutableBlockViewDownsize(this, newMin, newMax);
 	}
 
 	@Override
 	public MutableBlockVolume getBlockView(DiscreteTransform3 transform) {
-		throw new UnsupportedOperationException();
+		return new MutableBlockViewTransform(this, transform);
 	}
 
 	@Override
 	public MutableBlockVolumeWorker<? extends MutableBlockVolume> getBlockWorker() {
-		throw new UnsupportedOperationException();
+		return new SpongeMutableBlockVolumeWorker<>(this);
 	}
 
 	public ChunkChangeListener getListener() {
