@@ -33,22 +33,21 @@ buildscript {
             name = 'sponge'
             url = 'http://repo.spongepowered.org/maven'
         }
-        maven {
-            name = 'gradle'
-            url = 'https://plugins.gradle.org/m2/'
-        }
     }
 
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
         classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
-        classpath "gradle.plugin.com.qixalite:SpongeStart:1.6.2"
     }
+}
+
+plugins {
+    id 'java'
+    id 'com.qixalite.spongestart' version '1.6.2'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
-apply plugin: "com.qixalite.spongestart"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -93,10 +92,6 @@ repositories {
 
 dependencies {
     compile 'org.spongepowered:spongecommon:7.1.0-SNAPSHOT:dev'
-    compile('org.spongepowered:mixin:0.7.4-SNAPSHOT') {
-        exclude module: 'launchwrapper'
-        exclude module: 'guava'
-    }
 }
 
 task updatePlugin <<{
