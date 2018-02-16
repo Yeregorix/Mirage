@@ -24,9 +24,11 @@
 
 package net.smoofyuniverse.antixray.event;
 
+import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -34,10 +36,15 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.filter.type.Exclude;
+import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class WorldEventListener {
 
@@ -55,6 +62,7 @@ public class WorldEventListener {
 		((InternalWorld) e.getTargetWorld()).getView().getLoadedChunkViews().forEach(NetworkChunk::saveToCacheLater);
 	}
 
+	@Exclude(ChangeBlockEvent.Post.class)
 	@Listener(order = Order.POST)
 	public void onBlockChange(ChangeBlockEvent e) {
 		boolean player = e.getCause().containsType(Player.class);
@@ -62,6 +70,28 @@ public class WorldEventListener {
 			if (t.isValid())
 				t.getOriginal().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, player));
 		}
+	}
+
+	@Listener(order = Order.POST)
+	public void onExplosionDetonate(ExplosionEvent.Detonate e) {
+		Set<Vector3i> blocks = new HashSet<>();
+
+		for (Location<World> loc : e.getAffectedLocations()) {
+			Vector3i pos = loc.getBlockPosition();
+			blocks.add(pos.add(1, 0, 0));
+			blocks.add(pos.add(-1, 0, 0));
+			blocks.add(pos.add(0, 1, 0));
+			blocks.add(pos.add(0, -1, 0));
+			blocks.add(pos.add(0, 0, 1));
+			blocks.add(pos.add(0, 0, -1));
+		}
+
+		for (Location<World> loc : e.getAffectedLocations())
+			blocks.remove(loc.getBlockPosition());
+
+		NetworkWorld netWorld = ((InternalWorld) e.getTargetWorld()).getView();
+		for (Vector3i pos : blocks)
+			netWorld.deobfuscate(pos);
 	}
 
 	@Listener(order = Order.POST)
