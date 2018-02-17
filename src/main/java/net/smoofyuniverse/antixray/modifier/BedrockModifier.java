@@ -29,6 +29,7 @@ import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.volume.BlockView;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.util.ModifierUtil;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -81,8 +82,7 @@ public class BedrockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public void modify(ChunkView view, Random r, Object config) {
-		Vector3i min = view.getBlockMin(), max = view.getMutableMax();
+	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
 
 		int height = Math.min(max.getY(), cfg.height);

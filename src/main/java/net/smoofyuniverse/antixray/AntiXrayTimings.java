@@ -31,6 +31,7 @@ public class AntiXrayTimings {
 	public static final Timing OBFUSCATION = Timings.of(AntiXray.get(), "Obfuscation");
 	public static final Timing PREOBFUSCATION = Timings.of(AntiXray.get(), "Preobfuscation");
 	public static final Timing DEOBFUSCATION = Timings.of(AntiXray.get(), "Deobfuscation");
+	public static final Timing REOBFUSCATION = Timings.of(AntiXray.get(), "Reobfuscation");
 	public static final Timing SENDING_CHANGES = Timings.of(AntiXray.get(), "Sending Changes");
 	public static final Timing WRITING_CACHE = Timings.of(AntiXray.get(), "Writing Cache");
 	public static final Timing READING_CACHE = Timings.of(AntiXray.get(), "Reading Cache");

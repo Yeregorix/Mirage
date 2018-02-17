@@ -24,6 +24,7 @@
 
 package net.smoofyuniverse.antixray.impl.network;
 
+import co.aikar.timings.Timing;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -73,11 +74,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -93,6 +91,8 @@ public class NetworkWorld implements WorldView {
 	private Signature signature;
 	private InternalWorld world;
 	private boolean enabled;
+
+	private Random random = new Random();
 
 	public NetworkWorld(InternalWorld w) {
 		this.world = w;
@@ -355,17 +355,43 @@ public class NetworkWorld implements WorldView {
 			return;
 
 		int r = player ? this.config.deobf.playerRadius : this.config.deobf.naturalRadius;
+		deobfuscate(x - r, Math.max(y - r, 0), z - r, x + r, Math.min(y + r, 255), z + r);
+	}
 
-		for (int dy = -r; dy <= r; dy++) {
-			int cy = y + dy;
-			if (cy < 0 || cy >= 256)
-				continue;
-
-			for (int dx = -r; dx <= r; dx++) {
-				for (int dz = -r; dz <= r; dz++)
-					deobfuscate(x + dx, cy, z + dz);
+	private void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		for (int x = minX; x <= maxX; x++) {
+			for (int y = minY; y <= maxY; y++) {
+				for (int z = minZ; z <= maxZ; z++)
+					deobfuscate(x, y, z);
 			}
 		}
+	}
+
+	@Override
+	public void reobfuscateSurrounding(int x, int y, int z, boolean player) {
+		if (!this.enabled)
+			return;
+
+		int r = player ? this.config.deobf.playerRadius : this.config.deobf.naturalRadius;
+		Vector3i min = new Vector3i(x - r, Math.max(y - r, 0), z - r), max = new Vector3i(x + r, Math.min(y + r, 255), z + r);
+		deobfuscate(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
+
+		AntiXrayTimings.REOBFUSCATION.startTiming();
+
+		for (Entry<ChunkModifier, Object> e : getModifiers().entrySet()) {
+			ChunkModifier mod = e.getKey();
+			Timing timing = mod.getTiming();
+
+			timing.startTiming();
+			try {
+				mod.modify(this, min, max, this.random, e.getValue());
+			} catch (Exception ex) {
+				AntiXray.LOGGER.error("Modifier " + mod.getId() + " has thrown an exception while (re)modifying a part of a network world", ex);
+			}
+			timing.stopTiming();
+		}
+
+		AntiXrayTimings.REOBFUSCATION.stopTiming();
 	}
 
 	public boolean isChunkLoaded(int x, int z) {

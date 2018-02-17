@@ -35,7 +35,6 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.filter.type.Exclude;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
@@ -66,9 +65,17 @@ public class WorldEventListener {
 	@Listener(order = Order.POST)
 	public void onBlockChange(ChangeBlockEvent e) {
 		boolean player = e.getCause().containsType(Player.class);
-		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
-			if (t.isValid())
-				t.getOriginal().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, player));
+
+		if (e instanceof ChangeBlockEvent.Place) {
+			for (Transaction<BlockSnapshot> t : e.getTransactions()) {
+				if (t.isValid())
+					t.getOriginal().getLocation().ifPresent(loc -> reobfuscateSurrounding(loc, player));
+			}
+		} else {
+			for (Transaction<BlockSnapshot> t : e.getTransactions()) {
+				if (t.isValid())
+					t.getOriginal().getLocation().ifPresent(loc -> deobfuscateSurrounding(loc, player));
+			}
 		}
 	}
 
@@ -94,13 +101,11 @@ public class WorldEventListener {
 			netWorld.deobfuscate(pos);
 	}
 
-	@Listener(order = Order.POST)
-	public void onBlockInteract(InteractBlockEvent e) {
-		if (e.getCause().containsType(Player.class))
-			e.getTargetBlock().getLocation().ifPresent(loc -> updateSurroundingBlocks(loc, true));
+	private static void reobfuscateSurrounding(Location<World> loc, boolean player) {
+		((InternalWorld) loc.getExtent()).getView().reobfuscateSurrounding(loc.getBlockPosition(), player);
 	}
 
-	private static void updateSurroundingBlocks(Location<World> loc, boolean player) {
+	private static void deobfuscateSurrounding(Location<World> loc, boolean player) {
 		((InternalWorld) loc.getExtent()).getView().deobfuscateSurrounding(loc.getBlockPosition(), player);
 	}
 }

@@ -24,9 +24,11 @@
 
 package net.smoofyuniverse.antixray.modifier;
 
+import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.volume.BlockView;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import ninja.leaping.configurate.ConfigurationNode;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -61,5 +63,5 @@ public class EmptyModifier extends ChunkModifier {
 	}
 
 	@Override
-	public void modify(ChunkView view, Random r, Object config) {}
+	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {}
 }

@@ -26,7 +26,9 @@ package net.smoofyuniverse.antixray.api.modifier;
 
 import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
+import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.api.cache.Signature;
+import net.smoofyuniverse.antixray.api.volume.BlockView;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -122,5 +124,18 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param view The ChunkView to modify
 	 * @param r The Random object that should be used by the modifier
 	 */
-	public abstract void modify(ChunkView view, Random r, Object config);
+	public void modify(ChunkView view, Random r, Object config) {
+		modify(view, view.getBlockMin(), view.getMutableMax(), r, config);
+	}
+
+	/**
+	 * Modifies the BlockView that will be send to players.
+	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
+	 *
+	 * @param view The BlockView to modify
+	 * @param min  The lowest block location to modify
+	 * @param max  The highest block location to modify
+	 * @param r    The Random object that should be used by the modifier
+	 */
+	public abstract void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config);
 }

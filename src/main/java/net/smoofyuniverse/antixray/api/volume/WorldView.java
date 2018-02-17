@@ -164,4 +164,24 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @param player Whether the player deobfuscation radius should be used instead of the natural radius
 	 */
 	void deobfuscateSurrounding(int x, int y, int z, boolean player);
+
+	/**
+	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param pos    The position
+	 * @param player Whether the player reobfuscation radius should be used instead of the natural radius
+	 */
+	default void reobfuscateSurrounding(Vector3i pos, boolean player) {
+		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
+	}
+
+	/**
+	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param x      The X position
+	 * @param y      The Y position
+	 * @param z      The Z position
+	 * @param player Whether the player reobfuscation radius should be used instead of the natural radius
+	 */
+	void reobfuscateSurrounding(int x, int y, int z, boolean player);
 }
