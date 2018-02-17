@@ -42,7 +42,8 @@ import org.spongepowered.api.block.BlockState;
 
 public class ChunkChangeListener {
 	private Short2ObjectMap<IBlockState> changesMap = new Short2ObjectOpenHashMap<>(64);
-	private int changedSections, changes;
+	private int changedSections;
+	private boolean capacityExceeded;
 
 	private PlayerChunkMap playerChunkMap;
 	private Chunk chunk;
@@ -53,23 +54,27 @@ public class ChunkChangeListener {
 	}
 
 	public void addChange(int x, int y, int z, BlockState newBlock) {
-		this.changes++;
-		if (this.changes == 64)
-			this.changesMap.clear();
-		if (this.changes < 64)
-			this.changesMap.put((short) (x << 12 | z << 8 | y), (IBlockState) newBlock);
+		if (!this.capacityExceeded) {
+			if (this.changesMap.size() == 64) {
+				this.changesMap.clear();
+				this.capacityExceeded = true;
+			} else
+				this.changesMap.put((short) (x << 12 | z << 8 | y), (IBlockState) newBlock);
+		}
 		this.changedSections |= 1 << (y >> 4);
 	}
 
 	public void sendChanges() {
-		if (this.changes == 0)
+		if (!this.capacityExceeded && this.changesMap.isEmpty())
 			return;
 
 		PlayerChunkMapEntry entry = getEntry();
 		if (entry != null && entry.isSentToPlayers()) {
 			AntiXrayTimings.SENDING_CHANGES.startTiming();
 
-			if (this.changes == 1) {
+			if (this.capacityExceeded) {
+				entry.sendPacket(new SPacketChunkData(this.chunk, this.changedSections));
+			} else if (this.changesMap.size() == 1) {
 				SPacketBlockChange packet = new SPacketBlockChange();
 				Entry<IBlockState> e = this.changesMap.short2ObjectEntrySet().iterator().next();
 				short pos = e.getShortKey();
@@ -77,17 +82,15 @@ public class ChunkChangeListener {
 				packet.blockPosition = new BlockPos((pos >> 12 & 15) + this.chunk.x * 16, pos & 255, (pos >> 8 & 15) + this.chunk.z * 16);
 				packet.blockState = e.getValue();
 				entry.sendPacket(packet);
-			} else if (this.changes < 64) {
+			} else {
 				SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
 				packet.chunkPos = chunk.getPos();
-				BlockUpdateData[] datas = new BlockUpdateData[this.changes];
+				BlockUpdateData[] datas = new BlockUpdateData[this.changesMap.size()];
 				int i = 0;
 				for (Entry<IBlockState> e : this.changesMap.short2ObjectEntrySet())
 					datas[i++] = packet.new BlockUpdateData(e.getShortKey(), e.getValue());
 				packet.changedBlocks = datas;
 				entry.sendPacket(packet);
-			} else {
-				entry.sendPacket(new SPacketChunkData(this.chunk, this.changedSections));
 			}
 
 			AntiXrayTimings.SENDING_CHANGES.stopTiming();
@@ -101,9 +104,9 @@ public class ChunkChangeListener {
 	}
 
 	public void clearChanges() {
-		this.changes = 0;
 		this.changesMap.clear();
 		this.changedSections = 0;
+		this.capacityExceeded = false;
 	}
 
 	public boolean isChunkSent() {
