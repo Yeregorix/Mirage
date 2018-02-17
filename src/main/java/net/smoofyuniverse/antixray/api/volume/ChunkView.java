@@ -61,18 +61,21 @@ public interface ChunkView extends BlockView {
 
 	/**
 	 * Gets the world the chunk is in.
+	 *
 	 * @return The world
 	 */
 	WorldView getWorld();
 
 	/**
 	 * Gets the position of the chunk.
+	 *
 	 * @return The position
 	 */
 	Vector3i getPosition();
 
 	/**
 	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}.
+	 *
 	 * @return Whether neighbor chunks are loaded
 	 */
 	boolean areNeighborsLoaded();

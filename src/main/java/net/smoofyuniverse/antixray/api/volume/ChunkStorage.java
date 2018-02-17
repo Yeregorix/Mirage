@@ -67,18 +67,21 @@ public interface ChunkStorage extends BlockStorage {
 
 	/**
 	 * Gets the world the chunk is in.
+	 *
 	 * @return The world
 	 */
 	WorldStorage getWorld();
 
 	/**
 	 * Gets the position of the chunk.
+	 *
 	 * @return The position
 	 */
 	Vector3i getPosition();
 
 	/**
 	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockStorage#isExposed(int, int, int)}.
+	 *
 	 * @return Whether neighbor chunks are loaded
 	 */
 	boolean areNeighborsLoaded();

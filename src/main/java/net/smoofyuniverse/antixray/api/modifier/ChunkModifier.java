@@ -105,6 +105,7 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
 	 * A different signature from the cached one will cause the cached object to be invalidated.
+	 *
 	 * @param builder The signature builder
 	 * @param config Your config object
 	 */
@@ -113,6 +114,7 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * A fast method to check whether this modifier is ready to modify a chunk.
 	 * Some modifiers might need to check whether neighboring chunks are loaded.
+	 *
 	 * @param view The ChunkView to modify
 	 * @return true if this modifier is ready to modify the chunk
 	 */
@@ -121,6 +123,7 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * Modifies the ChunkView that will be send to players.
 	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
+	 *
 	 * @param view The ChunkView to modify
 	 * @param r The Random object that should be used by the modifier
 	 */
