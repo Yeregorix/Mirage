@@ -27,7 +27,7 @@ package net.smoofyuniverse.antixray;
 import com.google.inject.Inject;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
-import net.smoofyuniverse.antixray.bstats.Metrics;
+import net.smoofyuniverse.antixray.bstats.MetricsLite;
 import net.smoofyuniverse.antixray.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
@@ -74,7 +74,7 @@ public class AntiXray {
 	private PluginContainer container;
 
 	@Inject
-	private Metrics metrics;
+	private MetricsLite metrics;
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
