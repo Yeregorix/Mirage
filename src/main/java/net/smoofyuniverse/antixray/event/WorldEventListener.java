@@ -49,10 +49,12 @@ public class WorldEventListener {
 
 	@Listener(order = Order.POST)
 	public void onWorldLoad(LoadWorldEvent e) {
+		World world = e.getTargetWorld();
+		AntiXray.LOGGER.info("Loading configuration for world " + world.getName() + " ..");
 		try {
-			((InternalWorld) e.getTargetWorld()).getView().loadConfig();
+			((InternalWorld) world).getView().loadConfig();
 		} catch (Exception ex) {
-			AntiXray.LOGGER.error("Failed to load world " + e.getTargetWorld().getName() + "'s configuration", ex);
+			AntiXray.LOGGER.error("Failed to load configuration for world " + world.getName(), ex);
 		}
 	}
 

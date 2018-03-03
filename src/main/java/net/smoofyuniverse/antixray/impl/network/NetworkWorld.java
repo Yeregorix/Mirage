@@ -102,10 +102,7 @@ public class NetworkWorld implements WorldView {
 		if (this.config != null)
 			throw new IllegalStateException("Config already loaded");
 
-		String name = getName();
-		AntiXray.LOGGER.info("Loading configuration for world " + name + " ..");
-
-		Path file = AntiXray.get().getWorldConfigsDirectory().resolve(name + ".conf");
+		Path file = AntiXray.get().getWorldConfigsDirectory().resolve(getName() + ".conf");
 		ConfigurationLoader<CommentedConfigurationNode> loader = AntiXray.get().createConfigLoader(file);
 
 		WorldProperties properties = getProperties();
