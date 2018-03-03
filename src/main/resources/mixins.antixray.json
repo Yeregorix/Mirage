@@ -6,11 +6,13 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "mixins.antixray.refmap.json",
   "server": [
+    "packet.MixinBlockUpdateData",
+    "packet.MixinSPacketBlockChange",
+    "packet.MixinSPacketChunkData",
     "MixinAnvilChunkLoader",
     "MixinBlockStateContainer",
     "MixinChunk",
     "MixinExtendedBlockStorage",
-    "MixinPacketChunkData",
     "MixinPlayerChunkMapEntry",
     "MixinStateImplementation",
     "MixinWorld"

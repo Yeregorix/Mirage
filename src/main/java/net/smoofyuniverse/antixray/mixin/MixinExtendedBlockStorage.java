@@ -42,6 +42,6 @@ public class MixinExtendedBlockStorage {
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	public void onInit(int y, boolean storeSkylight, CallbackInfo ci) {
-		((InternalBlockContainer) this.data).setY(y);
+		((InternalBlockContainer) this.data).getNetworkBlockContainer().setY(y);
 	}
 }

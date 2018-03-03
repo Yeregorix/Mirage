@@ -24,45 +24,64 @@
 
 package net.smoofyuniverse.antixray.mixin;
 
-import net.minecraft.network.Packet;
-import net.minecraft.network.play.server.SPacketChunkData;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.server.management.PlayerChunkMapEntry;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
-import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
+import net.smoofyuniverse.antixray.impl.network.ChunkChangeListener;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerChunkMapEntry.class)
-public class MixinPlayerChunkMapEntry {
+public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 
 	@Shadow
 	private Chunk chunk;
 
+	@Shadow
+	private int changes;
+
+	@Shadow
+	private int changedSectionFilter;
+
 	@Inject(method = "sendToPlayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/play/server/SPacketChunkData;<init>(Lnet/minecraft/world/chunk/Chunk;I)V", shift = Shift.AFTER))
 	public void onSendToPlayers(CallbackInfoReturnable<Boolean> ci) {
-		clearChanges();
+		if (this.chunk != null && ((InternalChunk) this.chunk).isViewAvailable())
+			((InternalChunk) this.chunk).getView().setListener(this);
 	}
 
-	private void clearChanges() {
-		if (this.chunk != null) {
-			try {
-				if (((InternalChunk) this.chunk).isViewAvailable())
-					((InternalChunk) this.chunk).getView().getListener().clearChanges();
-			} catch (Exception e) {
-				AntiXray.LOGGER.error("Failed to clear changes of a network chunk", e);
-			}
-		}
+	@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/WorldServer;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/state/IBlockState;"), require = 2)
+	public IBlockState onGetBlockState(WorldServer world, BlockPos pos) {
+		return (IBlockState) ((InternalWorld) world).getView().getBlock(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	@Inject(method = "sendPacket", at = @At("HEAD"))
-	public void onSendPacket(Packet<?> packet, CallbackInfo ci) {
-		if (packet instanceof SPacketChunkData && ((SPacketChunkData) packet).isFullChunk())
-			clearChanges();
+	@Override
+	public void addChange(int x, int y, int z) {
+		blockChanged(x, y, z);
+	}
+
+	@Shadow
+	public abstract void blockChanged(int x, int y, int z);
+
+	@Override
+	public void sendChanges() {
+		update();
+	}
+
+	@Shadow
+	public abstract void update();
+
+	@Override
+	public void clearChanges() {
+		this.changes = 0;
+		this.changedSectionFilter = 0;
 	}
 }

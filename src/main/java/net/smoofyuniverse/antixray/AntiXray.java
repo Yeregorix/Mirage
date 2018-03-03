@@ -112,7 +112,6 @@ public class AntiXray {
 					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
 						if (chunk.getState() == State.NEED_REOBFUSCATION)
 							chunk.obfuscate();
-						chunk.getListener().sendChanges();
 					}
 				}
 			}).intervalTicks(1).submit(this);

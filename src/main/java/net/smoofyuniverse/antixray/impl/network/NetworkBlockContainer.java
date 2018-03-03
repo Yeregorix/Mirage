@@ -33,7 +33,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.*;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
-import org.spongepowered.api.block.BlockState;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -63,7 +62,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
 			if (fakeBlock != realBlock) {
 				set(i, realBlock);
-				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, (BlockState) realBlock);
+				if (listener != null)
+					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
 			}
 		}
 	}
@@ -78,7 +78,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
 		if (fakeBlock != realBlock) {
 			set(i, realBlock);
-			listener.addChange(x, this.y + y, z, (BlockState) realBlock);
+			if (listener != null)
+				listener.addChange(x, this.y + y, z);
 			return true;
 		}
 		return false;
@@ -97,7 +98,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			IBlockState block = this.container.get(i);
 			if (ores.contains(block)) {
 				set(i, ground);
-				listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15, (BlockState) ground);
+				if (listener != null)
+					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
 			}
 		}
 	}

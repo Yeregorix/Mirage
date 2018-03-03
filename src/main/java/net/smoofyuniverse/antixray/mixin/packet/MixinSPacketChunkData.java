@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.mixin;
+package net.smoofyuniverse.antixray.mixin.packet;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.SPacketChunkData;
@@ -37,7 +37,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SPacketChunkData.class)
-public abstract class MixinPacketChunkData {
+public abstract class MixinSPacketChunkData {
 
 	@Inject(method = "calculateChunkSize", at = @At("HEAD"))
 	public void onCalculateChunkSize(Chunk chunk, boolean skyLight, int sections, CallbackInfoReturnable<Integer> ci) {
@@ -47,11 +47,11 @@ public abstract class MixinPacketChunkData {
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
 	public void writeModified(BlockStateContainer container, PacketBuffer buffer) {
-		((InternalBlockContainer) container).writeModified(buffer);
+		((InternalBlockContainer) container).getNetworkBlockContainer().write(buffer);
 	}
 
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
 	public int calculateModifiedSize(BlockStateContainer container) {
-		return ((InternalBlockContainer) container).getModifiedSize();
+		return ((InternalBlockContainer) container).getNetworkBlockContainer().getSerializedSize();
 	}
 }

@@ -60,6 +60,7 @@ import org.spongepowered.common.world.schematic.GlobalPalette;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -82,7 +83,6 @@ public class NetworkChunk implements ChunkView {
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
 		this.world = world;
-		this.listener = new ChunkChangeListener((Chunk) this.chunk);
 		Vector3i pos = getPosition();
 		this.x = pos.getX();
 		this.z = pos.getZ();
@@ -127,6 +127,14 @@ public class NetworkChunk implements ChunkView {
 		}
 		this.containers = containers;
 		this.mutableMax = new Vector3i(15, maxY, 15);
+	}
+
+	public Optional<ChunkChangeListener> getListener() {
+		return Optional.ofNullable(this.listener);
+	}
+
+	public void setListener(ChunkChangeListener listener) {
+		this.listener = listener;
 	}
 
 	public State getState() {
@@ -275,10 +283,11 @@ public class NetworkChunk implements ChunkView {
 
 		NetworkBlockContainer container = this.containers[y >> 4];
 		if (container == null)
-			return false; // AntiXray is designed to replace already existing blocks, not to create new ones
+			return false; // AntiXray is currently designed to replace already existing blocks, not to create new ones
 
 		container.set(x, y & 15, z, (IBlockState) block);
-		this.listener.addChange(x, y, z, block);
+		if (this.listener != null)
+			this.listener.addChange(x, y, z);
 		this.saved = false;
 		return true;
 	}
@@ -296,10 +305,6 @@ public class NetworkChunk implements ChunkView {
 	@Override
 	public MutableBlockVolumeWorker<? extends MutableBlockVolume> getBlockWorker() {
 		return new SpongeMutableBlockVolumeWorker<>(this);
-	}
-
-	public ChunkChangeListener getListener() {
-		return this.listener;
 	}
 
 	@Override

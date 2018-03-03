@@ -25,7 +25,6 @@
 package net.smoofyuniverse.antixray.mixin;
 
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.BlockStateContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.network.NetworkBlockContainer;
@@ -39,21 +38,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinBlockStateContainer implements InternalBlockContainer {
 	private NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
 	private NetworkChunk chunk;
-
-	@Override
-	public int getModifiedSize() {
-		return this.networkContainer.getSerializedSize();
-	}
-
-	@Override
-	public void writeModified(PacketBuffer buf) {
-		this.networkContainer.write(buf);
-	}
-
-	@Override
-	public void setY(int y) {
-		this.networkContainer.setY(y);
-	}
 
 	@Override
 	public void setNetworkChunk(NetworkChunk chunk) {
