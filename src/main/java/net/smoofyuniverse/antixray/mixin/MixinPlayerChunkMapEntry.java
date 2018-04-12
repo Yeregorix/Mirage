@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -60,7 +58,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 
 	@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/WorldServer;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/state/IBlockState;"), require = 2)
 	public IBlockState onGetBlockState(WorldServer world, BlockPos pos) {
-		return (IBlockState) ((InternalWorld) world).getView().getBlock(pos.getX(), pos.getY(), pos.getZ());
+		return (IBlockState) ((InternalWorld) world).getApplicable().getBlock(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	@Override

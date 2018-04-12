@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -124,8 +122,10 @@ public class AntiXray {
 
 	@Listener
 	public void onServerStopping(GameStoppingServerEvent e) {
-		if (this.updateTask != null)
+		if (this.updateTask != null) {
 			this.updateTask.cancel();
+			this.updateTask = null;
+		}
 	}
 
 	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {

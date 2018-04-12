@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,11 +24,14 @@ package net.smoofyuniverse.antixray.impl.internal;
 
 import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import org.spongepowered.api.world.extent.BlockVolume;
 
 public interface InternalChunk extends ChunkStorage {
 
 	@Override
 	NetworkChunk getView();
+
+	BlockVolume getApplicable();
 
 	@Override
 	InternalWorld getWorld();
