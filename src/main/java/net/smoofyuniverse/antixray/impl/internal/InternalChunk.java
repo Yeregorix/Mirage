@@ -24,14 +24,11 @@ package net.smoofyuniverse.antixray.impl.internal;
 
 import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
-import org.spongepowered.api.world.extent.BlockVolume;
 
 public interface InternalChunk extends ChunkStorage {
 
 	@Override
 	NetworkChunk getView();
-
-	BlockVolume getApplicable();
 
 	@Override
 	InternalWorld getWorld();

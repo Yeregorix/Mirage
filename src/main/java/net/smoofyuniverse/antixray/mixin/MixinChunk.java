@@ -36,7 +36,6 @@ import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
-import org.spongepowered.api.world.extent.BlockVolume;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -85,11 +84,6 @@ public abstract class MixinChunk implements InternalChunk {
 		if (this.netChunk == null)
 			throw new IllegalStateException("NetworkChunk not available");
 		return this.netChunk;
-	}
-
-	@Override
-	public BlockVolume getApplicable() {
-		return this.netChunk == null ? this : this.netChunk;
 	}
 
 	@Override

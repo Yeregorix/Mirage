@@ -24,18 +24,32 @@ package net.smoofyuniverse.antixray.mixin.packet;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.network.play.server.SPacketMultiBlockChange;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.play.server.SPacketMultiBlockChange.BlockUpdateData;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(SPacketMultiBlockChange.BlockUpdateData.class)
-public class MixinBlockUpdateData {
+@Mixin(SPacketMultiBlockChange.class)
+public class MixinSPacketMultiBlockChange {
+	@Shadow
+	public BlockUpdateData[] changedBlocks;
 
-	@Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/state/IBlockState;"), require = 0)
-	public IBlockState onGetBlockState(Chunk chunk, BlockPos pos) {
-		return (IBlockState) ((InternalChunk) chunk).getApplicable().getBlock(pos.getX(), pos.getY(), pos.getZ());
+	@Inject(method = "<init>(I[SLnet/minecraft/world/chunk/Chunk;)V", at = @At("RETURN"))
+	public void onInit(int changes, short[] offsets, Chunk chunk, CallbackInfo ci) {
+		if (((InternalChunk) chunk).isViewAvailable()) {
+			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
+			SPacketMultiBlockChange thisPacket = (SPacketMultiBlockChange) (Object) this;
+
+			for (int i = 0; i < this.changedBlocks.length; i++) {
+				short offset = offsets[i];
+				this.changedBlocks[i] = thisPacket.new BlockUpdateData(offset,
+						(IBlockState) netChunk.getBlock(offset >> 12 & 15, offset & 255, offset >> 8 & 15));
+			}
+		}
 	}
 }
