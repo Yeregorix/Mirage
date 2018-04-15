@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -177,7 +175,7 @@ public class NetworkChunk implements ChunkView {
 				list.add(data);
 			}
 		}
-		out.setContainers(list.toArray(new BlockContainerSnapshot[list.size()]));
+		out.setContainers(list.toArray(new BlockContainerSnapshot[0]));
 		out.setDate(System.currentTimeMillis());
 		return out;
 	}

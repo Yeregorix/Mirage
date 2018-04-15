@@ -30,10 +30,10 @@ import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.ChunkChangeListener;
+import org.spongepowered.asm.lib.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -50,9 +50,9 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 	@Shadow
 	private int changedSectionFilter;
 
-	@Inject(method = "sendToPlayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/play/server/SPacketChunkData;<init>(Lnet/minecraft/world/chunk/Chunk;I)V", shift = Shift.AFTER))
+	@Inject(method = "sendToPlayers", at = @At(value = "FIELD", target = "Lnet/minecraft/server/management/PlayerChunkMapEntry;sentToPlayers:Z", opcode = Opcodes.PUTFIELD))
 	public void onSendToPlayers(CallbackInfoReturnable<Boolean> ci) {
-		if (this.chunk != null && ((InternalChunk) this.chunk).isViewAvailable())
+		if (((InternalChunk) this.chunk).isViewAvailable())
 			((InternalChunk) this.chunk).getView().setListener(this);
 	}
 
