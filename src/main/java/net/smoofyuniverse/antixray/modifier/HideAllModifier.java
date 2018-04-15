@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -59,7 +57,7 @@ public class HideAllModifier extends ChunkModifier {
 	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
 		if (cfg.blocks == null)
-			cfg.blocks = ModifierUtil.getCommonOres(world.getDimensionType());
+			cfg.blocks = ModifierUtil.getCommonResources(world.getDimensionType());
 		if (cfg.replacement == null)
 			cfg.replacement = ModifierUtil.getCommonGround(world.getDimensionType());
 		node.setValue(Config.TOKEN, cfg);

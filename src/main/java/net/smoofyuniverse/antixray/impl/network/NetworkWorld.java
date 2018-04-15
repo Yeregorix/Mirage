@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -120,7 +118,7 @@ public class NetworkWorld implements WorldView {
 		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN, new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END));
 
 		if (cfg.preobf.blocks == null)
-			cfg.preobf.blocks = ModifierUtil.getCommonOres(dimType);
+			cfg.preobf.blocks = ModifierUtil.getCommonResources(dimType);
 		if (cfg.preobf.replacement == null)
 			cfg.preobf.replacement = ModifierUtil.getCommonGround(dimType);
 

@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,9 +30,12 @@ import org.spongepowered.api.world.DimensionTypes;
 
 public class ModifierUtil {
 
-	public static BlockSet getCommonOres(DimensionType dimType) {
+	public static BlockSet getCommonResources(DimensionType dimType) {
 		BlockSet set = new BlockSet();
 		if (dimType == DimensionTypes.NETHER) {
+			set.add(BlockTypes.LAVA);
+			set.add(BlockTypes.MAGMA);
+			set.add(BlockTypes.GLOWSTONE);
 			set.add(BlockTypes.QUARTZ_ORE);
 		} else if (dimType == DimensionTypes.OVERWORLD) {
 			set.add(BlockTypes.REDSTONE_ORE);
