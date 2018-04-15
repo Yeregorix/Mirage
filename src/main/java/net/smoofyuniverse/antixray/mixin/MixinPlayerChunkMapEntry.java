@@ -23,11 +23,13 @@
 package net.smoofyuniverse.antixray.mixin;
 
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.network.play.server.SPacketMultiBlockChange;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
+import net.smoofyuniverse.antixray.impl.internal.InternalMultiBlockChange;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.ChunkChangeListener;
 import org.spongepowered.asm.lib.Opcodes;
@@ -60,6 +62,13 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 	@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/WorldServer;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/state/IBlockState;"), require = 2)
 	public IBlockState onGetBlockState(WorldServer world, BlockPos pos) {
 		return (IBlockState) ((InternalWorld) world).getApplicable().getBlock(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	@Redirect(method = "update", at = @At(value = "NEW", target = "net/minecraft/network/play/server/SPacketMultiBlockChange"))
+	public SPacketMultiBlockChange newSPacketMultiBlockChange(int changes, short[] changedBlocks, Chunk chunk) {
+		SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
+		((InternalMultiBlockChange) packet).fastInit(changes, changedBlocks, chunk);
+		return packet;
 	}
 
 	@Override
