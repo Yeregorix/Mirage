@@ -119,6 +119,29 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
+	// Waiting on a Mixin issue
+/*	@Inject(method = "setBlockState", at = @At("RETURN"))
+	public void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> ci) {
+		bindContainer(pos.getY() >> 4);
+	} */
+
+	@Inject(method = "setLightFor", at = @At("RETURN"))
+	public void onSetLightFor(EnumSkyBlock type, BlockPos pos, int value, CallbackInfo ci) {
+		bindContainer(pos.getY() >> 4);
+	}
+
+	@Override
+	public void bindContainer(int index) {
+		if (this.netChunk != null) {
+			ExtendedBlockStorage storage = this.storageArrays[index];
+			if (storage != null && !this.netChunk.hasContainer(index)) {
+				this.netChunk.setContainer(index, storage);
+				if (!storage.isEmpty())
+					this.netChunk.setSaved(false);
+			}
+		}
+	}
+
 	@Override
 	public boolean isExposed(int x, int y, int z) {
 		if (!containsBlock(x, y, z))

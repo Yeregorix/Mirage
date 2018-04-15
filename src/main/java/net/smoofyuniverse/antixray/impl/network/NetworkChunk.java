@@ -127,6 +127,28 @@ public class NetworkChunk implements ChunkView {
 		this.mutableMax = new Vector3i(15, maxY, 15);
 	}
 
+	public void setContainer(int index, ExtendedBlockStorage s) {
+		setContainer(index, ((InternalBlockContainer) s.getData()).getNetworkBlockContainer());
+	}
+
+	public void setContainer(int index, NetworkBlockContainer c) {
+		if (this.containers == null || this.containers[index] != null)
+			throw new UnsupportedOperationException();
+
+		if (c != null) {
+			c.getInternalBlockContainer().setNetworkChunk(this);
+			this.containers[index] = c;
+
+			int y = c.getY() + 15;
+			if (this.mutableMax.getY() < y)
+				this.mutableMax = new Vector3i(15, y, 15);
+		}
+	}
+
+	public boolean hasContainer(int index) {
+		return this.containers != null && this.containers[index] != null;
+	}
+
 	public Optional<ChunkChangeListener> getListener() {
 		return Optional.ofNullable(this.listener);
 	}

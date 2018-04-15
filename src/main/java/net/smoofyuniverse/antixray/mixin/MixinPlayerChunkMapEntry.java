@@ -36,6 +36,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerChunkMapEntry.class)
@@ -64,6 +65,12 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 	@Override
 	public void addChange(int x, int y, int z) {
 		blockChanged(x, y, z);
+	}
+
+	// Temp fix
+	@Inject(method = "blockChanged", at = @At("HEAD"))
+	public void onBlockChanged(int x, int y, int z, CallbackInfo ci) {
+		((InternalChunk) this.chunk).bindContainer(y >> 4);
 	}
 
 	@Shadow

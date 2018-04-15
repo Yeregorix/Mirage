@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,7 +55,7 @@ public class MixinBlockStateContainer implements InternalBlockContainer {
 	}
 
 	@Inject(method = "setBits(I)V", at = @At("HEAD"))
-	public void onSetBits(int bitsIn, CallbackInfo ci) {
-		this.networkContainer.setBits(bitsIn);
+	public void onSetBits(int bits, CallbackInfo ci) {
+		this.networkContainer.setBits(bits);
 	}
 }

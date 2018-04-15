@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -104,9 +102,9 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		}
 	}
 
-	public void setBits(int bitsIn) {
-		if (bitsIn != this.bits) {
-			this.bits = bitsIn;
+	public void setBits(int bits) {
+		if (this.bits != bits) {
+			this.bits = bits;
 
 			if (this.bits <= 4) {
 				this.bits = 4;
