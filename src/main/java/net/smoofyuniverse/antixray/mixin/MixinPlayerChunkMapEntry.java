@@ -79,7 +79,8 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 	// Temp fix
 	@Inject(method = "blockChanged", at = @At("HEAD"))
 	public void onBlockChanged(int x, int y, int z, CallbackInfo ci) {
-		((InternalChunk) this.chunk).bindContainer(y >> 4);
+		if (this.chunk != null)
+			((InternalChunk) this.chunk).bindContainer(y >> 4);
 	}
 
 	@Shadow
