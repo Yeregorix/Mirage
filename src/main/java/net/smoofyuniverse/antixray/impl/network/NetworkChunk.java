@@ -73,8 +73,9 @@ public class NetworkChunk implements ChunkView {
 	private final int x, z;
 	private final long seed;
 
-	private State state = State.NOT_OBFUSCATED;
+	private final Object containersLock = new Object();
 	private NetworkBlockContainer[] containers;
+	private State state = State.NOT_OBFUSCATED;
 	private ChunkChangeListener listener;
 	private Random random = new Random();
 	private boolean saved = true;
@@ -108,20 +109,22 @@ public class NetworkChunk implements ChunkView {
 		if (this.state != State.NOT_OBFUSCATED)
 			throw new IllegalStateException();
 
-		if (this.containers != null) {
-			for (NetworkBlockContainer c : this.containers) {
-				if (c != null)
-					c.getInternalBlockContainer().setNetworkChunk(null);
+		synchronized (this.containersLock) {
+			if (this.containers != null) {
+				for (NetworkBlockContainer c : this.containers) {
+					if (c != null)
+						c.getInternalBlockContainer().setNetworkChunk(null);
+				}
 			}
-		}
 
-		if (containers != null) {
-			for (NetworkBlockContainer c : containers) {
-				if (c != null)
-					c.getInternalBlockContainer().setNetworkChunk(this);
+			if (containers != null) {
+				for (NetworkBlockContainer c : containers) {
+					if (c != null)
+						c.getInternalBlockContainer().setNetworkChunk(this);
+				}
 			}
+			this.containers = containers;
 		}
-		this.containers = containers;
 	}
 
 	public void setContainer(int index, ExtendedBlockStorage s) {
@@ -129,17 +132,21 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	public void setContainer(int index, NetworkBlockContainer c) {
-		if (this.containers == null || this.containers[index] != null)
-			throw new UnsupportedOperationException();
+		synchronized (this.containersLock) {
+			if (this.containers == null || this.containers[index] != null)
+				throw new UnsupportedOperationException();
 
-		if (c != null) {
-			c.getInternalBlockContainer().setNetworkChunk(this);
-			this.containers[index] = c;
+			if (c != null) {
+				c.getInternalBlockContainer().setNetworkChunk(this);
+				this.containers[index] = c;
+			}
 		}
 	}
 
 	public boolean hasContainer(int index) {
-		return this.containers != null && this.containers[index] != null;
+		synchronized (this.containersLock) {
+			return this.containers != null && this.containers[index] != null;
+		}
 	}
 
 	public Optional<ChunkChangeListener> getListener() {
