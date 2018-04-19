@@ -46,6 +46,7 @@ import org.spongepowered.api.world.extent.MutableBlockVolume;
 import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
+import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
 import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
 import org.spongepowered.common.world.extent.ExtentBufferUtil;
@@ -54,6 +55,7 @@ import org.spongepowered.common.world.extent.MutableBlockViewTransform;
 import org.spongepowered.common.world.extent.UnmodifiableBlockVolumeWrapper;
 import org.spongepowered.common.world.extent.worker.SpongeMutableBlockVolumeWorker;
 import org.spongepowered.common.world.schematic.GlobalPalette;
+import org.spongepowered.common.world.storage.SpongeChunkLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,24 +67,26 @@ import java.util.Random;
  * Represents a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk implements ChunkView {
-	public static final Vector3i BLOCK_MIN = Vector3i.ZERO, BLOCK_MAX = new Vector3i(15, 255, 15), BLOCK_SIZE = new Vector3i(16, 256, 16);
+	private final Vector3i position, blockMin, blockMax;
+	private final InternalChunk chunk;
+	private final NetworkWorld world;
+	private final int x, z;
+	private final long seed;
 
 	private State state = State.NOT_OBFUSCATED;
 	private NetworkBlockContainer[] containers;
 	private ChunkChangeListener listener;
-	private InternalChunk chunk;
-	private NetworkWorld world;
-	private final int x, z;
 	private Random random = new Random();
 	private boolean saved = true;
-	private long seed;
 
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
 		this.world = world;
-		Vector3i pos = getPosition();
-		this.x = pos.getX();
-		this.z = pos.getZ();
+		this.position = chunk.getPosition();
+		this.blockMin = chunk.getBlockMin();
+		this.blockMax = chunk.getBlockMax();
+		this.x = this.position.getX();
+		this.z = this.position.getZ();
 
 		long wSeed = world.getConfig().seed;
 		this.random.setSeed(wSeed);
@@ -229,30 +233,57 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
+	public InternalChunk getStorage() {
+		return this.chunk;
+	}
+
+	@Override
+	public NetworkWorld getWorld() {
+		return this.world;
+	}
+
+	@Override
+	public Vector3i getPosition() {
+		return this.position;
+	}
+
+	@Override
+	public boolean deobfuscate(int x, int y, int z) {
+		checkBounds(x, y, z);
+		if (this.state == State.NOT_OBFUSCATED)
+			return false;
+
+		NetworkBlockContainer container = this.containers[y >> 4];
+		if (container != null && container.deobfuscate(this.listener, x & 15, y & 15, z & 15)) {
+			this.saved = false;
+			return true;
+		}
+		return false;
+	}
+
+	private void checkBounds(int x, int y, int z) {
+		if (!containsBlock(x, y, z))
+			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), this.blockMin, this.blockMax);
+	}
+
+	@Override
 	public Vector3i getBlockMin() {
-		return BLOCK_MIN;
+		return this.blockMin;
 	}
 
 	@Override
 	public Vector3i getBlockMax() {
-		return BLOCK_MAX;
+		return this.blockMax;
 	}
 
 	@Override
 	public Vector3i getBlockSize() {
-		return BLOCK_SIZE;
+		return SpongeChunkLayout.CHUNK_SIZE;
 	}
 
 	@Override
 	public boolean containsBlock(int x, int y, int z) {
-		return x >= 0 && y >= 0 && z >= 0 && x < 16 && y < 256 && z < 16;
-	}
-
-	@Override
-	public BlockState getBlock(int x, int y, int z) {
-		checkBounds(x, y, z);
-		NetworkBlockContainer c = this.containers[y >> 4];
-		return c == null ? BlockTypes.AIR.getDefaultState() : (BlockState) c.get(x, y & 15, z);
+		return VecHelper.inBounds(x, y, z, this.blockMin, this.blockMax);
 	}
 
 	@Override
@@ -281,26 +312,11 @@ public class NetworkChunk implements ChunkView {
 		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
 	}
 
-	private void checkBounds(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), BLOCK_MIN, BLOCK_MAX);
-	}
-
 	@Override
-	public boolean setBlock(int x, int y, int z, BlockState block) {
+	public BlockState getBlock(int x, int y, int z) {
 		checkBounds(x, y, z);
-
-		NetworkBlockContainer container = this.containers[y >> 4];
-		if (container == null) {
-			this.chunk.bindOrCreateContainer(y >> 4);
-			container = this.containers[y >> 4];
-		}
-
-		container.set(x, y & 15, z, (IBlockState) block);
-		if (this.listener != null)
-			this.listener.addChange(x, y, z);
-		this.saved = false;
-		return true;
+		NetworkBlockContainer c = this.containers[y >> 4];
+		return c == null ? BlockTypes.AIR.getDefaultState() : (BlockState) c.get(x & 15, y & 15, z & 15);
 	}
 
 	@Override
@@ -316,21 +332,6 @@ public class NetworkChunk implements ChunkView {
 	@Override
 	public MutableBlockVolumeWorker<? extends MutableBlockVolume> getBlockWorker() {
 		return new SpongeMutableBlockVolumeWorker<>(this);
-	}
-
-	@Override
-	public InternalChunk getStorage() {
-		return this.chunk;
-	}
-
-	@Override
-	public NetworkWorld getWorld() {
-		return this.world;
-	}
-
-	@Override
-	public Vector3i getPosition() {
-		return this.chunk.getPosition();
 	}
 
 	@Override
@@ -427,22 +428,28 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public boolean deobfuscate(int x, int y, int z) {
+	public boolean setBlock(int x, int y, int z, BlockState block) {
 		checkBounds(x, y, z);
-		if (this.state == State.NOT_OBFUSCATED)
-			return false;
 
 		NetworkBlockContainer container = this.containers[y >> 4];
-		if (container != null && container.deobfuscate(this.listener, x, y & 15, z)) {
-			this.saved = false;
-			return true;
+		if (container == null) {
+			this.chunk.bindOrCreateContainer(y >> 4);
+			container = this.containers[y >> 4];
 		}
-		return false;
+
+		container.set(x & 15, y & 15, z & 15, (IBlockState) block);
+		if (this.listener != null)
+			this.listener.addChange(x & 15, y, z & 15);
+		this.saved = false;
+		return true;
 	}
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {
 		checkBounds(x, y, z);
+
+		x &= 15;
+		z &= 15;
 
 		if (y != 255 && notFullCube1(x, y + 1, z))
 			return true;

@@ -47,13 +47,15 @@ public class MixinSPacketMultiBlockChange implements InternalMultiBlockChange {
 	@Inject(method = "<init>(I[SLnet/minecraft/world/chunk/Chunk;)V", at = @At("RETURN"))
 	public void onInit(int changes, short[] offsets, Chunk chunk, CallbackInfo ci) {
 		if (((InternalChunk) chunk).isViewAvailable()) {
-			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
 			SPacketMultiBlockChange thisObj = (SPacketMultiBlockChange) (Object) this;
+			int bx = chunk.x << 4, bz = chunk.z << 4;
+
+			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
 
 			for (int i = 0; i < this.changedBlocks.length; i++) {
 				short offset = offsets[i];
 				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,
-						(IBlockState) netChunk.getBlock(offset >> 12 & 15, offset & 255, offset >> 8 & 15));
+						(IBlockState) netChunk.getBlock(bx + (offset >> 12 & 15), offset & 255, bz + (offset >> 8 & 15)));
 			}
 		}
 	}
@@ -64,6 +66,7 @@ public class MixinSPacketMultiBlockChange implements InternalMultiBlockChange {
 		this.changedBlocks = new BlockUpdateData[changes];
 
 		SPacketMultiBlockChange thisObj = (SPacketMultiBlockChange) (Object) this;
+		int bx = chunk.x << 4, bz = chunk.z << 4;
 
 		if (((InternalChunk) chunk).isViewAvailable()) {
 			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
@@ -71,11 +74,9 @@ public class MixinSPacketMultiBlockChange implements InternalMultiBlockChange {
 			for (int i = 0; i < this.changedBlocks.length; i++) {
 				short offset = offsets[i];
 				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,
-						(IBlockState) netChunk.getBlock(offset >> 12 & 15, offset & 255, offset >> 8 & 15));
+						(IBlockState) netChunk.getBlock(bx + (offset >> 12 & 15), offset & 255, bz + (offset >> 8 & 15)));
 			}
 		} else {
-			int bx = chunk.x << 4, bz = chunk.z << 4;
-
 			for (int i = 0; i < this.changedBlocks.length; i++) {
 				short offset = offsets[i];
 				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,

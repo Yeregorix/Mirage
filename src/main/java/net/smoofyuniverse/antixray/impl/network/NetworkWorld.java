@@ -58,6 +58,7 @@ import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
 import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
 import org.spongepowered.common.world.extent.ExtentBufferUtil;
@@ -82,18 +83,23 @@ import java.util.concurrent.ThreadLocalRandom;
 public class NetworkWorld implements WorldView {
 	public static final int CURRENT_CONFIG_VERSION = 1, MINIMUM_CONFIG_VERSION = 1;
 
-	private Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
+	private final Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
+	private final Vector3i blockMin, blockMax, blockSize;
+	private final InternalWorld world;
+
 	private Map<ChunkModifier, Object> modifiers;
 	private NetworkRegionCache regionCache;
 	private WorldConfig.Immutable config;
 	private Signature signature;
-	private InternalWorld world;
 	private boolean enabled;
 
 	private Random random = new Random();
 
-	public NetworkWorld(InternalWorld w) {
-		this.world = w;
+	public NetworkWorld(InternalWorld world) {
+		this.world = world;
+		this.blockMin = world.getBlockMin();
+		this.blockMax = world.getBlockMax();
+		this.blockSize = world.getBlockSize();
 	}
 
 	public void loadConfig() throws IOException, ObjectMappingException {
@@ -389,14 +395,14 @@ public class NetworkWorld implements WorldView {
 		AntiXrayTimings.REOBFUSCATION.stopTiming();
 	}
 
-	public boolean isChunkLoaded(int x, int z) {
-		return getChunk(x, z) != null;
-	}
-
 	@Override
 	public boolean deobfuscate(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.deobfuscate(x & 15, y, z & 15);
+		return chunk != null && chunk.deobfuscate(x, y, z);
+	}
+
+	public boolean isChunkLoaded(int x, int z) {
+		return getChunk(x, z) != null;
 	}
 
 	@Nullable
@@ -408,13 +414,13 @@ public class NetworkWorld implements WorldView {
 	@Override
 	public boolean isExposed(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.isExposed(x & 15, y, z & 15);
+		return chunk != null && chunk.isExposed(x, y, z);
 	}
 
 	@Override
 	public boolean setBlock(int x, int y, int z, BlockState block) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.setBlock(x & 15, y, z & 15, block);
+		return chunk != null && chunk.setBlock(x, y, z, block);
 	}
 
 	@Override
@@ -434,28 +440,28 @@ public class NetworkWorld implements WorldView {
 
 	@Override
 	public Vector3i getBlockMin() {
-		return this.world.getBlockMin();
+		return this.blockMin;
 	}
 
 	@Override
 	public Vector3i getBlockMax() {
-		return this.world.getBlockMax();
+		return this.blockMax;
 	}
 
 	@Override
 	public Vector3i getBlockSize() {
-		return this.world.getBlockSize();
+		return this.blockSize;
 	}
 
 	@Override
 	public boolean containsBlock(int x, int y, int z) {
-		return this.world.containsBlock(x, y, z);
+		return VecHelper.inBounds(x, y, z, this.blockMin, this.blockMax);
 	}
 
 	@Override
 	public BlockState getBlock(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk == null ? BlockTypes.AIR.getDefaultState() : chunk.getBlock(x & 15, y, z & 15);
+		return chunk == null ? BlockTypes.AIR.getDefaultState() : chunk.getBlock(x, y, z);
 	}
 
 	@Override
@@ -472,7 +478,7 @@ public class NetworkWorld implements WorldView {
 	public MutableBlockVolume getBlockCopy(StorageType type) {
 		switch (type) {
 			case STANDARD:
-				return new ArrayMutableBlockBuffer(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
+				return new ArrayMutableBlockBuffer(GlobalPalette.instance, this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
 			case THREAD_SAFE:
 			default:
 				throw new UnsupportedOperationException(type.name());
@@ -481,7 +487,7 @@ public class NetworkWorld implements WorldView {
 
 	@Override
 	public ImmutableBlockVolume getImmutableBlockCopy() {
-		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
+		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
 	}
 
 	@Override
