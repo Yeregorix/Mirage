@@ -58,9 +58,37 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	@Final
 	private World world;
+	@Shadow
+	private boolean dirty;
 
 	private NetworkChunk netChunk;
 	private long cacheDate;
+
+	@Shadow
+	public abstract IBlockState getBlockState(int x, int y, int z);
+
+	@Shadow
+	public abstract int getHeightValue(int x, int z);
+
+	@Shadow
+	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
+
+	@Override
+	public void bindOrCreateContainer(int index) {
+		if (this.netChunk != null && !this.netChunk.hasContainer(index)) {
+			ExtendedBlockStorage storage = this.storageArrays[index];
+			if (storage == null) {
+				storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
+				this.storageArrays[index] = storage;
+				generateSkylightMap();
+				this.netChunk.setContainer(index, storage);
+			} else {
+				this.netChunk.setContainer(index, storage);
+				if (!storage.isEmpty())
+					this.netChunk.setSaved(false);
+			}
+		}
+	}
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
@@ -142,6 +170,9 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
+	@Shadow
+	public abstract void generateSkylightMap();
+
 	@Override
 	public boolean isExposed(int x, int y, int z) {
 		if (!containsBlock(x, y, z))
@@ -186,9 +217,6 @@ public abstract class MixinChunk implements InternalChunk {
 		return neighbor == null || !((Chunk) neighbor).getBlockState(x, y, z).isFullCube();
 	}
 
-	@Shadow
-	public abstract IBlockState getBlockState(int x, int y, int z);
-
 	@Override
 	public int getBlockLightLevel(int x, int y, int z) {
 		return getLightFor(EnumSkyBlock.BLOCK, new BlockPos(x, y, z));
@@ -198,12 +226,6 @@ public abstract class MixinChunk implements InternalChunk {
 	public boolean canSeeTheSky(int x, int y, int z) {
 		return y >= getHeightValue(x & 15, z & 15);
 	}
-
-	@Shadow
-	public abstract int getHeightValue(int x, int z);
-
-	@Shadow
-	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
 	@Override
 	public boolean areNeighborsLoaded() {

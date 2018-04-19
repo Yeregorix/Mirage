@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -128,7 +126,7 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param r The Random object that should be used by the modifier
 	 */
 	public void modify(ChunkView view, Random r, Object config) {
-		modify(view, view.getBlockMin(), view.getMutableMax(), r, config);
+		modify(view, view.getBlockMin(), view.getBlockMax(), r, config);
 	}
 
 	/**

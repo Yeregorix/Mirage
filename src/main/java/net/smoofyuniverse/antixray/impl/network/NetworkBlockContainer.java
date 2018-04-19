@@ -24,6 +24,7 @@ package net.smoofyuniverse.antixray.impl.network;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.BitArray;
 import net.minecraft.util.ObjectIntIdentityMap;
@@ -44,8 +45,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	private BlockStateContainer container;
 	private IBlockStatePalette palette;
 	private BitArray storage;
-	private int bits;
-	private int y = -1;
+	private int bits, y = -1;
+	private int blockCount;
 
 	public NetworkBlockContainer(BlockStateContainer container) {
 		this.container = container;
@@ -53,34 +54,6 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 	public InternalBlockContainer getInternalBlockContainer() {
 		return (InternalBlockContainer) this.container;
-	}
-
-	public void deobfuscate(ChunkChangeListener listener) {
-		for (int i = 0; i < 4096; i++) {
-			IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
-			if (fakeBlock != realBlock) {
-				set(i, realBlock);
-				if (listener != null)
-					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
-			}
-		}
-	}
-
-	public IBlockState get(int index) {
-		IBlockState block = this.palette.getBlockState(this.storage.getAt(index));
-		return block == null ? AIR_BLOCK_STATE : block;
-	}
-
-	public boolean deobfuscate(ChunkChangeListener listener, int x, int y, int z) {
-		int i = getIndex(x, y, z);
-		IBlockState fakeBlock = get(i), realBlock = this.container.get(i);
-		if (fakeBlock != realBlock) {
-			set(i, realBlock);
-			if (listener != null)
-				listener.addChange(x, this.y + y, z);
-			return true;
-		}
-		return false;
 	}
 
 	public int getY() {
@@ -91,15 +64,35 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		this.y = y;
 	}
 
-	public void obfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
+	public boolean isEmpty() {
+		return this.blockCount == 0;
+	}
+
+	public void deobfuscate(ChunkChangeListener listener) {
+		this.blockCount = 0;
 		for (int i = 0; i < 4096; i++) {
-			IBlockState block = this.container.get(i);
-			if (ores.contains(block)) {
-				set(i, ground);
+			IBlockState fakeState = get(i), realState = this.container.get(i);
+
+			if (realState.getBlock() != Blocks.AIR)
+				this.blockCount++;
+
+			if (fakeState != realState) {
+				_set(i, realState);
+
 				if (listener != null)
 					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
 			}
 		}
+	}
+
+	public IBlockState get(int index) {
+		IBlockState state = this.palette.getBlockState(this.storage.getAt(index));
+		return state == null ? AIR_BLOCK_STATE : state;
+	}
+
+	private void _set(int index, IBlockState state) {
+		int i = this.palette.idFor(state);
+		this.storage.setAt(index, i);
 	}
 
 	public void setBits(int bits) {
@@ -121,21 +114,69 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		}
 	}
 
-	public void set(int x, int y, int z, IBlockState state) {
-		set(getIndex(x, y, z), state);
-	}
-
 	public static int getIndex(int x, int y, int z) {
 		return y << 8 | z << 4 | x;
 	}
 
-	public void set(int index, IBlockState state) {
-		int i = this.palette.idFor(state);
-		this.storage.setAt(index, i);
+	public boolean deobfuscate(ChunkChangeListener listener, int x, int y, int z) {
+		int i = getIndex(x, y, z);
+		IBlockState fakeState = get(i), realState = this.container.get(i);
+
+		if (fakeState != realState) {
+			if (realState.getBlock() == Blocks.AIR)
+				this.blockCount--;
+			else if (fakeState.getBlock() == Blocks.AIR)
+				this.blockCount++;
+
+			_set(i, realState);
+
+			if (listener != null)
+				listener.addChange(x, this.y + y, z);
+			return true;
+		}
+		return false;
+	}
+
+	public void obfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
+		boolean notAirGround = ground.getBlock() != Blocks.AIR;
+
+		this.blockCount = 0;
+		for (int i = 0; i < 4096; i++) {
+			IBlockState state = get(i);
+
+			if (ores.contains(state)) {
+				if (notAirGround)
+					this.blockCount++;
+
+				_set(i, ground);
+
+				if (listener != null)
+					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
+			} else {
+				if (state.getBlock() != Blocks.AIR)
+					this.blockCount++;
+			}
+		}
 	}
 
 	public IBlockState get(int x, int y, int z) {
 		return get(getIndex(x, y, z));
+	}
+
+	public void set(int x, int y, int z, IBlockState state) {
+		set(getIndex(x, y, z), state);
+	}
+
+	public void set(int index, IBlockState state) {
+		IBlockState oldState = get(index);
+		if (oldState != state) {
+			if (oldState.getBlock() == Blocks.AIR)
+				this.blockCount++;
+			else if (state.getBlock() == Blocks.AIR)
+				this.blockCount--;
+
+			_set(index, state);
+		}
 	}
 
 	@Override
@@ -147,7 +188,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		for (int i = 0; i < 4096; i++) {
 			IBlockState block = oldPalette.getBlockState(oldStorage.getAt(i));
 			if (block != null)
-				set(i, block);
+				_set(i, block);
 		}
 
 		return this.palette.idFor(state);
@@ -201,13 +242,19 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	}
 
 	private void setDataFromNBT(byte[] blockIds, NibbleArray data, @Nullable NibbleArray extension) {
+		this.blockCount = 0;
 		for (int i = 0; i < 4096; i++) {
 			int x = i & 15;
 			int y = i >> 8 & 15;
 			int z = i >> 4 & 15;
 			int ext = extension == null ? 0 : extension.get(x, y, z);
 			int id = ext << 12 | (blockIds[i] & 255) << 4 | data.get(x, y, z);
-			set(i, BLOCK_STATE_IDS.getByValue(id));
+
+			IBlockState block = BLOCK_STATE_IDS.getByValue(id);
+			if (block.getBlock() != Blocks.AIR)
+				this.blockCount++;
+
+			_set(i, block);
 		}
 	}
 

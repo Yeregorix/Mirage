@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,6 +26,7 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.SPacketChunkData;
 import net.minecraft.world.chunk.BlockStateContainer;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import org.spongepowered.asm.mixin.Mixin;
@@ -53,5 +52,15 @@ public abstract class MixinSPacketChunkData {
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;getSerializedSize()I"))
 	public int calculateModifiedSize(BlockStateContainer container) {
 		return ((InternalBlockContainer) container).getNetworkBlockContainer().getSerializedSize();
+	}
+
+	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;isEmpty()Z"))
+	public boolean isModifiedEmpty1(ExtendedBlockStorage storage) {
+		return ((InternalBlockContainer) storage.getData()).getNetworkBlockContainer().isEmpty();
+	}
+
+	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;isEmpty()Z"))
+	public boolean isModifiedEmpty2(ExtendedBlockStorage storage) {
+		return ((InternalBlockContainer) storage.getData()).getNetworkBlockContainer().isEmpty();
 	}
 }
