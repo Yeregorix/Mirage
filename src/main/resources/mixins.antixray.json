@@ -15,6 +15,7 @@
     "MixinExtendedBlockStorage",
     "MixinPlayerChunkMapEntry",
     "MixinStateImplementation",
+    "MixinTrackingUtil",
     "MixinWorld"
   ],
   "injectors": {

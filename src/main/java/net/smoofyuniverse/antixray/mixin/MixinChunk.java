@@ -42,6 +42,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = Chunk.class, priority = 1100)
 public abstract class MixinChunk implements InternalChunk {
@@ -119,11 +120,10 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	// Waiting on a Mixin issue
-/*	@Inject(method = "setBlockState", at = @At("RETURN"))
+	@Inject(method = "setBlockState", at = @At("RETURN"))
 	public void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> ci) {
 		bindContainer(pos.getY() >> 4);
-	} */
+	}
 
 	@Inject(method = "setLightFor", at = @At("RETURN"))
 	public void onSetLightFor(EnumSkyBlock type, BlockPos pos, int value, CallbackInfo ci) {
