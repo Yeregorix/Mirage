@@ -1,7 +1,7 @@
 # AntiXray
 A powerful Xray prevention plugin for Sponge.
 
-![alt text](http://files.smoofyuniverse.net/images/antixray-screenshots.png)
+![alt text](https://files.smoofyuniverse.net/images/antixray_screenshots.png)
 
 * Ore page: https://ore.spongepowered.org/Yeregorix/AntiXray
 
