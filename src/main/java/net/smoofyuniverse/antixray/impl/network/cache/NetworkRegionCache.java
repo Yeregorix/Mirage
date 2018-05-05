@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,9 +34,11 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 public class NetworkRegionCache {
-	public static final int CURRENT_VERSION = 1, MINIMUM_VERSION = 1;
+	public static final int CURRENT_VERSION = 2, MINIMUM_VERSION = 1;
 
 	private final Long2ObjectMap<NetworkRegionFile> loadedRegions = new Long2ObjectOpenHashMap<>();
 	private final Path dir;
@@ -52,11 +52,7 @@ public class NetworkRegionCache {
 		}
 	}
 
-	public int getVersion() {
-		return this.version;
-	}
-
-	public boolean isVersionSupported() throws IOException {
+	public void loadVersion() throws IOException {
 		if (this.version == -1) {
 			Path file = this.dir.resolve("version");
 			if (Files.exists(file)) {
@@ -69,10 +65,58 @@ public class NetworkRegionCache {
 				}
 			}
 		}
+	}
+
+	public int getVersion() {
+		return this.version;
+	}
+
+	public boolean isVersionSupported() {
 		return this.version >= MINIMUM_VERSION && this.version <= CURRENT_VERSION;
 	}
 
-	public void updateVersion() {}
+	public boolean shouldUpdateVersion() {
+		return this.version != CURRENT_VERSION;
+	}
+
+	public void updateVersion() throws IOException {
+		if (this.version < MINIMUM_VERSION || this.version > CURRENT_VERSION)
+			throw new UnsupportedOperationException();
+
+		if (this.version == CURRENT_VERSION)
+			return;
+
+		synchronized (this.loadedRegions) {
+			if (!this.loadedRegions.isEmpty())
+				throw new IllegalStateException();
+		}
+
+		if (this.version == 1) {
+			deleteRegionFiles();
+			this.version = 2;
+		}
+	}
+
+	private void deleteRegionFiles() throws IOException {
+		IOException error = null;
+
+		try (Stream<Path> st = Files.list(this.dir)) {
+			Iterator<Path> it = st.iterator();
+			while (it.hasNext()) {
+				Path p = it.next();
+				if (isRegionFile(p.getFileName().toString())) {
+					try {
+						Files.delete(p);
+					} catch (IOException e) {
+						error = e;
+					}
+				}
+			}
+		}
+
+		if (error != null)
+			throw error;
+	}
 
 	public void saveVersion() throws IOException {
 		Path file = this.dir.resolve("version");
@@ -117,6 +161,22 @@ public class NetworkRegionCache {
 
 	private Path getRegionFile(int x, int z) {
 		return this.dir.resolve("r." + x + "." + z + ".dat");
+	}
+
+	private static boolean isRegionFile(String name) {
+		if (name.startsWith("r.") && name.endsWith(".dat")) {
+			String pos = name.substring(2, name.length() - 4);
+			int i = pos.indexOf('.');
+			if (i == -1)
+				return false;
+
+			try {
+				Integer.parseInt(pos.substring(0, i));
+				Integer.parseInt(pos.substring(i + 1));
+			} catch (Exception ignored) {
+			}
+		}
+		return false;
 	}
 
 	public void closeLoadedRegions() {

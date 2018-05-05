@@ -20,12 +20,26 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.impl.internal;
+package net.smoofyuniverse.antixray.impl.network.change;
 
-import net.minecraft.world.chunk.Chunk;
+import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 
-public interface InternalMultiBlockChange {
+import javax.annotation.Nullable;
 
-	void fastInit(int changes, short[] offsets, Chunk chunk);
+public interface ChunkChangeListener {
 
+	@Nullable
+	InternalChunk getChunk();
+
+	void addChange(int x, int y, int z);
+
+	void sendChanges();
+
+	void clearChanges();
+
+	void updateDynamism(int x, int y, int z, int distance);
+
+	void clearDynamism();
+
+	void markDirty();
 }

@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,7 +28,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class BlockContainerSnapshot {
-	private byte[] blockIds, data, extension;
+	private byte[] blockIds, data, extension, dynamism;
 	private int section;
 
 	public int getSection() {
@@ -46,7 +44,7 @@ public class BlockContainerSnapshot {
 	}
 
 	public void setBlockIds(byte[] blockIds) {
-		if (blockIds.length != 4096)
+		if (blockIds == null || blockIds.length != 4096)
 			throw new IllegalArgumentException();
 		this.blockIds = blockIds;
 	}
@@ -56,7 +54,7 @@ public class BlockContainerSnapshot {
 	}
 
 	public void setData(byte[] data) {
-		if (data.length != 2048)
+		if (data == null || data.length != 2048)
 			throw new IllegalArgumentException();
 		this.data = data;
 	}
@@ -72,6 +70,16 @@ public class BlockContainerSnapshot {
 		this.extension = extension;
 	}
 
+	public byte[] getDynamism() {
+		return this.dynamism;
+	}
+
+	public void setDynamism(byte[] dynamism) {
+		if (dynamism == null || dynamism.length != 2048)
+			throw new IllegalArgumentException();
+		this.dynamism = dynamism;
+	}
+
 	public void write(DataOutputStream out) throws IOException {
 		out.writeInt(this.section);
 		out.write(this.blockIds);
@@ -83,9 +91,14 @@ public class BlockContainerSnapshot {
 			out.writeBoolean(true);
 			out.write(this.extension);
 		}
+
+		out.write(this.dynamism);
 	}
 
-	public BlockContainerSnapshot read(DataInputStream in) throws IOException {
+	public BlockContainerSnapshot read(DataInputStream in, int version) throws IOException {
+		if (version < ChunkSnapshot.MINIMUM_VERSION || version > ChunkSnapshot.CURRENT_VERSION)
+			throw new IllegalArgumentException("version");
+
 		this.section = in.readInt();
 		this.blockIds = new byte[4096];
 		in.readFully(this.blockIds);
@@ -97,6 +110,9 @@ public class BlockContainerSnapshot {
 			in.readFully(this.extension);
 		} else
 			this.extension = null;
+
+		this.dynamism = new byte[2048];
+		in.readFully(this.dynamism);
 
 		return this;
 	}

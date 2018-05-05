@@ -20,46 +20,27 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.modifier;
+package net.smoofyuniverse.antixray.util;
 
-import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
-import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
-import net.smoofyuniverse.antixray.api.volume.BlockView;
-import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import ninja.leaping.configurate.ConfigurationNode;
-import org.spongepowered.api.world.storage.WorldProperties;
+public class MathUtil {
 
-import java.util.Random;
-
-/**
- * This modifier does not modify anything.
- */
-public class EmptyModifier extends ChunkModifier {
-
-	public EmptyModifier() {
-		super(AntiXray.get(), "Empty");
+	public static int clamp(int value, int min, int max) {
+		if (value < min)
+			return min;
+		if (value > max)
+			return max;
+		return value;
 	}
 
-	@Override
-	public boolean shouldCache() {
-		return false;
+	public static int squared(int value) {
+		return value * value;
 	}
 
-	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) {
-		return new Object();
+	public static int lengthSquared(int dx, int dz) {
+		return dx * dx + dz * dz;
 	}
 
-	@Override
-	public void appendSignature(Builder builder, Object config) {}
-
-	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return true;
+	public static int lengthSquared(int dx, int dy, int dz) {
+		return dx * dx + dy * dy + dz * dz;
 	}
-
-	@Override
-	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {}
 }

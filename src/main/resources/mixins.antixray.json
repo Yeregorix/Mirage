@@ -13,6 +13,7 @@
     "MixinBlockStateContainer",
     "MixinChunk",
     "MixinExtendedBlockStorage",
+    "MixinPlayerChunkMap",
     "MixinPlayerChunkMapEntry",
     "MixinStateImplementation",
     "MixinTrackingUtil",

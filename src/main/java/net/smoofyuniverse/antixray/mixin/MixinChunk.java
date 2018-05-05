@@ -73,21 +73,9 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
-	@Override
-	public void bindOrCreateContainer(int index) {
-		if (this.netChunk != null && !this.netChunk.hasContainer(index)) {
-			ExtendedBlockStorage storage = this.storageArrays[index];
-			if (storage == null) {
-				storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
-				this.storageArrays[index] = storage;
-				generateSkylightMap();
-				this.netChunk.setContainer(index, storage);
-			} else {
-				this.netChunk.setContainer(index, storage);
-				if (!storage.isEmpty())
-					this.netChunk.setSaved(false);
-			}
-		}
+	@Inject(method = "setBlockState", at = @At("RETURN"))
+	public void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> ci) {
+		bindContainerSafely(pos.getY() >> 4);
 	}
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
@@ -148,26 +136,47 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	@Inject(method = "setBlockState", at = @At("RETURN"))
-	public void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> ci) {
-		bindContainer(pos.getY() >> 4);
-	}
-
-	@Inject(method = "setLightFor", at = @At("RETURN"))
-	public void onSetLightFor(EnumSkyBlock type, BlockPos pos, int value, CallbackInfo ci) {
-		bindContainer(pos.getY() >> 4);
-	}
-
 	@Override
 	public void bindContainer(int index) {
 		if (this.netChunk != null) {
 			ExtendedBlockStorage storage = this.storageArrays[index];
-			if (storage != null && !this.netChunk.hasContainer(index)) {
+			if (storage != null && this.netChunk.needContainer(index)) {
 				this.netChunk.setContainer(index, storage);
 				if (!storage.isEmpty())
 					this.netChunk.setSaved(false);
 			}
 		}
+	}
+
+	@Override
+	public void bindContainerSafely(int index) {
+		try {
+			bindContainer(index);
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to bind a container of a network chunk", e);
+		}
+	}
+
+	@Override
+	public void bindOrCreateContainer(int index) {
+		if (this.netChunk != null && this.netChunk.needContainer(index)) {
+			ExtendedBlockStorage storage = this.storageArrays[index];
+			if (storage == null) {
+				storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
+				this.storageArrays[index] = storage;
+				generateSkylightMap();
+				this.netChunk.setContainer(index, storage);
+			} else {
+				this.netChunk.setContainer(index, storage);
+				if (!storage.isEmpty())
+					this.netChunk.setSaved(false);
+			}
+		}
+	}
+
+	@Inject(method = "setLightFor", at = @At("RETURN"))
+	public void onSetLightFor(EnumSkyBlock type, BlockPos pos, int value, CallbackInfo ci) {
+		bindContainerSafely(pos.getY() >> 4);
 	}
 
 	@Shadow

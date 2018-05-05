@@ -29,13 +29,15 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
-import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.config.PreobfuscationConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
 import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
+import net.smoofyuniverse.antixray.impl.network.change.ChunkChangeListener;
+import net.smoofyuniverse.antixray.impl.network.dynamism.DynamicChunk;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -59,18 +61,22 @@ import org.spongepowered.common.world.storage.SpongeChunkLayout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
+
+import static net.smoofyuniverse.antixray.util.MathUtil.*;
 
 /**
  * Represents a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk implements ChunkView {
+	public static final int maxDynamismDistance = 160, maxDynamismDistance2 = squared(160);
+
 	private final Vector3i position, blockMin, blockMax;
 	private final InternalChunk chunk;
 	private final NetworkWorld world;
-	private final int x, z;
+	public final int x, z;
+	private final boolean dynamismEnabled;
 	private final long seed;
 
 	private final Object containersLock = new Object();
@@ -86,6 +92,7 @@ public class NetworkChunk implements ChunkView {
 		this.position = chunk.getPosition();
 		this.blockMin = chunk.getBlockMin();
 		this.blockMax = chunk.getBlockMax();
+		this.dynamismEnabled = world.isDynamismEnabled();
 		this.x = this.position.getX();
 		this.z = this.position.getZ();
 
@@ -143,9 +150,9 @@ public class NetworkChunk implements ChunkView {
 		}
 	}
 
-	public boolean hasContainer(int index) {
+	public boolean needContainer(int index) {
 		synchronized (this.containersLock) {
-			return this.containers != null && this.containers[index] != null;
+			return this.containers != null && this.containers[index] == null;
 		}
 	}
 
@@ -242,6 +249,138 @@ public class NetworkChunk implements ChunkView {
 	@Override
 	public InternalChunk getStorage() {
 		return this.chunk;
+	}
+
+	@Override
+	public boolean isDynamismEnabled() {
+		return this.dynamismEnabled;
+	}
+
+	@Override
+	public void setDynamism(int x, int y, int z, int distance) {
+		checkBounds(x, y, z);
+		if (!this.dynamismEnabled)
+			return;
+
+		NetworkBlockContainer container = this.containers[y >> 4];
+		if (container == null) {
+			this.chunk.bindOrCreateContainer(y >> 4);
+			container = this.containers[y >> 4];
+		}
+
+		distance = clamp(distance, 0, 10);
+		container.setDynamism(x & 15, y & 15, z & 15, distance);
+		if (this.listener != null)
+			this.listener.updateDynamism(x & 15, y, z & 15, distance);
+		this.saved = false;
+	}
+
+	@Override
+	public int getDynamism(int x, int y, int z) {
+		checkBounds(x, y, z);
+		if (!this.dynamismEnabled)
+			return 0;
+
+		NetworkBlockContainer c = this.containers[y >> 4];
+		return c == null ? 0 : c.getDynamism(x & 15, y & 15, z & 15);
+	}
+
+	public void collectDynamicPositions(DynamicChunk chunk) {
+		if (!this.dynamismEnabled)
+			return;
+
+		Vector3i center = chunk.getCenter();
+		if (center == null)
+			return;
+
+		int relX = center.getX() - (this.x << 4), relZ = center.getZ() - (this.z << 4);
+
+		int minXZDistance2 = lengthSquared(clamp(relX, 0, 15) - relX, clamp(relZ, 0, 15) - relZ);
+		if (minXZDistance2 + squared(clamp(center.getY(), 0, 255) - center.getY()) > maxDynamismDistance2)
+			return;
+
+		for (NetworkBlockContainer c : this.containers) {
+			if (c != null) {
+				int relY = center.getY() - c.getY();
+
+				int d2 = minXZDistance2 + squared(clamp(relY, 0, 15) - relY);
+				if (d2 > maxDynamismDistance2 || d2 > squared(c.getMaxDynamism()) << 8)
+					continue;
+
+				c.collectDynamicPositions(chunk, relX, relY, relZ);
+			}
+		}
+	}
+
+	@Override
+	public void obfuscate() {
+		if (this.state == State.OBFUSCATED)
+			return;
+
+		AntiXrayTimings.OBFUSCATION.startTiming();
+
+		boolean ready = true;
+		for (ConfiguredModifier mod : this.world.getModifiers()) {
+			Timing timing = mod.modifier.getTiming();
+			timing.startTiming();
+
+			if (!mod.modifier.isReady(this, mod.config)) {
+				ready = false;
+				timing.stopTiming();
+				break;
+			}
+
+			timing.stopTiming();
+		}
+
+		if (this.state == State.NEED_REOBFUSCATION) {
+			if (!ready) {
+				AntiXrayTimings.OBFUSCATION.stopTiming();
+				return;
+			}
+
+			if (this.world.getConfig().preobf.enabled)
+				deobfuscate();
+		}
+
+		if (ready) {
+			this.random.setSeed(this.seed);
+
+			for (ConfiguredModifier mod : this.world.getModifiers()) {
+				Timing timing = mod.modifier.getTiming();
+				timing.startTiming();
+
+				try {
+					mod.modifier.modify(this, this.random, mod.config);
+				} catch (Exception ex) {
+					AntiXray.LOGGER.error("Modifier " + mod.modifier.getId() + " has thrown an exception while modifying a network chunk", ex);
+				}
+
+				timing.stopTiming();
+			}
+
+			this.state = State.OBFUSCATED;
+		} else {
+			if (this.world.getConfig().preobf.enabled) {
+				AntiXrayTimings.PREOBFUSCATION.startTiming();
+
+				PreobfuscationConfig.Immutable cfg = this.world.getConfig().preobf;
+				for (NetworkBlockContainer c : this.containers) {
+					if (c != null) {
+						c.clearDynamism();
+						c.obfuscate(this.listener, cfg.blocks, (IBlockState) cfg.replacement);
+					}
+				}
+
+				if (this.listener != null)
+					this.listener.clearDynamism();
+
+				AntiXrayTimings.PREOBFUSCATION.stopTiming();
+			}
+			this.state = State.NEED_REOBFUSCATION;
+		}
+
+		AntiXrayTimings.OBFUSCATION.stopTiming();
 	}
 
 	@Override
@@ -352,72 +491,6 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public void obfuscate() {
-		if (this.state == State.OBFUSCATED)
-			return;
-
-		AntiXrayTimings.OBFUSCATION.startTiming();
-
-		boolean ready = true;
-		for (Entry<ChunkModifier, Object> e : this.world.getModifiers().entrySet()) {
-			ChunkModifier mod = e.getKey();
-			Timing timing = mod.getTiming();
-
-			timing.startTiming();
-			if (!mod.isReady(this, e.getValue())) {
-				ready = false;
-				timing.stopTiming();
-				break;
-			}
-			timing.stopTiming();
-		}
-
-		if (this.state == State.NEED_REOBFUSCATION) {
-			if (!ready) {
-				AntiXrayTimings.OBFUSCATION.stopTiming();
-				return;
-			}
-
-			if (this.world.getConfig().preobf.enabled)
-				deobfuscate();
-		}
-
-		if (ready) {
-			this.random.setSeed(this.seed);
-
-			for (Entry<ChunkModifier, Object> e : this.world.getModifiers().entrySet()) {
-				ChunkModifier mod = e.getKey();
-				Timing timing = mod.getTiming();
-
-				timing.startTiming();
-				try {
-					mod.modify(this, this.random, e.getValue());
-				} catch (Exception ex) {
-					AntiXray.LOGGER.error("Modifier " + mod.getId() + " has thrown an exception while modifying a network chunk", ex);
-				}
-				timing.stopTiming();
-			}
-
-			this.state = State.OBFUSCATED;
-		} else {
-			if (this.world.getConfig().preobf.enabled) {
-				AntiXrayTimings.PREOBFUSCATION.startTiming();
-
-				PreobfuscationConfig.Immutable cfg = this.world.getConfig().preobf;
-				for (NetworkBlockContainer c : this.containers) {
-					if (c != null)
-						c.obfuscate(this.listener, cfg.blocks, (IBlockState) cfg.replacement);
-				}
-
-				AntiXrayTimings.PREOBFUSCATION.stopTiming();
-			}
-			this.state = State.NEED_REOBFUSCATION;
-		}
-
-		AntiXrayTimings.OBFUSCATION.stopTiming();
-	}
-
-	@Override
 	public void deobfuscate() {
 		if (this.state == State.NOT_OBFUSCATED)
 			return;
@@ -425,13 +498,29 @@ public class NetworkChunk implements ChunkView {
 		AntiXrayTimings.DEOBFUSCATION.startTiming();
 
 		for (NetworkBlockContainer c : this.containers) {
-			if (c != null)
+			if (c != null) {
+				c.clearDynamism();
 				c.deobfuscate(this.listener);
+			}
 		}
+
+		if (this.listener != null)
+			this.listener.clearDynamism();
 
 		this.state = State.NOT_OBFUSCATED;
 
 		AntiXrayTimings.DEOBFUSCATION.stopTiming();
+	}
+
+	@Override
+	public void clearDynamism() {
+		for (NetworkBlockContainer c : this.containers) {
+			if (c != null)
+				c.clearDynamism();
+		}
+
+		if (this.listener != null)
+			this.listener.clearDynamism();
 	}
 
 	@Override

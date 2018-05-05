@@ -111,4 +111,9 @@ public interface ChunkView extends BlockView {
 	 * @return Whether the block was different before being deobfuscated
 	 */
 	boolean deobfuscate(int x, int y, int z);
+
+	/**
+	 * Resets the dynamism distance of all positions
+	 */
+	void clearDynamism();
 }

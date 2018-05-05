@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,6 +27,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class ChunkSnapshot {
+	public static final int CURRENT_VERSION = 1, MINIMUM_VERSION = 1;
+
 	private BlockContainerSnapshot[] containers;
 	private long date;
 
@@ -49,6 +49,7 @@ public class ChunkSnapshot {
 	}
 
 	public void write(DataOutputStream out) throws IOException {
+		out.writeInt(CURRENT_VERSION);
 		out.writeLong(this.date);
 
 		out.writeInt(this.containers.length);
@@ -57,11 +58,15 @@ public class ChunkSnapshot {
 	}
 
 	public ChunkSnapshot read(DataInputStream in) throws IOException {
+		int version = in.readInt();
+		if (version < MINIMUM_VERSION || version > CURRENT_VERSION)
+			throw new IllegalArgumentException("version");
+
 		this.date = in.readLong();
 
 		this.containers = new BlockContainerSnapshot[in.readInt()];
 		for (int i = 0; i < this.containers.length; i++)
-			this.containers[i] = new BlockContainerSnapshot().read(in);
+			this.containers[i] = new BlockContainerSnapshot().read(in, version);
 
 		return this;
 	}

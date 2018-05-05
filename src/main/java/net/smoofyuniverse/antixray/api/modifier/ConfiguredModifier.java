@@ -20,26 +20,16 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.impl.internal;
+package net.smoofyuniverse.antixray.api.modifier;
 
-import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+public final class ConfiguredModifier {
+	public final ChunkModifier modifier;
+	public final Object config;
 
-public interface InternalChunk extends ChunkStorage {
-
-	@Override
-	NetworkChunk getView();
-
-	@Override
-	InternalWorld getWorld();
-
-	long getValidCacheDate();
-
-	void setValidCacheDate(long value);
-
-	void bindContainer(int index);
-
-	void bindContainerSafely(int index);
-
-	void bindOrCreateContainer(int index);
+	public ConfiguredModifier(ChunkModifier modifier, Object config) {
+		if (modifier == null || config == null)
+			throw new IllegalArgumentException();
+		this.modifier = modifier;
+		this.config = config;
+	}
 }

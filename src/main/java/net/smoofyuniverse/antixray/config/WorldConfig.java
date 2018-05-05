@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,6 +34,8 @@ public class WorldConfig {
 	public boolean enabled = true;
 	@Setting(value = "Cache", comment = "Enable or disable caching fake chunks on disk")
 	public boolean cache = true;
+	@Setting(value = "Dynamism", comment = "Enable or disable dynamic obfuscation")
+	public boolean dynamism = true;
 	@Setting(value = "Seed", comment = "The seed used by the modifier, shouldn't be modified")
 	public long seed = 0;
 	@Setting(value = "Deobfuscation")
@@ -50,18 +50,19 @@ public class WorldConfig {
 	public WorldConfig() {}
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.cache, this.seed, this.deobf.toImmutable(), this.preobf.toImmutable());
+		return new Immutable(this.enabled, this.cache, this.dynamism, this.seed, this.deobf.toImmutable(), this.preobf.toImmutable());
 	}
 
 	public static class Immutable {
-		public final boolean enabled, cache;
+		public final boolean enabled, cache, dynamism;
 		public final long seed;
 		public final DeobfuscationConfig.Immutable deobf;
 		public final PreobfuscationConfig.Immutable preobf;
 
-		public Immutable(boolean enabled, boolean cache, long seed, DeobfuscationConfig.Immutable deobf, PreobfuscationConfig.Immutable preobf) {
+		public Immutable(boolean enabled, boolean cache, boolean dynamism, long seed, DeobfuscationConfig.Immutable deobf, PreobfuscationConfig.Immutable preobf) {
 			this.enabled = enabled;
 			this.cache = cache;
+			this.dynamism = dynamism;
 			this.seed = seed;
 			this.deobf = deobf;
 			this.preobf = preobf;

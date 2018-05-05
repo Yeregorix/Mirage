@@ -96,9 +96,10 @@ public abstract class ChunkModifier implements CatalogType {
 	 *
 	 * @param node  The configuration node (mutable)
 	 * @param world The world where this config object will be applicable
+	 * @param preset An optional preset
 	 * @return Your config object
 	 */
-	public abstract Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException;
+	public abstract Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException;
 
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.

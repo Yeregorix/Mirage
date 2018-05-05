@@ -38,7 +38,7 @@ public class MixinTrackingUtil {
 	@Redirect(method = "trackBlockChange", at = @At(value = "INVOKE", target = "Lorg/spongepowered/common/interfaces/IMixinChunk;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/block/BlockSnapshot;)Lnet/minecraft/block/state/IBlockState;"))
 	private static IBlockState onSetBlockState(IMixinChunk chunk, BlockPos pos, IBlockState newState, IBlockState currentState, BlockSnapshot originalSnapshot) {
 		IBlockState r = chunk.setBlockState(pos, newState, currentState, originalSnapshot);
-		((InternalChunk) chunk).bindContainer(pos.getY() >> 4);
+		((InternalChunk) chunk).bindContainerSafely(pos.getY() >> 4);
 		return r;
 	}
 }

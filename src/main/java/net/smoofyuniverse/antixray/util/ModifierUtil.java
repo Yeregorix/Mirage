@@ -30,8 +30,7 @@ import org.spongepowered.api.world.DimensionTypes;
 
 public class ModifierUtil {
 
-	public static BlockSet getCommonResources(DimensionType dimType) {
-		BlockSet set = new BlockSet();
+	public static void getCommonResources(BlockSet set, DimensionType dimType) {
 		if (dimType == DimensionTypes.NETHER) {
 			set.add(BlockTypes.LAVA);
 			set.add(BlockTypes.MAGMA);
@@ -46,7 +45,35 @@ public class ModifierUtil {
 			set.add(BlockTypes.LAPIS_ORE);
 			set.add(BlockTypes.GOLD_ORE);
 		}
-		return set;
+	}
+
+	public static void getRareResources(BlockSet set, DimensionType dimType) {
+		set.add(BlockTypes.MOB_SPAWNER);
+		set.add(BlockTypes.CHEST);
+		set.add(BlockTypes.TRAPPED_CHEST);
+
+		if (dimType == DimensionTypes.NETHER) {
+			set.add(BlockTypes.PORTAL);
+		} else if (dimType == DimensionTypes.OVERWORLD) {
+			set.add(BlockTypes.MOSSY_COBBLESTONE);
+			set.add(BlockTypes.MONSTER_EGG);
+
+			set.add(BlockTypes.PORTAL);
+
+			set.add(BlockTypes.END_PORTAL);
+			set.add(BlockTypes.END_PORTAL_FRAME);
+		} else if (dimType == DimensionTypes.THE_END) {
+			set.add(BlockTypes.END_PORTAL);
+			set.add(BlockTypes.END_PORTAL_FRAME);
+		}
+	}
+
+	public static void getWaterResources(BlockSet set, DimensionType dimType) {
+		if (dimType == DimensionTypes.OVERWORLD) {
+			set.add(BlockTypes.SEA_LANTERN);
+			set.add(BlockTypes.PRISMARINE);
+			set.add(BlockTypes.GOLD_BLOCK);
+		}
 	}
 
 	public static BlockState getCommonGround(DimensionType dimType) {

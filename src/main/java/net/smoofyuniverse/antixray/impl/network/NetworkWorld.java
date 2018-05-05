@@ -25,7 +25,6 @@ package net.smoofyuniverse.antixray.impl.network;
 import co.aikar.timings.Timing;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.world.WorldType;
@@ -34,6 +33,7 @@ import net.smoofyuniverse.antixray.AntiXrayTimings;
 import net.smoofyuniverse.antixray.api.cache.Signature;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.api.volume.WorldView;
 import net.smoofyuniverse.antixray.config.WorldConfig;
@@ -42,6 +42,7 @@ import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.antixray.impl.network.cache.NetworkRegionCache;
 import net.smoofyuniverse.antixray.util.ModifierUtil;
+import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -74,8 +75,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static net.smoofyuniverse.antixray.util.MathUtil.clamp;
 
 /**
  * Represents the world viewed for the network (akka online players)
@@ -87,11 +89,11 @@ public class NetworkWorld implements WorldView {
 	private final Vector3i blockMin, blockMax, blockSize;
 	private final InternalWorld world;
 
-	private Map<ChunkModifier, Object> modifiers;
+	private List<ConfiguredModifier> modifiers;
 	private NetworkRegionCache regionCache;
 	private WorldConfig.Immutable config;
 	private Signature signature;
-	private boolean enabled;
+	private boolean enabled, dynamismEnabled;
 
 	private Random random = new Random();
 
@@ -123,20 +125,16 @@ public class NetworkWorld implements WorldView {
 		ConfigurationNode cfgNode = root.getNode("Config");
 		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN, new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END));
 
-		if (cfg.preobf.blocks == null)
-			cfg.preobf.blocks = ModifierUtil.getCommonResources(dimType);
+		if (cfg.preobf.blocks == null) {
+			cfg.preobf.blocks = new BlockSet();
+			ModifierUtil.getCommonResources(cfg.preobf.blocks, dimType);
+			ModifierUtil.getRareResources(cfg.preobf.blocks, dimType);
+		}
 		if (cfg.preobf.replacement == null)
 			cfg.preobf.replacement = ModifierUtil.getCommonGround(dimType);
 
-		if (cfg.deobf.naturalRadius < 1)
-			cfg.deobf.naturalRadius = 1;
-		if (cfg.deobf.naturalRadius > 4)
-			cfg.deobf.naturalRadius = 4;
-
-		if (cfg.deobf.playerRadius < 1)
-			cfg.deobf.playerRadius = 1;
-		if (cfg.deobf.playerRadius > 4)
-			cfg.deobf.playerRadius = 4;
+		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
+		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);
 
 		if (cfg.seed == 0)
 			cfg.seed = ThreadLocalRandom.current().nextLong();
@@ -148,12 +146,18 @@ public class NetworkWorld implements WorldView {
 
 		ConfigurationNode modsNode = root.getNode("Modifiers");
 		if (modsNode.isVirtual()) {
-			if (dimType == DimensionTypes.OVERWORLD)
+			if (dimType == DimensionTypes.OVERWORLD) {
 				modsNode.getAppendedNode().getNode("Id").setValue("bedrock");
+
+				ConfigurationNode water_dungeons = modsNode.getAppendedNode();
+				water_dungeons.getNode("Id").setValue("obvious");
+				water_dungeons.getNode("Preset").setValue("water_dungeons");
+			}
+
 			modsNode.getAppendedNode().getNode("Id").setValue("obvious");
 		}
 
-		ImmutableMap.Builder<ChunkModifier, Object> mods = ImmutableMap.builder();
+		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
 		if (cfg.enabled) {
 			for (ConfigurationNode node : modsNode.getChildrenList()) {
 				String id = node.getNode("Id").getString();
@@ -173,13 +177,14 @@ public class NetworkWorld implements WorldView {
 
 				Object modCfg;
 				try {
-					modCfg = mod.loadConfiguration(node.getNode("Options"), properties);
+					modCfg = mod.loadConfiguration(node.getNode("Options"), properties, node.getNode("Preset").getString("").toLowerCase());
+					node.removeChild("Preset");
 				} catch (Exception e) {
 					AntiXray.LOGGER.warn("Modifier " + mod.getId() + " failed to loaded his configuration. This modifier will be ignored.", e);
 					continue;
 				}
 
-				mods.put(mod, modCfg);
+				mods.add(new ConfiguredModifier(mod, modCfg));
 			}
 		}
 		this.modifiers = mods.build();
@@ -191,23 +196,31 @@ public class NetworkWorld implements WorldView {
 
 		if (cfg.enabled && cfg.cache) {
 			boolean useCache = false;
-			for (ChunkModifier mod : this.modifiers.keySet()) {
-				if (mod.shouldCache())
+			for (ConfiguredModifier mod : this.modifiers) {
+				if (mod.modifier.shouldCache())
 					useCache = true;
 			}
 
 			if (useCache) {
-				String cacheName = this.world.getUniqueId() + "/" + Signature.builder().append(this.modifiers.keySet()).build();
+				Signature.Builder cacheSignature = Signature.builder();
+				for (ConfiguredModifier mod : this.modifiers)
+					cacheSignature.append(mod.modifier);
+
+				String cacheName = this.world.getUniqueId() + "/" + cacheSignature.build();
 
 				this.regionCache = new NetworkRegionCache(AntiXray.get().getCacheDirectory().resolve(cacheName));
 				try {
+					this.regionCache.loadVersion();
 					if (this.regionCache.isVersionSupported()) {
-						this.regionCache.updateVersion();
+						if (this.regionCache.shouldUpdateVersion()) {
+							AntiXray.LOGGER.info("Updating cache version in directory " + cacheName + "/ ..");
+							this.regionCache.updateVersion();
+						}
 						this.regionCache.saveVersion();
 
-						Signature.Builder b = Signature.builder().append(cfg.seed);
-						for (Entry<ChunkModifier, Object> e : this.modifiers.entrySet())
-							e.getKey().appendSignature(b, e.getValue());
+						Signature.Builder b = Signature.builder().append(cfg.seed).append((byte) (cfg.dynamism ? 1 : 0));
+						for (ConfiguredModifier mod : this.modifiers)
+							mod.modifier.appendSignature(b, mod.config);
 						this.signature = b.build();
 					} else {
 						AntiXray.LOGGER.warn("Cache version in directory " + cacheName + "/ is not supported. Caching will be disabled.");
@@ -230,6 +243,7 @@ public class NetworkWorld implements WorldView {
 
 		this.config = cfg.toImmutable();
 		this.enabled = cfg.enabled;
+		this.dynamismEnabled = cfg.enabled && cfg.dynamism;
 	}
 
 	@Override
@@ -304,6 +318,29 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
+	public boolean isDynamismEnabled() {
+		return this.dynamismEnabled;
+	}
+
+	@Override
+	public void setDynamism(int x, int y, int z, int distance) {
+		if (this.dynamismEnabled) {
+			NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+			if (chunk != null)
+				chunk.setDynamism(x, y, z, distance);
+		}
+	}
+
+	@Override
+	public int getDynamism(int x, int y, int z) {
+		if (!this.dynamismEnabled)
+			return 0;
+
+		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk == null ? 0 : chunk.getDynamism(x, y, z);
+	}
+
+	@Override
 	public String getName() {
 		return this.world.getName();
 	}
@@ -314,7 +351,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public Map<ChunkModifier, Object> getModifiers() {
+	public List<ConfiguredModifier> getModifiers() {
 		if (this.config == null)
 			throw new IllegalStateException("Config not loaded");
 		return this.modifiers;
@@ -379,16 +416,16 @@ public class NetworkWorld implements WorldView {
 
 		AntiXrayTimings.REOBFUSCATION.startTiming();
 
-		for (Entry<ChunkModifier, Object> e : getModifiers().entrySet()) {
-			ChunkModifier mod = e.getKey();
-			Timing timing = mod.getTiming();
-
+		for (ConfiguredModifier mod : getModifiers()) {
+			Timing timing = mod.modifier.getTiming();
 			timing.startTiming();
+
 			try {
-				mod.modify(this, min, max, this.random, e.getValue());
+				mod.modifier.modify(this, min, max, this.random, mod.config);
 			} catch (Exception ex) {
-				AntiXray.LOGGER.error("Modifier " + mod.getId() + " has thrown an exception while (re)modifying a part of a network world", ex);
+				AntiXray.LOGGER.error("Modifier " + mod.modifier.getId() + " has thrown an exception while (re)modifying a part of a network world", ex);
 			}
+
 			timing.stopTiming();
 		}
 

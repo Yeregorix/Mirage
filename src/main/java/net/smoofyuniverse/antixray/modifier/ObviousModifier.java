@@ -38,11 +38,14 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
+
+import static net.smoofyuniverse.antixray.util.MathUtil.clamp;
 
 /**
  * This modifier only hides ores which are not exposed to the view of normal users.
@@ -54,12 +57,27 @@ public class ObviousModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
-		if (cfg.blocks == null)
-			cfg.blocks = ModifierUtil.getCommonResources(world.getDimensionType());
-		if (cfg.replacement == null)
-			cfg.replacement = ModifierUtil.getCommonGround(world.getDimensionType());
+
+		DimensionType dimType = world.getDimensionType();
+		if (preset.equals("water_dungeons")) {
+			cfg.blocks = new BlockSet();
+			ModifierUtil.getWaterResources(cfg.blocks, dimType);
+			cfg.replacement = BlockTypes.WATER.getDefaultState();
+			cfg.dynamism = 8;
+		} else {
+			if (cfg.blocks == null) {
+				cfg.blocks = new BlockSet();
+				ModifierUtil.getCommonResources(cfg.blocks, dimType);
+				ModifierUtil.getRareResources(cfg.blocks, dimType);
+			}
+			if (cfg.replacement == null)
+				cfg.replacement = ModifierUtil.getCommonGround(dimType);
+		}
+
+		cfg.dynamism = clamp(cfg.dynamism, 0, 10);
+
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
 	}
@@ -78,16 +96,25 @@ public class ObviousModifier extends ChunkModifier {
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
+		boolean useDynamism = cfg.dynamism != 0 && view.isDynamismEnabled();
 
 		for (int y = min.getY(); y <= max.getY(); y++) {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
 				for (int x = min.getX(); x <= max.getX(); x++) {
 					BlockState b = view.getBlock(x, y, z);
-					if (b == BlockTypes.AIR || b == cfg.replacement)
+					if (b.getType() == BlockTypes.AIR || b == cfg.replacement)
 						continue;
 
-					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, cfg.replacement);
+					if (cfg.blocks.contains(b)) {
+						if (view.isExposed(x, y, z)) {
+							if (useDynamism) {
+								view.setDynamism(x, y, z, cfg.dynamism);
+								view.setBlock(x, y, z, cfg.replacement);
+							}
+						} else {
+							view.setBlock(x, y, z, cfg.replacement);
+						}
+					}
 				}
 			}
 		}
@@ -101,18 +128,22 @@ public class ObviousModifier extends ChunkModifier {
 		public BlockSet blocks;
 		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
 		public BlockState replacement;
+		@Setting(value = "Dynamism", comment = "The dynamic obfuscation distance, between 0 and 10")
+		public int dynamism = 4;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), this.replacement);
+			return new Immutable(this.blocks.toSet(), this.replacement, this.dynamism);
 		}
 
 		public static final class Immutable {
 			public final Set<BlockState> blocks;
 			public final BlockState replacement;
+			public final int dynamism;
 
-			public Immutable(Collection<BlockState> blocks, BlockState replacement) {
+			public Immutable(Collection<BlockState> blocks, BlockState replacement, int dynamism) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacement = replacement;
+				this.dynamism = dynamism;
 			}
 		}
 	}

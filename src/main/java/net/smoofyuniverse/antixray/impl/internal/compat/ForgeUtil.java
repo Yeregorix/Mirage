@@ -20,26 +20,16 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.impl.internal;
+package net.smoofyuniverse.antixray.impl.internal.compat;
 
-import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkWatchEvent;
 
-public interface InternalChunk extends ChunkStorage {
+public class ForgeUtil {
 
-	@Override
-	NetworkChunk getView();
-
-	@Override
-	InternalWorld getWorld();
-
-	long getValidCacheDate();
-
-	void setValidCacheDate(long value);
-
-	void bindContainer(int index);
-
-	void bindContainerSafely(int index);
-
-	void bindOrCreateContainer(int index);
+	public static void postChunkWatchEvent(ChunkPos pos, EntityPlayerMP p) {
+		MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(pos, p));
+	}
 }

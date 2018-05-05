@@ -32,11 +32,18 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.*;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;
+import net.smoofyuniverse.antixray.impl.network.change.ChunkChangeListener;
+import net.smoofyuniverse.antixray.impl.network.dynamism.DynamicChunk;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Set;
 
+import static net.smoofyuniverse.antixray.util.MathUtil.lengthSquared;
+import static net.smoofyuniverse.antixray.util.MathUtil.squared;
+
 public class NetworkBlockContainer implements IBlockStatePaletteResizer {
+
 	@SuppressWarnings("deprecation")
 	private static final ObjectIntIdentityMap<IBlockState> BLOCK_STATE_IDS = Block.BLOCK_STATE_IDS;
 	private static final IBlockStatePalette REGISTRY_BASED_PALETTE = BlockStateContainer.REGISTRY_BASED_PALETTE;
@@ -44,12 +51,17 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 	private BlockStateContainer container;
 	private IBlockStatePalette palette;
+	private NibbleArray dynamism;
 	private BitArray storage;
-	private int bits, y = -1;
+	private int bits, minY = -1;
+
+	private int[] dynCount = new int[16];
 	private int blockCount;
 
 	public NetworkBlockContainer(BlockStateContainer container) {
 		this.container = container;
+		this.dynamism = new NibbleArray();
+		this.dynCount[0] = 4096;
 	}
 
 	public InternalBlockContainer getInternalBlockContainer() {
@@ -57,32 +69,15 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	}
 
 	public int getY() {
-		return this.y;
+		return this.minY;
 	}
 
 	public void setY(int y) {
-		this.y = y;
+		this.minY = y;
 	}
 
 	public boolean isEmpty() {
 		return this.blockCount == 0;
-	}
-
-	public void deobfuscate(ChunkChangeListener listener) {
-		this.blockCount = 0;
-		for (int i = 0; i < 4096; i++) {
-			IBlockState fakeState = get(i), realState = this.container.get(i);
-
-			if (realState.getBlock() != Blocks.AIR)
-				this.blockCount++;
-
-			if (fakeState != realState) {
-				_set(i, realState);
-
-				if (listener != null)
-					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
-			}
-		}
 	}
 
 	public IBlockState get(int index) {
@@ -114,12 +109,25 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		}
 	}
 
-	public static int getIndex(int x, int y, int z) {
-		return y << 8 | z << 4 | x;
+	public void deobfuscate(ChunkChangeListener listener) {
+		this.blockCount = 0;
+		for (int i = 0; i < 4096; i++) {
+			IBlockState fakeState = get(i), realState = this.container.get(i);
+
+			if (realState.getBlock() != Blocks.AIR)
+				this.blockCount++;
+
+			if (fakeState != realState) {
+				_set(i, realState);
+
+				if (listener != null)
+					listener.addChange(i & 15, this.minY + (i >> 8 & 15), i >> 4 & 15);
+			}
+		}
 	}
 
 	public boolean deobfuscate(ChunkChangeListener listener, int x, int y, int z) {
-		int i = getIndex(x, y, z);
+		int i = index(x, y, z);
 		IBlockState fakeState = get(i), realState = this.container.get(i);
 
 		if (fakeState != realState) {
@@ -128,13 +136,29 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			else if (fakeState.getBlock() == Blocks.AIR)
 				this.blockCount++;
 
+			setDynamism(i, 0);
 			_set(i, realState);
 
-			if (listener != null)
-				listener.addChange(x, this.y + y, z);
+			if (listener != null) {
+				listener.updateDynamism(x, this.minY + y, z, 0);
+				listener.addChange(x, this.minY + y, z);
+			}
 			return true;
 		}
 		return false;
+	}
+
+	public static int index(int x, int y, int z) {
+		return y << 8 | z << 4 | x;
+	}
+
+	public void setDynamism(int index, int distance) {
+		int oldD = this.dynamism.getFromIndex(index);
+		if (oldD != distance) {
+			this.dynamism.setIndex(index, distance);
+			this.dynCount[oldD]--;
+			this.dynCount[distance]++;
+		}
 	}
 
 	public void obfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
@@ -151,7 +175,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 				_set(i, ground);
 
 				if (listener != null)
-					listener.addChange(i & 15, this.y + (i >> 8 & 15), i >> 4 & 15);
+					listener.addChange(i & 15, this.minY + (i >> 8 & 15), i >> 4 & 15);
 			} else {
 				if (state.getBlock() != Blocks.AIR)
 					this.blockCount++;
@@ -159,12 +183,48 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		}
 	}
 
-	public IBlockState get(int x, int y, int z) {
-		return get(getIndex(x, y, z));
+	public int getMaxDynamism() {
+		for (int i = 10; i >= 0; i--) {
+			if (this.dynCount[i] != 0)
+				return i;
+		}
+		return 0;
 	}
 
-	public void set(int x, int y, int z, IBlockState state) {
-		set(getIndex(x, y, z), state);
+	public void clearDynamism() {
+		this.dynamism = new NibbleArray();
+		Arrays.fill(this.dynCount, 0);
+		this.dynCount[0] = 4096;
+	}
+
+	public void setDynamism(int x, int y, int z, int distance) {
+		setDynamism(index(x, y, z), distance);
+	}
+
+	public int getDynamism(int x, int y, int z) {
+		return getDynamism(index(x, y, z));
+	}
+
+	public int getDynamism(int index) {
+		return this.dynamism.getFromIndex(index);
+	}
+
+	public void collectDynamicPositions(DynamicChunk chunk, int cX, int cY, int cZ) {
+		if (this.dynCount[0] == 4096)
+			return;
+
+		for (int i = 0; i < 4096; i++) {
+			int d = this.dynamism.getFromIndex(i);
+			if (d != 0) {
+				int x = i & 15, y = i >> 8 & 15, z = i >> 4 & 15;
+				if (lengthSquared(cX - x, cY - y, cZ - z) <= squared(d) << 8)
+					chunk.add(x, this.minY + y, z);
+			}
+		}
+	}
+
+	public IBlockState get(int x, int y, int z) {
+		return get(index(x, y, z));
 	}
 
 	public void set(int index, IBlockState state) {
@@ -200,15 +260,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		buf.writeLongArray(this.storage.getBackingLongArray());
 	}
 
-	public void save(BlockContainerSnapshot out) {
-		byte[] blockIds = new byte[4096];
-		NibbleArray data = new NibbleArray();
-		NibbleArray extension = getDataForNBT(blockIds, data);
-
-		out.setSection(this.y >> 4);
-		out.setBlockIds(blockIds);
-		out.setData(data.getData());
-		out.setExtension(extension == null ? null : extension.getData());
+	public void set(int x, int y, int z, IBlockState state) {
+		set(index(x, y, z), state);
 	}
 
 	@Nullable
@@ -235,10 +288,26 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		return extension;
 	}
 
+	public void save(BlockContainerSnapshot out) {
+		byte[] blockIds = new byte[4096];
+		NibbleArray data = new NibbleArray();
+		NibbleArray extension = getDataForNBT(blockIds, data);
+		byte[] dynamism = this.dynamism.getData().clone();
+
+		out.setSection(this.minY >> 4);
+		out.setBlockIds(blockIds);
+		out.setData(data.getData());
+		out.setExtension(extension == null ? null : extension.getData());
+		out.setDynamism(dynamism);
+	}
+
 	public void load(BlockContainerSnapshot in) {
-		if (in.getSection() != this.y >> 4)
+		if (in.getSection() != this.minY >> 4)
 			throw new IllegalArgumentException("Section");
+
 		setDataFromNBT(in.getBlockIds(), new NibbleArray(in.getData()), in.getExtension() == null ? null : new NibbleArray(in.getExtension()));
+		this.dynamism = new NibbleArray(in.getDynamism().clone());
+		recalculateDynCount();
 	}
 
 	private void setDataFromNBT(byte[] blockIds, NibbleArray data, @Nullable NibbleArray extension) {
@@ -260,5 +329,11 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 	public int getSerializedSize() {
 		return 1 + this.palette.getSerializedSize() + PacketBuffer.getVarIntSize(this.storage.size()) + this.storage.getBackingLongArray().length * 8;
+	}
+
+	private void recalculateDynCount() {
+		Arrays.fill(this.dynCount, 0);
+		for (int i = 0; i < 4096; i++)
+			this.dynCount[this.dynamism.getFromIndex(i)]++;
 	}
 }

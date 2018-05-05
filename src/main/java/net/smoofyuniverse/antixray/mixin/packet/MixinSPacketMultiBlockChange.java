@@ -28,7 +28,6 @@ import net.minecraft.network.play.server.SPacketMultiBlockChange.BlockUpdateData
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
-import net.smoofyuniverse.antixray.impl.internal.InternalMultiBlockChange;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -37,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SPacketMultiBlockChange.class)
-public class MixinSPacketMultiBlockChange implements InternalMultiBlockChange {
+public class MixinSPacketMultiBlockChange {
 	@Shadow
 	public BlockUpdateData[] changedBlocks;
 
@@ -47,40 +46,14 @@ public class MixinSPacketMultiBlockChange implements InternalMultiBlockChange {
 	@Inject(method = "<init>(I[SLnet/minecraft/world/chunk/Chunk;)V", at = @At("RETURN"))
 	public void onInit(int changes, short[] offsets, Chunk chunk, CallbackInfo ci) {
 		if (((InternalChunk) chunk).isViewAvailable()) {
+			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
 			SPacketMultiBlockChange thisObj = (SPacketMultiBlockChange) (Object) this;
-			int bx = chunk.x << 4, bz = chunk.z << 4;
-
-			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
+			int minX = chunk.x << 4, minZ = chunk.z << 4;
 
 			for (int i = 0; i < this.changedBlocks.length; i++) {
-				short offset = offsets[i];
-				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,
-						(IBlockState) netChunk.getBlock(bx + (offset >> 12 & 15), offset & 255, bz + (offset >> 8 & 15)));
-			}
-		}
-	}
-
-	@Override
-	public void fastInit(int changes, short[] offsets, Chunk chunk) {
-		this.chunkPos = new ChunkPos(chunk.x, chunk.z);
-		this.changedBlocks = new BlockUpdateData[changes];
-
-		SPacketMultiBlockChange thisObj = (SPacketMultiBlockChange) (Object) this;
-		int bx = chunk.x << 4, bz = chunk.z << 4;
-
-		if (((InternalChunk) chunk).isViewAvailable()) {
-			NetworkChunk netChunk = ((InternalChunk) chunk).getView();
-
-			for (int i = 0; i < this.changedBlocks.length; i++) {
-				short offset = offsets[i];
-				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,
-						(IBlockState) netChunk.getBlock(bx + (offset >> 12 & 15), offset & 255, bz + (offset >> 8 & 15)));
-			}
-		} else {
-			for (int i = 0; i < this.changedBlocks.length; i++) {
-				short offset = offsets[i];
-				this.changedBlocks[i] = thisObj.new BlockUpdateData(offset,
-						chunk.getBlockState(bx + (offset >> 12 & 15), offset & 255, bz + (offset >> 8 & 15)));
+				short pos = offsets[i];
+				this.changedBlocks[i] = thisObj.new BlockUpdateData(pos,
+						(IBlockState) netChunk.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 			}
 		}
 	}

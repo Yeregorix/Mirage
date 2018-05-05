@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,10 +26,11 @@ import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 
 public class AntiXrayTimings {
-	public static final Timing OBFUSCATION = Timings.of(AntiXray.get(), "Obfuscation");
-	public static final Timing PREOBFUSCATION = Timings.of(AntiXray.get(), "Preobfuscation");
-	public static final Timing DEOBFUSCATION = Timings.of(AntiXray.get(), "Deobfuscation");
-	public static final Timing REOBFUSCATION = Timings.of(AntiXray.get(), "Reobfuscation");
-	public static final Timing WRITING_CACHE = Timings.of(AntiXray.get(), "Writing Cache");
-	public static final Timing READING_CACHE = Timings.of(AntiXray.get(), "Reading Cache");
+	public static final Timing OBFUSCATION = Timings.of(AntiXray.get(), "Obfuscation"),
+			PREOBFUSCATION = Timings.of(AntiXray.get(), "Preobfuscation"),
+			DEOBFUSCATION = Timings.of(AntiXray.get(), "Deobfuscation"),
+			REOBFUSCATION = Timings.of(AntiXray.get(), "Reobfuscation"),
+			WRITING_CACHE = Timings.of(AntiXray.get(), "Writing Cache"),
+			READING_CACHE = Timings.of(AntiXray.get(), "Reading Cache"),
+			DYNAMISM = Timings.of(AntiXray.get(), "Dynamism");
 }

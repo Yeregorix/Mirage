@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -60,7 +58,7 @@ public class BedrockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
 		if (cfg.ground == null)
 			cfg.ground = ModifierUtil.getCommonGround(world.getDimensionType());

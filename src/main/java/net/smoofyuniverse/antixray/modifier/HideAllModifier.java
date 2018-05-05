@@ -38,6 +38,7 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
@@ -54,12 +55,24 @@ public class HideAllModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN, new Config());
-		if (cfg.blocks == null)
-			cfg.blocks = ModifierUtil.getCommonResources(world.getDimensionType());
-		if (cfg.replacement == null)
-			cfg.replacement = ModifierUtil.getCommonGround(world.getDimensionType());
+
+		DimensionType dimType = world.getDimensionType();
+		if (preset.equals("water_dungeons")) {
+			cfg.blocks = new BlockSet();
+			ModifierUtil.getWaterResources(cfg.blocks, dimType);
+			cfg.replacement = BlockTypes.WATER.getDefaultState();
+		} else {
+			if (cfg.blocks == null) {
+				cfg.blocks = new BlockSet();
+				ModifierUtil.getCommonResources(cfg.blocks, dimType);
+				ModifierUtil.getRareResources(cfg.blocks, dimType);
+			}
+			if (cfg.replacement == null)
+				cfg.replacement = ModifierUtil.getCommonGround(dimType);
+		}
+
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
 	}
@@ -83,7 +96,7 @@ public class HideAllModifier extends ChunkModifier {
 			for (int z = min.getZ(); z <= max.getZ(); z++) {
 				for (int x = min.getX(); x <= max.getX(); x++) {
 					BlockState b = view.getBlock(x, y, z);
-					if (b == BlockTypes.AIR || b == cfg.replacement)
+					if (b.getType() == BlockTypes.AIR || b == cfg.replacement)
 						continue;
 
 					if (cfg.blocks.contains(b))

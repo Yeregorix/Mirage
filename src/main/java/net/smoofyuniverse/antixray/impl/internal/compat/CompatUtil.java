@@ -20,46 +20,30 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.modifier;
+package net.smoofyuniverse.antixray.impl.internal.compat;
 
-import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.antixray.AntiXray;
-import net.smoofyuniverse.antixray.api.cache.Signature.Builder;
-import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
-import net.smoofyuniverse.antixray.api.volume.BlockView;
-import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import ninja.leaping.configurate.ConfigurationNode;
-import org.spongepowered.api.world.storage.WorldProperties;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.math.ChunkPos;
 
-import java.util.Random;
+public class CompatUtil {
+	public static final boolean useForge = detectForge();
 
-/**
- * This modifier does not modify anything.
- */
-public class EmptyModifier extends ChunkModifier {
-
-	public EmptyModifier() {
-		super(AntiXray.get(), "Empty");
+	public static boolean hasTileEntity(IBlockState state) {
+		return useForge ? state.getBlock().hasTileEntity(state) : state.getBlock().hasTileEntity();
 	}
 
-	@Override
-	public boolean shouldCache() {
-		return false;
+	public static void postChunkWatchEvent(ChunkPos pos, EntityPlayerMP p) {
+		if (useForge)
+			ForgeUtil.postChunkWatchEvent(pos, p);
 	}
 
-	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) {
-		return new Object();
+	private static boolean detectForge() {
+		try {
+			Class.forName("net.minecraftforge.common.ForgeVersion");
+			return true;
+		} catch (ClassNotFoundException e) {
+			return false;
+		}
 	}
-
-	@Override
-	public void appendSignature(Builder builder, Object config) {}
-
-	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return true;
-	}
-
-	@Override
-	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {}
 }

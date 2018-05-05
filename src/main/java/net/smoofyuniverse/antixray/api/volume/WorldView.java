@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,13 +23,13 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
+import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.config.WorldConfig;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -58,7 +56,7 @@ public interface WorldView extends BlockView, Identifiable {
 	/**
 	 * @return The modifiers applied to this world and their configurations
 	 */
-	Map<ChunkModifier, Object> getModifiers();
+	List<ConfiguredModifier> getModifiers();
 
 	/**
 	 * @return The configuration of this world

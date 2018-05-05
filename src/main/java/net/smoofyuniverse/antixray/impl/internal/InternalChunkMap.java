@@ -22,24 +22,15 @@
 
 package net.smoofyuniverse.antixray.impl.internal;
 
-import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
+import net.smoofyuniverse.antixray.impl.network.dynamism.PlayerDynamismManager;
 
-public interface InternalChunk extends ChunkStorage {
+import javax.annotation.Nullable;
+import java.util.UUID;
 
-	@Override
-	NetworkChunk getView();
+public interface InternalChunkMap {
 
-	@Override
-	InternalWorld getWorld();
+	boolean isDynamismEnabled();
 
-	long getValidCacheDate();
-
-	void setValidCacheDate(long value);
-
-	void bindContainer(int index);
-
-	void bindContainerSafely(int index);
-
-	void bindOrCreateContainer(int index);
+	@Nullable
+	PlayerDynamismManager getDynamismManager(UUID playerId);
 }

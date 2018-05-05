@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,6 +34,47 @@ public interface BlockView extends MutableBlockVolume {
 	 * @return The BlockStorage which is associated with this BlockView
 	 */
 	BlockStorage getStorage();
+
+	/**
+	 * @return Whether dynamic obfuscation is enabled in this volume
+	 */
+	boolean isDynamismEnabled();
+
+	/**
+	 * Sets the dynamism distance of the given position
+	 *
+	 * @param pos      The position
+	 * @param distance The distance of dynamism, between 0 and 15
+	 */
+	default void setDynamism(Vector3i pos, int distance) {
+		setDynamism(pos.getX(), pos.getY(), pos.getZ(), distance);
+	}
+
+	/**
+	 * Sets the dynamism distance of the given position
+	 *
+	 * @param x        The X position
+	 * @param y        The Y position
+	 * @param z        The Z position
+	 * @param distance The distance of dynamism, between 0 and 15
+	 */
+	void setDynamism(int x, int y, int z, int distance);
+
+	/**
+	 * @param pos The position
+	 * @return The distance of dynamism, between 0 and 15
+	 */
+	default int getDynamism(Vector3i pos) {
+		return getDynamism(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return The distance of dynamism, between 0 and 15
+	 */
+	int getDynamism(int x, int y, int z);
 
 	/**
 	 * Checks if the block at the given position is exposed to the view of normal users.
