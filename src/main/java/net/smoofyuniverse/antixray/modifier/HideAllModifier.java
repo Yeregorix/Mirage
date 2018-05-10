@@ -45,6 +45,8 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
 
+import static net.smoofyuniverse.antixray.util.MathUtil.clamp;
+
 /**
  * This modifier hides all ores.
  */
@@ -63,6 +65,9 @@ public class HideAllModifier extends ChunkModifier {
 			cfg.blocks = new BlockSet();
 			ModifierUtil.getWaterResources(cfg.blocks, dimType);
 			cfg.replacement = BlockTypes.WATER.getDefaultState();
+
+			cfg.minY = 30;
+			cfg.maxY = 64;
 		} else {
 			if (cfg.blocks == null) {
 				cfg.blocks = new BlockSet();
@@ -71,6 +76,15 @@ public class HideAllModifier extends ChunkModifier {
 			}
 			if (cfg.replacement == null)
 				cfg.replacement = ModifierUtil.getCommonGround(dimType);
+
+			cfg.minY = clamp(cfg.minY, 0, 255);
+			cfg.maxY = clamp(cfg.maxY, 0, 255);
+
+			if (cfg.minY > cfg.maxY) {
+				int t = cfg.minY;
+				cfg.minY = cfg.maxY;
+				cfg.maxY = t;
+			}
 		}
 
 		node.setValue(Config.TOKEN, cfg);
@@ -80,7 +94,7 @@ public class HideAllModifier extends ChunkModifier {
 	@Override
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		builder.append(cfg.blocks).append(cfg.replacement);
+		builder.append(cfg.blocks).append(cfg.replacement).append(cfg.minY).append(cfg.maxY);
 	}
 
 	@Override
@@ -91,10 +105,11 @@ public class HideAllModifier extends ChunkModifier {
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
+		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
 
-		for (int y = min.getY(); y <= max.getY(); y++) {
-			for (int z = min.getZ(); z <= max.getZ(); z++) {
-				for (int x = min.getX(); x <= max.getX(); x++) {
+		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
+			for (int z = min.getZ(); z <= maxZ; z++) {
+				for (int x = min.getX(); x <= maxX; x++) {
 					BlockState b = view.getBlock(x, y, z);
 					if (b.getType() == BlockTypes.AIR || b == cfg.replacement)
 						continue;
@@ -114,18 +129,25 @@ public class HideAllModifier extends ChunkModifier {
 		public BlockSet blocks;
 		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
 		public BlockState replacement;
+		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
+		public int minY = 0;
+		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
+		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), this.replacement);
+			return new Immutable(this.blocks.toSet(), this.replacement, this.minY, this.maxY);
 		}
 
 		public static final class Immutable {
 			public final Set<BlockState> blocks;
 			public final BlockState replacement;
+			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, BlockState replacement) {
+			public Immutable(Collection<BlockState> blocks, BlockState replacement, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacement = replacement;
+				this.minY = minY;
+				this.maxY = maxY;
 			}
 		}
 	}

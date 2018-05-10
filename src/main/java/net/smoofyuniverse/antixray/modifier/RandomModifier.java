@@ -89,6 +89,14 @@ public class RandomModifier extends ChunkModifier {
 		}
 
 		cfg.dynamism = clamp(cfg.dynamism, 0, 10);
+		cfg.minY = clamp(cfg.minY, 0, 255);
+		cfg.maxY = clamp(cfg.maxY, 0, 255);
+
+		if (cfg.minY > cfg.maxY) {
+			int t = cfg.minY;
+			cfg.minY = cfg.maxY;
+			cfg.maxY = t;
+		}
 
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
@@ -97,7 +105,7 @@ public class RandomModifier extends ChunkModifier {
 	@Override
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		builder.append(cfg.blocks).append(cfg.replacements);
+		builder.append(cfg.blocks).append(cfg.replacements).append(cfg.dynamism).append(cfg.minY).append(cfg.maxY);
 	}
 
 	@Override
@@ -109,10 +117,11 @@ public class RandomModifier extends ChunkModifier {
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
 		boolean useDynamism = cfg.dynamism != 0 && view.isDynamismEnabled();
+		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
 
-		for (int y = min.getY(); y <= max.getY(); y++) {
-			for (int z = min.getZ(); z <= max.getZ(); z++) {
-				for (int x = min.getX(); x <= max.getX(); x++) {
+		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
+			for (int z = min.getZ(); z <= maxZ; z++) {
+				for (int x = min.getX(); x <= maxX; x++) {
 					BlockState b = view.getBlock(x, y, z);
 					if (b.getType() == BlockTypes.AIR)
 						continue;
@@ -142,20 +151,27 @@ public class RandomModifier extends ChunkModifier {
 		public Map<BlockState, Double> replacements;
 		@Setting(value = "Dynamism", comment = "The dynamic obfuscation distance, between 0 and 10")
 		public int dynamism = 4;
+		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
+		public int minY = 0;
+		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
+		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements), this.dynamism);
+			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements), this.dynamism, this.minY, this.maxY);
 		}
 
 		public static final class Immutable {
 			public final Set<BlockState> blocks;
 			public final WeightedList<BlockState> replacements;
 			public final int dynamism;
+			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int dynamism) {
+			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int dynamism, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacements = replacements;
 				this.dynamism = dynamism;
+				this.minY = minY;
+				this.maxY = maxY;
 			}
 		}
 	}
