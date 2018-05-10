@@ -128,10 +128,15 @@ public abstract class MixinChunk implements InternalChunk {
 		if (this.netChunk != null) {
 			try {
 				this.netChunk.setContainers(this.storageArrays);
+			} catch (Exception e) {
+				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
+				return;
+			}
+			try {
 				if (this.netChunk.getState() != State.OBFUSCATED)
 					this.netChunk.loadFromCacheNow();
 			} catch (Exception e) {
-				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
+				AntiXray.LOGGER.error("Failed to load a network chunk from cache", e);
 			}
 		}
 	}

@@ -92,7 +92,20 @@ public class BlockContainerSnapshot {
 			out.write(this.extension);
 		}
 
-		out.write(this.dynamism);
+		if (isEmpty(this.dynamism))
+			out.writeBoolean(false);
+		else {
+			out.writeBoolean(true);
+			out.write(this.dynamism);
+		}
+	}
+
+	private static boolean isEmpty(byte[] array) {
+		for (byte b : array) {
+			if (b != 0)
+				return false;
+		}
+		return true;
 	}
 
 	public BlockContainerSnapshot read(DataInputStream in, int version) throws IOException {
@@ -112,7 +125,8 @@ public class BlockContainerSnapshot {
 			this.extension = null;
 
 		this.dynamism = new byte[2048];
-		in.readFully(this.dynamism);
+		if (in.readBoolean())
+			in.readFully(this.dynamism);
 
 		return this;
 	}
