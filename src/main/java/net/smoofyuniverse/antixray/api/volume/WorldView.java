@@ -24,7 +24,7 @@ package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
-import net.smoofyuniverse.antixray.config.WorldConfig;
+import net.smoofyuniverse.antixray.config.world.WorldConfig;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
 

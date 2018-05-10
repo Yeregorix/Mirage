@@ -36,7 +36,7 @@ import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
 import net.smoofyuniverse.antixray.api.volume.WorldView;
-import net.smoofyuniverse.antixray.config.WorldConfig;
+import net.smoofyuniverse.antixray.config.world.WorldConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.cache.ChunkSnapshot;

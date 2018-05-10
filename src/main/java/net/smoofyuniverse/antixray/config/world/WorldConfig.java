@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.config;
+package net.smoofyuniverse.antixray.config.world;
 
 import com.google.common.reflect.TypeToken;
 import ninja.leaping.configurate.objectmapping.Setting;

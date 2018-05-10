@@ -31,7 +31,7 @@ import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.AntiXrayTimings;
 import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
-import net.smoofyuniverse.antixray.config.PreobfuscationConfig;
+import net.smoofyuniverse.antixray.config.world.PreobfuscationConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.network.cache.BlockContainerSnapshot;

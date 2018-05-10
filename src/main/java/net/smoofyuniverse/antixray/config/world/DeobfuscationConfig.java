@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,39 +20,28 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.config;
+package net.smoofyuniverse.antixray.config.world;
 
-import com.google.common.collect.ImmutableSet;
-import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import org.spongepowered.api.block.BlockState;
-
-import java.util.Collection;
-import java.util.Set;
 
 @ConfigSerializable
-public class PreobfuscationConfig {
-	@Setting(value = "Enabled", comment = "Enable or disable preobfuscation in this world")
-	public boolean enabled = false;
-	@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-	public BlockSet blocks;
-	@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
-	public BlockState replacement;
+public class DeobfuscationConfig {
+	@Setting(value = "NaturalRadius", comment = "Radius to deobfuscate on natural block update, between 1 and 4")
+	public int naturalRadius = 1;
+	@Setting(value = "PlayerRadius", comment = "Radius to deobfuscate on player block update, between 1 and 4")
+	public int playerRadius = 2;
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.blocks.toSet(), this.replacement);
+		return new Immutable(this.naturalRadius, this.playerRadius);
 	}
 
 	public static class Immutable {
-		public final boolean enabled;
-		public final Set<BlockState> blocks;
-		public final BlockState replacement;
+		public final int naturalRadius, playerRadius;
 
-		public Immutable(boolean enabled, Collection<BlockState> blocks, BlockState replacement) {
-			this.enabled = enabled;
-			this.blocks = ImmutableSet.copyOf(blocks);
-			this.replacement = replacement;
+		public Immutable(int naturalRadius, int playerRadius) {
+			this.naturalRadius = naturalRadius;
+			this.playerRadius = playerRadius;
 		}
 	}
 }

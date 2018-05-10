@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,28 +20,28 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.config;
+package net.smoofyuniverse.antixray.ore.adapter;
 
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import com.google.gson.*;
 
-@ConfigSerializable
-public class DeobfuscationConfig {
-	@Setting(value = "NaturalRadius", comment = "Radius to deobfuscate on natural block update, between 1 and 4")
-	public int naturalRadius = 1;
-	@Setting(value = "PlayerRadius", comment = "Radius to deobfuscate on player block update, between 1 and 4")
-	public int playerRadius = 2;
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 
-	public Immutable toImmutable() {
-		return new Immutable(this.naturalRadius, this.playerRadius);
+public final class InstantAdapter implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
+	public static final DateTimeFormatter FORMAT = new DateTimeFormatterBuilder()
+			.append(DateTimeFormatter.ISO_LOCAL_DATE).appendLiteral(' ')
+			.append(DateTimeFormatter.ISO_LOCAL_TIME).toFormatter().withZone(ZoneId.systemDefault());
+
+	@Override
+	public JsonElement serialize(Instant object, Type type, JsonSerializationContext context) {
+		return new JsonPrimitive(FORMAT.format(object));
 	}
 
-	public static class Immutable {
-		public final int naturalRadius, playerRadius;
-
-		public Immutable(int naturalRadius, int playerRadius) {
-			this.naturalRadius = naturalRadius;
-			this.playerRadius = playerRadius;
-		}
+	@Override
+	public Instant deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+		return FORMAT.parse(json.getAsString(), Instant::from);
 	}
 }
