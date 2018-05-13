@@ -29,6 +29,7 @@ import net.minecraft.util.math.ChunkPos;
 public class CompatUtil {
 	public static final boolean useForge = detectForge();
 
+	@SuppressWarnings("deprecation")
 	public static boolean hasTileEntity(IBlockState state) {
 		return useForge ? state.getBlock().hasTileEntity(state) : state.getBlock().hasTileEntity();
 	}
