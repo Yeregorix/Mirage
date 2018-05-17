@@ -61,6 +61,7 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	private boolean dirty;
 
+	private final Object containersLock = new Object();
 	private NetworkChunk netChunk;
 	private long cacheDate;
 
@@ -87,12 +88,15 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
 	public void onInitWithPrimer(CallbackInfo ci) {
-		if (this.netChunk != null) {
-			try {
+		if (this.netChunk == null)
+			return;
+
+		try {
+			synchronized (this.containersLock) {
 				this.netChunk.setContainers(this.storageArrays);
-			} catch (Exception e) {
-				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
 			}
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
 		}
 	}
 
@@ -125,30 +129,39 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Inject(method = "setStorageArrays", at = @At("RETURN"))
 	public void onSetStorageArrays(CallbackInfo ci) {
-		if (this.netChunk != null) {
-			try {
+		if (this.netChunk == null)
+			return;
+
+		try {
+			synchronized (this.containersLock) {
 				this.netChunk.setContainers(this.storageArrays);
-			} catch (Exception e) {
-				AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
-				return;
 			}
-			try {
-				if (this.netChunk.getState() != State.OBFUSCATED)
-					this.netChunk.loadFromCacheNow();
-			} catch (Exception e) {
-				AntiXray.LOGGER.error("Failed to load a network chunk from cache", e);
-			}
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to update containers of a network chunk", e);
+			return;
+		}
+
+		try {
+			if (this.netChunk.getState() != State.OBFUSCATED)
+				this.netChunk.loadFromCacheNow();
+		} catch (Exception e) {
+			AntiXray.LOGGER.error("Failed to load a network chunk from cache", e);
 		}
 	}
 
 	@Override
 	public void bindContainer(int index) {
-		if (this.netChunk != null) {
-			ExtendedBlockStorage storage = this.storageArrays[index];
-			if (storage != null && this.netChunk.needContainer(index)) {
-				this.netChunk.setContainer(index, storage);
-				if (!storage.isEmpty())
-					this.netChunk.setSaved(false);
+		if (this.netChunk == null)
+			return;
+
+		ExtendedBlockStorage storage = this.storageArrays[index];
+		if (storage != null) {
+			synchronized (this.containersLock) {
+				if (this.netChunk.needContainer(index)) {
+					this.netChunk.setContainer(index, storage);
+					if (!storage.isEmpty())
+						this.netChunk.setSaved(false);
+				}
 			}
 		}
 	}
@@ -164,17 +177,22 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Override
 	public void bindOrCreateContainer(int index) {
-		if (this.netChunk != null && this.netChunk.needContainer(index)) {
-			ExtendedBlockStorage storage = this.storageArrays[index];
-			if (storage == null) {
-				storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
-				this.storageArrays[index] = storage;
-				generateSkylightMap();
-				this.netChunk.setContainer(index, storage);
-			} else {
-				this.netChunk.setContainer(index, storage);
-				if (!storage.isEmpty())
-					this.netChunk.setSaved(false);
+		if (this.netChunk == null)
+			return;
+
+		synchronized (this.containersLock) {
+			if (this.netChunk.needContainer(index)) {
+				ExtendedBlockStorage storage = this.storageArrays[index];
+				if (storage == null) {
+					storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
+					this.storageArrays[index] = storage;
+					generateSkylightMap();
+					this.netChunk.setContainer(index, storage);
+				} else {
+					this.netChunk.setContainer(index, storage);
+					if (!storage.isEmpty())
+						this.netChunk.setSaved(false);
+				}
 			}
 		}
 	}

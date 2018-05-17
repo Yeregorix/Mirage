@@ -79,7 +79,6 @@ public class NetworkChunk implements ChunkView {
 	private final boolean dynamismEnabled;
 	private final long seed;
 
-	private final Object containersLock = new Object();
 	private NetworkBlockContainer[] containers;
 	private State state = State.NOT_OBFUSCATED;
 	private ChunkChangeListener listener;
@@ -116,22 +115,20 @@ public class NetworkChunk implements ChunkView {
 		if (this.state != State.NOT_OBFUSCATED)
 			throw new IllegalStateException();
 
-		synchronized (this.containersLock) {
-			if (this.containers != null) {
-				for (NetworkBlockContainer c : this.containers) {
-					if (c != null)
-						c.getInternalBlockContainer().setNetworkChunk(null);
-				}
+		if (this.containers != null) {
+			for (NetworkBlockContainer c : this.containers) {
+				if (c != null)
+					c.getInternalBlockContainer().setNetworkChunk(null);
 			}
-
-			if (containers != null) {
-				for (NetworkBlockContainer c : containers) {
-					if (c != null)
-						c.getInternalBlockContainer().setNetworkChunk(this);
-				}
-			}
-			this.containers = containers;
 		}
+
+		if (containers != null) {
+			for (NetworkBlockContainer c : containers) {
+				if (c != null)
+					c.getInternalBlockContainer().setNetworkChunk(this);
+			}
+		}
+		this.containers = containers;
 	}
 
 	public void setContainer(int index, ExtendedBlockStorage s) {
@@ -139,21 +136,19 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	public void setContainer(int index, NetworkBlockContainer c) {
-		synchronized (this.containersLock) {
-			if (this.containers == null || this.containers[index] != null)
-				throw new UnsupportedOperationException();
+		if (this.containers == null)
+			throw new UnsupportedOperationException("Containers not initialized");
+		if (this.containers[index] != null)
+			throw new UnsupportedOperationException("Index already initialized");
+		if (c == null)
+			throw new IllegalArgumentException();
 
-			if (c != null) {
-				c.getInternalBlockContainer().setNetworkChunk(this);
-				this.containers[index] = c;
-			}
-		}
+		c.getInternalBlockContainer().setNetworkChunk(this);
+		this.containers[index] = c;
 	}
 
 	public boolean needContainer(int index) {
-		synchronized (this.containersLock) {
-			return this.containers != null && this.containers[index] == null;
-		}
+		return this.containers != null && this.containers[index] == null;
 	}
 
 	public Optional<ChunkChangeListener> getListener() {
