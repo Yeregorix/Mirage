@@ -24,6 +24,7 @@ package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
+import net.smoofyuniverse.antixray.config.world.DeobfuscationConfig;
 import net.smoofyuniverse.antixray.config.world.WorldConfig;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -147,7 +148,7 @@ public interface WorldView extends BlockView, Identifiable {
 	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
 	 * @param pos The position
-	 * @param player Whether the player deobfuscation radius should be used instead of the natural radius
+	 * @param player Use player deobf radius
 	 */
 	default void deobfuscateSurrounding(Vector3i pos, boolean player) {
 		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
@@ -159,15 +160,38 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @param x The X position
 	 * @param y The Y position
 	 * @param z The Z position
-	 * @param player Whether the player deobfuscation radius should be used instead of the natural radius
+	 * @param player Use player deobf radius
 	 */
-	void deobfuscateSurrounding(int x, int y, int z, boolean player);
+	default void deobfuscateSurrounding(int x, int y, int z, boolean player) {
+		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
+		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius);
+	}
+
+	/**
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param x      The X position
+	 * @param y      The Y position
+	 * @param z      The Z position
+	 * @param radius The radius
+	 */
+	void deobfuscateSurrounding(int x, int y, int z, int radius);
+
+	/**
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param pos    The position
+	 * @param radius The radius
+	 */
+	default void deobfuscateSurrounding(Vector3i pos, int radius) {
+		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
+	}
 
 	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
-	 * @param pos    The position
-	 * @param player Whether the player reobfuscation radius should be used instead of the natural radius
+	 * @param pos The position
+	 * @param player Use player reobf radius
 	 */
 	default void reobfuscateSurrounding(Vector3i pos, boolean player) {
 		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
@@ -176,10 +200,33 @@ public interface WorldView extends BlockView, Identifiable {
 	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @param player Use player reobf radius
+	 */
+	default void reobfuscateSurrounding(int x, int y, int z, boolean player) {
+		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
+		reobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius);
+	}
+
+	/**
+	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
 	 * @param x      The X position
 	 * @param y      The Y position
 	 * @param z      The Z position
-	 * @param player Whether the player reobfuscation radius should be used instead of the natural radius
+	 * @param radius The radius
 	 */
-	void reobfuscateSurrounding(int x, int y, int z, boolean player);
+	void reobfuscateSurrounding(int x, int y, int z, int radius);
+
+	/**
+	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param pos    The position
+	 * @param radius The radius
+	 */
+	default void reobfuscateSurrounding(Vector3i pos, int radius) {
+		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
+	}
 }

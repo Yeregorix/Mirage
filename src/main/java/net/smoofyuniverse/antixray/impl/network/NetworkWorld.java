@@ -388,12 +388,9 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public void deobfuscateSurrounding(int x, int y, int z, boolean player) {
-		if (!this.enabled)
-			return;
-
-		int r = player ? this.config.deobf.playerRadius : this.config.deobf.naturalRadius;
-		deobfuscate(x - r, Math.max(y - r, 0), z - r, x + r, Math.min(y + r, 255), z + r);
+	public void deobfuscateSurrounding(int x, int y, int z, int radius) {
+		if (this.enabled && radius > 0)
+			deobfuscate(x - radius, Math.max(y - radius, 0), z - radius, x + radius, Math.min(y + radius, 255), z + radius);
 	}
 
 	private void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
@@ -406,12 +403,11 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public void reobfuscateSurrounding(int x, int y, int z, boolean player) {
-		if (!this.enabled)
+	public void reobfuscateSurrounding(int x, int y, int z, int radius) {
+		if (!this.enabled || radius <= 0)
 			return;
 
-		int r = player ? this.config.deobf.playerRadius : this.config.deobf.naturalRadius;
-		Vector3i min = new Vector3i(x - r, Math.max(y - r, 0), z - r), max = new Vector3i(x + r, Math.min(y + r, 255), z + r);
+		Vector3i min = new Vector3i(x - radius, Math.max(y - radius, 0), z - radius), max = new Vector3i(x + radius, Math.min(y + radius, 255), z + radius);
 		deobfuscate(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
 
 		AntiXrayTimings.REOBFUSCATION.startTiming();
