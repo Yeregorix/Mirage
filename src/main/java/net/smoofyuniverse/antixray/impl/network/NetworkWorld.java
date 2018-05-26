@@ -427,7 +427,7 @@ public class NetworkWorld implements WorldView {
 
 		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-				NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+				NetworkChunk chunk = getChunk(chunkX, chunkZ);
 
 				if (chunk.getState() != State.DEOBFUSCATED) {
 					int chunkMinX = chunkX << 4, chunkMinZ = chunkZ << 4;
