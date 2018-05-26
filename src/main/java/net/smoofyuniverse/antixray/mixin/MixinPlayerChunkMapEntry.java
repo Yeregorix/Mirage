@@ -206,8 +206,8 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 			if (this.changes < 64) {
 				short pos = (short) (x << 12 | z << 8 | y);
 
-				for (short pos2 : this.changedBlocks) {
-					if (pos == pos2)
+				for (int i = 0; i < this.changes; i++) {
+					if (this.changedBlocks[i] == pos)
 						return;
 				}
 
@@ -262,7 +262,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 
 							BlockChange.Builder b = BlockChange.builder(chunk);
 							for (int i = 0; i < this.changes; i++) {
-								short pos = this.changedBlocks[0];
+								short pos = this.changedBlocks[i];
 								b.add(pos, (dynChunk.currentlyContains(pos) ? chunk : netChunk).getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 							}
 
@@ -278,7 +278,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 
 						BlockChange.Builder b = BlockChange.builder(chunk);
 						for (int i = 0; i < this.changes; i++) {
-							short pos = this.changedBlocks[0];
+							short pos = this.changedBlocks[i];
 							b.add(pos, volume.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 						}
 
