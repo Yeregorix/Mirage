@@ -88,7 +88,6 @@ public class RandomModifier extends ChunkModifier {
 			cfg.replacements.put(ModifierUtil.getCommonGround(dimType), (double) cfg.replacements.size());
 		}
 
-		cfg.dynamism = clamp(cfg.dynamism, 0, 10);
 		cfg.minY = clamp(cfg.minY, 0, 255);
 		cfg.maxY = clamp(cfg.maxY, 0, 255);
 
@@ -105,7 +104,7 @@ public class RandomModifier extends ChunkModifier {
 	@Override
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		builder.append(cfg.blocks).append(cfg.replacements).append(cfg.dynamism).append(cfg.minY).append(cfg.maxY);
+		builder.append(cfg.blocks).append(cfg.replacements).append(cfg.minY).append(cfg.maxY);
 	}
 
 	@Override
@@ -116,7 +115,6 @@ public class RandomModifier extends ChunkModifier {
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		boolean useDynamism = cfg.dynamism != 0 && view.isDynamismEnabled();
 		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
 
 		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
@@ -126,16 +124,8 @@ public class RandomModifier extends ChunkModifier {
 					if (b.getType() == BlockTypes.AIR)
 						continue;
 
-					if (cfg.blocks.contains(b)) {
-						if (view.isExposed(x, y, z)) {
-							if (useDynamism) {
-								view.setDynamism(x, y, z, cfg.dynamism);
-								view.setBlock(x, y, z, cfg.replacements.get(r));
-							}
-						} else {
-							view.setBlock(x, y, z, cfg.replacements.get(r));
-						}
-					}
+					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
+						view.setBlock(x, y, z, cfg.replacements.get(r));
 				}
 			}
 		}
@@ -149,27 +139,23 @@ public class RandomModifier extends ChunkModifier {
 		public BlockSet blocks;
 		@Setting(value = "Replacements", comment = "Blocks and their weight used to randomly replace hidden blocks")
 		public Map<BlockState, Double> replacements;
-		@Setting(value = "Dynamism", comment = "The dynamic obfuscation distance, between 0 and 10")
-		public int dynamism = 4;
 		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
 		public int minY = 0;
 		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
 		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements), this.dynamism, this.minY, this.maxY);
+			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements), this.minY, this.maxY);
 		}
 
 		public static final class Immutable {
 			public final Set<BlockState> blocks;
 			public final WeightedList<BlockState> replacements;
-			public final int dynamism;
 			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int dynamism, int minY, int maxY) {
+			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacements = replacements;
-				this.dynamism = dynamism;
 				this.minY = minY;
 				this.maxY = maxY;
 			}
