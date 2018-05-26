@@ -24,7 +24,7 @@ package net.smoofyuniverse.antixray.impl.internal.compat;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.Chunk;
 
 public class CompatUtil {
 	public static final boolean useForge = detectForge();
@@ -34,9 +34,9 @@ public class CompatUtil {
 		return useForge ? state.getBlock().hasTileEntity(state) : state.getBlock().hasTileEntity();
 	}
 
-	public static void postChunkWatchEvent(ChunkPos pos, EntityPlayerMP p) {
+	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
 		if (useForge)
-			ForgeUtil.postChunkWatchEvent(pos, p);
+			ForgeUtil.postChunkWatchEvent(chunk, player);
 	}
 
 	private static boolean detectForge() {

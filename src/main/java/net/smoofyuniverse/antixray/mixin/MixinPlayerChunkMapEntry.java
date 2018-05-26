@@ -153,7 +153,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 				AntiXrayTimings.DYNAMISM.stopTiming();
 
 				this.playerChunkMap.getWorldServer().getEntityTracker().sendLeashedEntitiesInChunk(p, this.chunk);
-				CompatUtil.postChunkWatchEvent(this.pos, p);
+				CompatUtil.postChunkWatchEvent(this.chunk, p);
 			}
 		} else {
 			Packet<?> packet = new SPacketChunkData(this.chunk, 65535);
@@ -162,7 +162,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 				p.connection.sendPacket(packet);
 
 				this.playerChunkMap.getWorldServer().getEntityTracker().sendLeashedEntitiesInChunk(p, this.chunk);
-				CompatUtil.postChunkWatchEvent(this.pos, p);
+				CompatUtil.postChunkWatchEvent(this.chunk, p);
 			}
 		}
 

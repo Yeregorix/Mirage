@@ -23,13 +23,13 @@
 package net.smoofyuniverse.antixray.impl.internal.compat;
 
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 
 public class ForgeUtil {
 
-	public static void postChunkWatchEvent(ChunkPos pos, EntityPlayerMP p) {
-		MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(pos, p));
+	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
+		MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(chunk, player));
 	}
 }
