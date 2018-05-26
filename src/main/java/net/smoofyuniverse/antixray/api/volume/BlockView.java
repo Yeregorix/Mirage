@@ -23,6 +23,7 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 
 /**
@@ -34,6 +35,35 @@ public interface BlockView extends MutableBlockVolume {
 	 * @return The BlockStorage which is associated with this BlockView
 	 */
 	BlockStorage getStorage();
+
+	/**
+	 * @param minX The X minimum position
+	 * @param minY The Y minimum position
+	 * @param minZ The Z minimum position
+	 * @param maxX The X maximum position
+	 * @param maxY The Y maximum position
+	 * @param maxZ The Z maximum position
+	 * @throws PositionOutOfBoundsException if one of the two positions is not contained in the volume
+	 * @throws IllegalArgumentException     if the two positions does not defines a valid area
+	 */
+	default void checkBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		checkBlockPosition(minX, minY, minZ);
+		checkBlockPosition(maxX, maxY, maxZ);
+
+		if (minX > maxX || minY > maxY || minZ > maxZ)
+			throw new IllegalArgumentException("Invalid area");
+	}
+
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @throws PositionOutOfBoundsException if the position is not contained in the volume
+	 */
+	default void checkBlockPosition(int x, int y, int z) {
+		if (!containsBlock(x, y, z))
+			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
+	}
 
 	/**
 	 * @return Whether dynamic obfuscation is enabled in this volume
@@ -53,9 +83,9 @@ public interface BlockView extends MutableBlockVolume {
 	/**
 	 * Sets the dynamism distance of the given position
 	 *
-	 * @param x        The X position
-	 * @param y        The Y position
-	 * @param z        The Z position
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
 	 * @param distance The distance of dynamism, between 0 and 15
 	 */
 	void setDynamism(int x, int y, int z, int distance);
@@ -97,4 +127,130 @@ public interface BlockView extends MutableBlockVolume {
 	 * @return Whether the block is exposed
 	 */
 	boolean isExposed(int x, int y, int z);
+
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param pos The position
+	 * @return Whether the block was different before being deobfuscated
+	 */
+	default boolean deobfuscate(Vector3i pos) {
+		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	/**
+	 * Deobfuscates a single block at the given position.
+	 *
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @return Whether the block was different before being deobfuscated
+	 */
+	boolean deobfuscate(int x, int y, int z);
+
+	/**
+	 * Deobfuscates all blocks around the given position according to the radius.
+	 *
+	 * @param pos    The position
+	 * @param radius The radius
+	 */
+	default void deobfuscateSurrounding(Vector3i pos, int radius) {
+		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
+	}
+
+	/**
+	 * Deobfuscates all blocks around the given position according to the radius.
+	 *
+	 * @param x      The X position
+	 * @param y      The Y position
+	 * @param z      The Z position
+	 * @param radius The radius
+	 */
+	default void deobfuscateSurrounding(int x, int y, int z, int radius) {
+		checkBlockPosition(x, y, z);
+
+		if (radius < 0)
+			throw new IllegalArgumentException("Negative radius");
+
+		if (radius == 0)
+			deobfuscate(x, y, z);
+		else {
+			Vector3i min = getBlockMin(), max = getBlockMax();
+			deobfuscateArea(Math.max(x - radius, min.getX()), Math.max(y - radius, min.getY()), Math.max(z - radius, min.getZ()),
+					Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()));
+		}
+	}
+
+	/**
+	 * Deobfuscates all blocks in the given area.
+	 *
+	 * @param minX The X minimum position
+	 * @param minY The Y minimum position
+	 * @param minZ The Z minimum position
+	 * @param maxX The X maximum position
+	 * @param maxY The Y maximum position
+	 * @param maxZ The Z maximum position
+	 */
+	void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
+
+	/**
+	 * Deobfuscates all blocks in the given area.
+	 *
+	 * @param min The minimum position
+	 * @param max The maximum position
+	 */
+	default void deobfuscateArea(Vector3i min, Vector3i max) {
+		deobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
+	}
+
+	/**
+	 * Reobfuscates all blocks around the given position according to the radius.
+	 *
+	 * @param pos    The position
+	 * @param radius The radius
+	 */
+	default void reobfuscateSurrounding(Vector3i pos, int radius) {
+		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
+	}
+
+	/**
+	 * Reobfuscates all blocks around the given position according to the radius.
+	 *
+	 * @param x      The X position
+	 * @param y      The Y position
+	 * @param z      The Z position
+	 * @param radius The radius
+	 */
+	default void reobfuscateSurrounding(int x, int y, int z, int radius) {
+		checkBlockPosition(x, y, z);
+
+		if (radius < 0)
+			throw new IllegalArgumentException("Negative radius");
+
+		Vector3i min = getBlockMin(), max = getBlockMax();
+		reobfuscateArea(Math.max(x - radius, min.getX()), Math.max(y - radius, min.getY()), Math.max(z - radius, min.getZ()),
+				Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()));
+	}
+
+	/**
+	 * Reobfuscates all blocks in the given area.
+	 *
+	 * @param minX The X minimum position
+	 * @param minY The Y minimum position
+	 * @param minZ The Z minimum position
+	 * @param maxX The X maximum position
+	 * @param maxY The Y maximum position
+	 * @param maxZ The Z maximum position
+	 */
+	void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
+
+	/**
+	 * Reobfuscates all blocks in the given area.
+	 *
+	 * @param min The minimum position
+	 * @param max The maximum position
+	 */
+	default void reobfuscateArea(Vector3i min, Vector3i max) {
+		reobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
+	}
 }

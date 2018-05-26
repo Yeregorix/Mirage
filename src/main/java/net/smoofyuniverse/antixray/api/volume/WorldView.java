@@ -125,26 +125,6 @@ public interface WorldView extends BlockView, Identifiable {
 	Collection<? extends ChunkView> getLoadedChunkViews();
 
 	/**
-	 * Deobfuscates a single block at the given position.
-	 *
-	 * @param pos The position
-	 * @return Whether the block was different before being deobfuscated
-	 */
-	default boolean deobfuscate(Vector3i pos) {
-		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * Deobfuscates a single block at the given position.
-	 *
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the block was different before being deobfuscated
-	 */
-	boolean deobfuscate(int x, int y, int z);
-
-	/**
 	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
 	 * @param pos The position
@@ -168,26 +148,6 @@ public interface WorldView extends BlockView, Identifiable {
 	}
 
 	/**
-	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param x      The X position
-	 * @param y      The Y position
-	 * @param z      The Z position
-	 * @param radius The radius
-	 */
-	void deobfuscateSurrounding(int x, int y, int z, int radius);
-
-	/**
-	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param pos    The position
-	 * @param radius The radius
-	 */
-	default void deobfuscateSurrounding(Vector3i pos, int radius) {
-		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
-	}
-
-	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
 	 * @param pos The position
@@ -208,25 +168,5 @@ public interface WorldView extends BlockView, Identifiable {
 	default void reobfuscateSurrounding(int x, int y, int z, boolean player) {
 		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
 		reobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius);
-	}
-
-	/**
-	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param x      The X position
-	 * @param y      The Y position
-	 * @param z      The Z position
-	 * @param radius The radius
-	 */
-	void reobfuscateSurrounding(int x, int y, int z, int radius);
-
-	/**
-	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param pos    The position
-	 * @param radius The radius
-	 */
-	default void reobfuscateSurrounding(Vector3i pos, int radius) {
-		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
 	}
 }

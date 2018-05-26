@@ -25,6 +25,7 @@ package net.smoofyuniverse.antixray;
 import com.google.inject.Inject;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.antixray.api.volume.ChunkView.State;
 import net.smoofyuniverse.antixray.bstats.MetricsLite;
 import net.smoofyuniverse.antixray.config.global.GlobalConfig;
 import net.smoofyuniverse.antixray.config.serializer.BlockSetSerializer;
@@ -32,7 +33,6 @@ import net.smoofyuniverse.antixray.event.PlayerEventListener;
 import net.smoofyuniverse.antixray.event.WorldEventListener;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
-import net.smoofyuniverse.antixray.impl.network.NetworkChunk.State;
 import net.smoofyuniverse.antixray.ore.OreAPI;
 import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -174,7 +174,7 @@ public class AntiXray {
 			this.updateTask = Task.builder().execute(() -> {
 				for (World w : this.game.getServer().getWorlds()) {
 					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
-						if (chunk.getState() == State.NEED_REOBFUSCATION)
+						if (chunk.getState() == State.PREOBFUSCATED)
 							chunk.obfuscate();
 					}
 				}

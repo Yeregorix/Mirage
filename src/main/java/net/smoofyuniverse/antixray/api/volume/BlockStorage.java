@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,6 +23,7 @@
 package net.smoofyuniverse.antixray.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 
 /**
@@ -36,6 +35,35 @@ public interface BlockStorage extends ImmutableBlockVolume {
 	 * @return The BlockView which is associated with this BlockStorage
 	 */
 	BlockView getView();
+
+	/**
+	 * @param minX The X minimum position
+	 * @param minY The Y minimum position
+	 * @param minZ The Z minimum position
+	 * @param maxX The X maximum position
+	 * @param maxY The Y maximum position
+	 * @param maxZ The Z maximum position
+	 * @throws PositionOutOfBoundsException if one of the two positions is not contained in the volume
+	 * @throws IllegalArgumentException     if the two positions does not defines a valid area
+	 */
+	default void checkBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		checkBlockPosition(minX, minY, minZ);
+		checkBlockPosition(maxX, maxY, maxZ);
+
+		if (minX > maxX || minY > maxY || minZ > maxZ)
+			throw new IllegalArgumentException("Invalid area");
+	}
+
+	/**
+	 * @param x The X position
+	 * @param y The Y position
+	 * @param z The Z position
+	 * @throws PositionOutOfBoundsException if the position is not contained in the volume
+	 */
+	default void checkBlockPosition(int x, int y, int z) {
+		if (!containsBlock(x, y, z))
+			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
+	}
 
 	/**
 	 * Checks if the block at the given position is exposed to the view of normal users.

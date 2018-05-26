@@ -161,7 +161,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		}
 	}
 
-	public void obfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
+	public void preobfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
 		boolean notAirGround = ground.getBlock() != Blocks.AIR;
 
 		this.blockCount = 0;

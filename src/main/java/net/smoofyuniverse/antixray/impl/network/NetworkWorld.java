@@ -35,6 +35,7 @@ import net.smoofyuniverse.antixray.api.modifier.ChunkModifier;
 import net.smoofyuniverse.antixray.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.antixray.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.antixray.api.volume.ChunkView;
+import net.smoofyuniverse.antixray.api.volume.ChunkView.State;
 import net.smoofyuniverse.antixray.api.volume.WorldView;
 import net.smoofyuniverse.antixray.config.world.WorldConfig;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
@@ -388,27 +389,85 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public void deobfuscateSurrounding(int x, int y, int z, int radius) {
-		if (this.enabled && radius > 0)
-			deobfuscate(x - radius, Math.max(y - radius, 0), z - radius, x + radius, Math.min(y + radius, 255), z + radius);
+	public boolean deobfuscate(int x, int y, int z) {
+		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk != null && chunk.deobfuscate(x, y, z);
+	}
+
+	@Override
+	public void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
+
+		if (!this.enabled)
+			return;
+
+		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
+		if (minChunkX == maxChunkX && minChunkZ == maxChunkZ) {
+			NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+			if (chunk == null)
+				throw new IllegalStateException("Chunk must be loaded");
+
+			if (chunk.getState() != State.DEOBFUSCATED)
+				chunk.deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
+			return;
+		}
+
+		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+				if (getChunk(chunkX, chunkZ) == null)
+					throw new IllegalStateException("Chunks must be loaded");
+			}
+		}
+
+		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 
 	private void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		for (int x = minX; x <= maxX; x++) {
-			for (int y = minY; y <= maxY; y++) {
-				for (int z = minZ; z <= maxZ; z++)
-					deobfuscate(x, y, z);
+		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
+
+		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+				NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+
+				if (chunk.getState() != State.DEOBFUSCATED) {
+					int chunkMinX = chunkX << 4, chunkMinZ = chunkZ << 4;
+					chunk.deobfuscate(Math.max(minX, chunkMinX), minY, Math.max(minZ, chunkMinZ), Math.min(maxX, chunkMinX + 15), maxY, Math.min(maxZ, chunkMinZ + 15));
+				}
 			}
 		}
 	}
 
 	@Override
-	public void reobfuscateSurrounding(int x, int y, int z, int radius) {
-		if (!this.enabled || radius <= 0)
+	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
+
+		if (!this.enabled)
 			return;
 
-		Vector3i min = new Vector3i(x - radius, Math.max(y - radius, 0), z - radius), max = new Vector3i(x + radius, Math.min(y + radius, 255), z + radius);
-		deobfuscate(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
+		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
+		if (minChunkX == maxChunkX && minChunkZ == maxChunkZ) {
+			NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+			if (chunk == null)
+				throw new IllegalStateException("Chunk must be loaded");
+			if (chunk.getState() != State.OBFUSCATED)
+				throw new IllegalStateException("Chunk must be fully obfuscated");
+
+			chunk.reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
+			return;
+		}
+
+		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+				NetworkChunk chunk = getChunk(chunkX, chunkZ);
+				if (chunk == null)
+					throw new IllegalStateException("Chunks must be loaded");
+				if (chunk.getState() != State.OBFUSCATED)
+					throw new IllegalStateException("Chunks must be fully obfuscated");
+			}
+		}
+
+		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
+		Vector3i min = new Vector3i(minX, minY, minZ), max = new Vector3i(maxX, maxY, maxZ);
 
 		AntiXrayTimings.REOBFUSCATION.startTiming();
 
@@ -426,12 +485,6 @@ public class NetworkWorld implements WorldView {
 		}
 
 		AntiXrayTimings.REOBFUSCATION.stopTiming();
-	}
-
-	@Override
-	public boolean deobfuscate(int x, int y, int z) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.deobfuscate(x, y, z);
 	}
 
 	public boolean isChunkLoaded(int x, int z) {

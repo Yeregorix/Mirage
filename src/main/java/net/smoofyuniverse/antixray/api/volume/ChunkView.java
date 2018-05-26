@@ -78,9 +78,9 @@ public interface ChunkView extends BlockView {
 	boolean areNeighborsLoaded();
 
 	/**
-	 * @return Whether this chunk is marked as obfuscated.
+	 * @return The state of this chunk.
 	 */
-	boolean isObfuscated();
+	State getState();
 
 	/**
 	 * If not already done and if all modifiers are ready, this method obfuscates all blocks inside this chunk.
@@ -93,27 +93,16 @@ public interface ChunkView extends BlockView {
 	void deobfuscate();
 
 	/**
-	 * Deobfuscates a single block at the given position.
-	 *
-	 * @param pos The position
-	 * @return Whether the block was different before being deobfuscated
+	 * Deofuscates and then reobfuscates all blocks inside this chunk.
 	 */
-	default boolean deobfuscate(Vector3i pos) {
-		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * Deobfuscates a single block at the given position.
-	 *
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the block was different before being deobfuscated
-	 */
-	boolean deobfuscate(int x, int y, int z);
+	void reobfuscate();
 
 	/**
 	 * Resets the dynamism distance of all positions
 	 */
 	void clearDynamism();
+
+	public enum State {
+		DEOBFUSCATED, PREOBFUSCATED, OBFUSCATED
+	}
 }
