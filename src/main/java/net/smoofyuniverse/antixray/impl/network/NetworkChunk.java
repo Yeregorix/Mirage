@@ -555,11 +555,14 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail) {
 		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
 
-		if (this.state != State.OBFUSCATED)
+		if (this.state != State.OBFUSCATED) {
+			if (silentFail)
+				return;
 			throw new IllegalStateException("Chunk must be fully obfuscated");
+		}
 
 		reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
 	}

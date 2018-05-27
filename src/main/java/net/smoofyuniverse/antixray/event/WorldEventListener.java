@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -98,13 +96,13 @@ public class WorldEventListener {
 		for (Location<World> loc : e.getAffectedLocations())
 			blocks.remove(loc.getBlockPosition());
 
-		NetworkWorld netWorld = ((InternalWorld) e.getTargetWorld()).getView();
+		NetworkWorld world = ((InternalWorld) e.getTargetWorld()).getView();
 		for (Vector3i pos : blocks)
-			netWorld.deobfuscate(pos);
+			world.deobfuscate(pos);
 	}
 
 	private static void reobfuscateSurrounding(Location<World> loc, boolean player) {
-		((InternalWorld) loc.getExtent()).getView().reobfuscateSurrounding(loc.getBlockPosition(), player);
+		((InternalWorld) loc.getExtent()).getView().reobfuscateSurrounding(loc.getBlockPosition(), player, true);
 	}
 
 	private static void deobfuscateSurrounding(Location<World> loc, boolean player) {

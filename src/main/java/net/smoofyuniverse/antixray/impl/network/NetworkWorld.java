@@ -438,7 +438,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail) {
 		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
 
 		if (!this.enabled)
@@ -447,10 +447,16 @@ public class NetworkWorld implements WorldView {
 		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
 		if (minChunkX == maxChunkX && minChunkZ == maxChunkZ) {
 			NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
-			if (chunk == null)
+			if (chunk == null) {
+				if (silentFail)
+					return;
 				throw new IllegalStateException("Chunk must be loaded");
-			if (chunk.getState() != State.OBFUSCATED)
+			}
+			if (chunk.getState() != State.OBFUSCATED) {
+				if (silentFail)
+					return;
 				throw new IllegalStateException("Chunk must be fully obfuscated");
+			}
 
 			chunk.reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
 			return;
@@ -459,10 +465,16 @@ public class NetworkWorld implements WorldView {
 		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
 				NetworkChunk chunk = getChunk(chunkX, chunkZ);
-				if (chunk == null)
+				if (chunk == null) {
+					if (silentFail)
+						return;
 					throw new IllegalStateException("Chunks must be loaded");
-				if (chunk.getState() != State.OBFUSCATED)
+				}
+				if (chunk.getState() != State.OBFUSCATED) {
+					if (silentFail)
+						return;
 					throw new IllegalStateException("Chunks must be fully obfuscated");
+				}
 			}
 		}
 
