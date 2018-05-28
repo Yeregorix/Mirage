@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.antixray.mixin.packet;
+package net.smoofyuniverse.antixray.mixin;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.SPacketChunkData;
