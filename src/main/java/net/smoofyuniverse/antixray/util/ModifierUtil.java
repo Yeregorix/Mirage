@@ -32,7 +32,6 @@ public class ModifierUtil {
 
 	public static void getCommonResources(BlockSet set, DimensionType dimType) {
 		if (dimType == DimensionTypes.NETHER) {
-			set.add(BlockTypes.LAVA);
 			set.add(BlockTypes.MAGMA);
 			set.add(BlockTypes.GLOWSTONE);
 			set.add(BlockTypes.QUARTZ_ORE);
