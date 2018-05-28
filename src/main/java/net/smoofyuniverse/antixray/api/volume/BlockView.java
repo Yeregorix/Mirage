@@ -132,7 +132,7 @@ public interface BlockView extends MutableBlockVolume {
 	 * Deobfuscates a single block at the given position.
 	 *
 	 * @param pos The position
-	 * @return Whether the block was different before being deobfuscated
+	 * @return Whether the block has been deobfuscated
 	 */
 	default boolean deobfuscate(Vector3i pos) {
 		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
@@ -144,7 +144,7 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param x The X position
 	 * @param y The Y position
 	 * @param z The Z position
-	 * @return Whether the block was different before being deobfuscated
+	 * @return Whether the block has been deobfuscated
 	 */
 	boolean deobfuscate(int x, int y, int z);
 
@@ -153,9 +153,11 @@ public interface BlockView extends MutableBlockVolume {
 	 *
 	 * @param pos    The position
 	 * @param radius The radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	default void deobfuscateSurrounding(Vector3i pos, int radius) {
-		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius);
+	default void deobfuscateSurrounding(Vector3i pos, int radius, boolean silentFail) {
+		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius, silentFail);
 	}
 
 	/**
@@ -165,8 +167,10 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param y      The Y position
 	 * @param z      The Z position
 	 * @param radius The radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	default void deobfuscateSurrounding(int x, int y, int z, int radius) {
+	default void deobfuscateSurrounding(int x, int y, int z, int radius, boolean silentFail) {
 		checkBlockPosition(x, y, z);
 
 		if (radius < 0)
@@ -177,7 +181,7 @@ public interface BlockView extends MutableBlockVolume {
 		else {
 			Vector3i min = getBlockMin(), max = getBlockMax();
 			deobfuscateArea(Math.max(x - radius, min.getX()), Math.max(y - radius, min.getY()), Math.max(z - radius, min.getZ()),
-					Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()));
+					Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()), silentFail);
 		}
 	}
 
@@ -190,17 +194,21 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param maxX The X maximum position
 	 * @param maxY The Y maximum position
 	 * @param maxZ The Z maximum position
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
+	void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail);
 
 	/**
 	 * Deobfuscates all blocks in the given area.
 	 *
 	 * @param min The minimum position
 	 * @param max The maximum position
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	default void deobfuscateArea(Vector3i min, Vector3i max) {
-		deobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ());
+	default void deobfuscateArea(Vector3i min, Vector3i max, boolean silentFail) {
+		deobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ(), silentFail);
 	}
 
 	/**

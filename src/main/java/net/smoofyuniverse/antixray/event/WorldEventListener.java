@@ -106,6 +106,6 @@ public class WorldEventListener {
 	}
 
 	private static void deobfuscateSurrounding(Location<World> loc, boolean player) {
-		((InternalWorld) loc.getExtent()).getView().deobfuscateSurrounding(loc.getBlockPosition(), player);
+		((InternalWorld) loc.getExtent()).getView().deobfuscateSurrounding(loc.getBlockPosition(), player, true);
 	}
 }

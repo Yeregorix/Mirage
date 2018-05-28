@@ -461,7 +461,7 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+	public void deobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail) {
 		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
 
 		if (this.state != State.DEOBFUSCATED)

@@ -129,9 +129,11 @@ public interface WorldView extends BlockView, Identifiable {
 	 *
 	 * @param pos The position
 	 * @param player Use player deobf radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	default void deobfuscateSurrounding(Vector3i pos, boolean player) {
-		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player);
+	default void deobfuscateSurrounding(Vector3i pos, boolean player, boolean silentFail) {
+		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player, silentFail);
 	}
 
 	/**
@@ -141,10 +143,12 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @param y The Y position
 	 * @param z The Z position
 	 * @param player Use player deobf radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	default void deobfuscateSurrounding(int x, int y, int z, boolean player) {
+	default void deobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
 		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
-		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius);
+		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
 	}
 
 	/**
