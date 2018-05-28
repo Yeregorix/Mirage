@@ -24,7 +24,6 @@ package net.smoofyuniverse.antixray.impl.internal;
 
 import net.smoofyuniverse.antixray.api.volume.WorldStorage;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
-import org.spongepowered.api.world.extent.BlockVolume;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -33,8 +32,6 @@ public interface InternalWorld extends WorldStorage {
 
 	@Override
 	NetworkWorld getView();
-
-	BlockVolume getApplicable();
 
 	@Nullable
 	InternalChunk getChunk(int x, int z);

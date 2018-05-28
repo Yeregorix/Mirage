@@ -30,7 +30,6 @@ import net.smoofyuniverse.antixray.api.volume.ChunkStorage;
 import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
-import org.spongepowered.api.world.extent.BlockVolume;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -70,11 +69,6 @@ public abstract class MixinWorld implements InternalWorld {
 	@Override
 	public NetworkWorld getView() {
 		return this.networkWorld;
-	}
-
-	@Override
-	public BlockVolume getApplicable() {
-		return this.networkWorld.isEnabled() ? this.networkWorld : this;
 	}
 
 	@Nullable
