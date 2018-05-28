@@ -28,8 +28,9 @@ import java.util.List;
 public class VersionInfo {
 	public String name, pluginId, md5, href, author;
 	public List<DependencyInfo> dependencies;
-	public boolean staffApproved;
+	public List<TagInfo> tags;
 	public ChannelInfo channel;
 	public Instant createdAt;
-	public int id, fileSize;
+	public int id, fileSize, downloads;
+	public boolean staffApproved;
 }
