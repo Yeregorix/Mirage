@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,7 +23,9 @@
 package net.smoofyuniverse.antixray.mixin;
 
 import com.google.common.collect.ImmutableMap;
+import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.state.IBlockState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -40,20 +40,35 @@ public class MixinStateImplementation {
 	@Final
 	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
 
-	private int hash;
+	@Shadow
+	@Final
+	private Block block;
+
+	private boolean isOpaqueCube;
+	private int hashCode;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
-		this.hash = this.properties.hashCode();
+		this.hashCode = this.properties.hashCode();
+		this.isOpaqueCube = this.block.isOpaqueCube((IBlockState) this);
 	}
 
 	/**
 	 * @author Yeregorix
-	 * @reason Caching the hash significantly improves HashSet and HashMap performances
+	 * @reason Improves exposition check performances
+	 */
+	@Overwrite
+	public boolean isOpaqueCube() {
+		return this.isOpaqueCube;
+	}
+
+	/**
+	 * @author Yeregorix
+	 * @reason Improves HashSet and HashMap performances
 	 */
 	@Override
 	@Overwrite
 	public int hashCode() {
-		return this.hash;
+		return this.hashCode;
 	}
 }

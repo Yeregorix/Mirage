@@ -27,6 +27,7 @@ import net.smoofyuniverse.antixray.AntiXray;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
+import net.smoofyuniverse.antixray.util.ModifierUtil;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -66,16 +67,26 @@ public class WorldEventListener {
 	public void onBlockChange(ChangeBlockEvent e) {
 		boolean player = e.getCause().containsType(Player.class);
 
-		if (e instanceof ChangeBlockEvent.Place) {
-			for (Transaction<BlockSnapshot> t : e.getTransactions()) {
-				if (t.isValid())
-					t.getOriginal().getLocation().ifPresent(loc -> reobfuscateSurrounding(loc, player));
-			}
-		} else {
-			for (Transaction<BlockSnapshot> t : e.getTransactions()) {
-				if (t.isValid())
-					t.getOriginal().getLocation().ifPresent(loc -> deobfuscateSurrounding(loc, player));
-			}
+		for (Transaction<BlockSnapshot> t : e.getTransactions()) {
+			if (!t.isValid())
+				continue;
+
+			BlockSnapshot original = t.getOriginal();
+			boolean wasOpaque = ModifierUtil.isOpaque(original.getState()), isOpaque = ModifierUtil.isOpaque(t.getFinal().getState());
+			if (wasOpaque == isOpaque)
+				continue;
+
+			Location<World> loc = original.getLocation().orElse(null);
+			if (loc == null)
+				continue;
+
+			NetworkWorld world = ((InternalWorld) loc.getExtent()).getView();
+			Vector3i pos = loc.getBlockPosition();
+
+			if (isOpaque)
+				world.reobfuscateSurrounding(pos, player, true);
+			else
+				world.deobfuscateSurrounding(pos, player, true);
 		}
 	}
 
@@ -99,13 +110,5 @@ public class WorldEventListener {
 		NetworkWorld world = ((InternalWorld) e.getTargetWorld()).getView();
 		for (Vector3i pos : blocks)
 			world.deobfuscate(pos);
-	}
-
-	private static void reobfuscateSurrounding(Location<World> loc, boolean player) {
-		((InternalWorld) loc.getExtent()).getView().reobfuscateSurrounding(loc.getBlockPosition(), player, true);
-	}
-
-	private static void deobfuscateSurrounding(Location<World> loc, boolean player) {
-		((InternalWorld) loc.getExtent()).getView().deobfuscateSurrounding(loc.getBlockPosition(), player, true);
 	}
 }

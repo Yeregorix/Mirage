@@ -438,12 +438,41 @@ public class NetworkChunk implements ChunkView {
 		x &= 15;
 		z &= 15;
 
-		if (y != 255 && notFullCube1(x, y + 1, z))
+		if (y != 255 && !isOpaque1(x, y + 1, z))
 			return true;
-		if (y != 0 && notFullCube1(x, y - 1, z))
+		if (y != 0 && !isOpaque1(x, y - 1, z))
 			return true;
 
-		return notFullCube2(x + 1, y, z) || notFullCube2(x - 1, y, z) || notFullCube2(x, y, z + 1) || notFullCube2(x, y, z - 1);
+		return !(isOpaque2(x + 1, y, z) && isOpaque2(x - 1, y, z) && isOpaque2(x, y, z + 1) && isOpaque2(x, y, z - 1));
+	}
+
+	private boolean isOpaque1(int x, int y, int z) {
+		NetworkBlockContainer c = this.containers[y >> 4];
+		return c != null && c.get(x, y & 15, z).isOpaqueCube();
+	}
+
+	private boolean isOpaque2(int x, int y, int z) {
+		int dx = 0, dz = 0;
+		if (x < 0) {
+			dx--;
+			x += 16;
+		} else if (x >= 16) {
+			dx++;
+			x -= 16;
+		}
+		if (z < 0) {
+			dz--;
+			z += 16;
+		} else if (z >= 16) {
+			dz++;
+			z -= 16;
+		}
+
+		if (dx == 0 && dz == 0)
+			return isOpaque1(x, y, z);
+
+		NetworkChunk neighbor = this.world.getChunk(this.x + dx, this.z + dz);
+		return neighbor != null && neighbor.isOpaque1(x, y, z);
 	}
 
 	@Override
@@ -622,35 +651,6 @@ public class NetworkChunk implements ChunkView {
 			this.listener.addChange(x & 15, y, z & 15);
 		this.saved = false;
 		return true;
-	}
-
-	private boolean notFullCube1(int x, int y, int z) {
-		NetworkBlockContainer c = this.containers[y >> 4];
-		return c == null || !c.get(x, y & 15, z).isFullCube();
-	}
-
-	private boolean notFullCube2(int x, int y, int z) {
-		int dx = 0, dz = 0;
-		if (x < 0) {
-			dx--;
-			x += 16;
-		} else if (x >= 16) {
-			dx++;
-			x -= 16;
-		}
-		if (z < 0) {
-			dz--;
-			z += 16;
-		} else if (z >= 16) {
-			dz++;
-			z -= 16;
-		}
-
-		if (dx == 0 && dz == 0)
-			return notFullCube1(x, y, z);
-
-		NetworkChunk neighbor = this.world.getChunk(this.x + dx, this.z + dz);
-		return neighbor == null || neighbor.notFullCube1(x, y, z);
 	}
 
 	public static long asLong(int x, int z) {

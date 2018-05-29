@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.antixray.util;
 
+import net.minecraft.block.state.IBlockState;
 import net.smoofyuniverse.antixray.util.collection.BlockSet;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
@@ -29,6 +30,10 @@ import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 
 public class ModifierUtil {
+
+	public static boolean isOpaque(BlockState state) {
+		return ((IBlockState) state).isOpaqueCube();
+	}
 
 	public static void getCommonResources(BlockSet set, DimensionType dimType) {
 		if (dimType == DimensionTypes.NETHER) {

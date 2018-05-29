@@ -22,7 +22,6 @@
 
 package net.smoofyuniverse.antixray.mixin;
 
-import com.flowpowered.math.vector.Vector3i;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
@@ -35,7 +34,6 @@ import net.smoofyuniverse.antixray.impl.internal.InternalChunk;
 import net.smoofyuniverse.antixray.impl.internal.InternalWorld;
 import net.smoofyuniverse.antixray.impl.network.NetworkChunk;
 import net.smoofyuniverse.antixray.impl.network.NetworkWorld;
-import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -207,25 +205,24 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
+		checkBlockPosition(x, y, z);
 
 		x &= 15;
 		z &= 15;
 
-		if (y != 255 && notFullCube1(x, y + 1, z))
+		if (y != 255 && !isOpaque1(x, y + 1, z))
 			return true;
-		if (y != 0 && notFullCube1(x, y - 1, z))
+		if (y != 0 && !isOpaque1(x, y - 1, z))
 			return true;
 
-		return notFullCube2(x + 1, y, z) || notFullCube2(x - 1, y, z) || notFullCube2(x, y, z + 1) || notFullCube2(x, y, z - 1);
+		return !(isOpaque2(x + 1, y, z) && isOpaque2(x - 1, y, z) && isOpaque2(x, y, z + 1) && isOpaque2(x, y, z - 1));
 	}
 
-	private boolean notFullCube1(int x, int y, int z) {
-		return !getBlockState(x, y, z).isFullCube();
+	private boolean isOpaque1(int x, int y, int z) {
+		return getBlockState(x, y, z).isOpaqueCube();
 	}
 
-	private boolean notFullCube2(int x, int y, int z) {
+	private boolean isOpaque2(int x, int y, int z) {
 		int dx = 0, dz = 0;
 		if (x < 0) {
 			dx--;
@@ -243,10 +240,10 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 
 		if (dx == 0 && dz == 0)
-			return notFullCube1(x, y, z);
+			return isOpaque1(x, y, z);
 
 		InternalChunk neighbor = ((InternalWorld) this.world).getChunk(this.x + dx, this.z + dz);
-		return neighbor == null || !((Chunk) neighbor).getBlockState(x, y, z).isFullCube();
+		return neighbor != null && ((Chunk) neighbor).getBlockState(x, y, z).isOpaqueCube();
 	}
 
 	@Override
