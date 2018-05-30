@@ -1,9 +1,9 @@
-# AntiXray
-A powerful Xray prevention plugin for Sponge.
+# Mirage
+The best solution against xray users.
 
-![alt text](https://files.smoofyuniverse.net/images/antixray_screenshots.png)
+![alt text](https://files.smoofyuniverse.net/images/mirage_screenshots.png)
 
-* Ore page: https://ore.spongepowered.org/Yeregorix/AntiXray
+* Ore page: https://ore.spongepowered.org/Yeregorix/Mirage
 
 A big thank to thomas15v! The plugin has been entirely rewritten but he was the original creator of this project.
 

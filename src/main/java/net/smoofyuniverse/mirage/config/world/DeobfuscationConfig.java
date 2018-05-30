@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,28 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.config.world;
 
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+
+@ConfigSerializable
+public class DeobfuscationConfig {
+	@Setting(value = "NaturalRadius", comment = "Radius to deobfuscate on natural block update, between 1 and 4")
+	public int naturalRadius = 1;
+	@Setting(value = "PlayerRadius", comment = "Radius to deobfuscate on player block update, between 1 and 4")
+	public int playerRadius = 2;
+
+	public Immutable toImmutable() {
+		return new Immutable(this.naturalRadius, this.playerRadius);
+	}
+
+	public static class Immutable {
+		public final int naturalRadius, playerRadius;
+
+		public Immutable(int naturalRadius, int playerRadius) {
+			this.naturalRadius = naturalRadius;
+			this.playerRadius = playerRadius;
+		}
+	}
+}

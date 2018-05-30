@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,31 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.internal.compat;
 
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.chunk.Chunk;
+
+public class CompatUtil {
+	public static final boolean useForge = detectForge();
+
+	@SuppressWarnings("deprecation")
+	public static boolean hasTileEntity(IBlockState state) {
+		return useForge ? state.getBlock().hasTileEntity(state) : state.getBlock().hasTileEntity();
+	}
+
+	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
+		if (useForge)
+			ForgeUtil.postChunkWatchEvent(chunk, player);
+	}
+
+	private static boolean detectForge() {
+		try {
+			Class.forName("net.minecraftforge.common.ForgeVersion");
+			return true;
+		} catch (ClassNotFoundException e) {
+			return false;
+		}
+	}
+}

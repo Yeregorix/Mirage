@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.7.4",
+  "package": "net.smoofyuniverse.mirage.mixin",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "mixins.mirage.refmap.json",
+  "server": [
+    "MixinAnvilChunkLoader",
+    "MixinBlockStateContainer",
+    "MixinChunk",
+    "MixinExtendedBlockStorage",
+    "MixinPlayerChunkMap",
+    "MixinPlayerChunkMapEntry",
+    "MixinSPacketChunkData",
+    "MixinStateImplementation",
+    "MixinTrackingUtil",
+    "MixinWorld"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

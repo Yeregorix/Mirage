@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,16 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.api.modifier;
 
+public final class ConfiguredModifier {
+	public final ChunkModifier modifier;
+	public final Object config;
+
+	public ConfiguredModifier(ChunkModifier modifier, Object config) {
+		if (modifier == null || config == null)
+			throw new IllegalArgumentException();
+		this.modifier = modifier;
+		this.config = config;
+	}
+}

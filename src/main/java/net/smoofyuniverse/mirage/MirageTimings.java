@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,17 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage;
 
+import co.aikar.timings.Timing;
+import co.aikar.timings.Timings;
+
+public class MirageTimings {
+	public static final Timing OBFUSCATION = Timings.of(Mirage.get(), "Obfuscation"),
+			PREOBFUSCATION = Timings.of(Mirage.get(), "Preobfuscation"),
+			DEOBFUSCATION = Timings.of(Mirage.get(), "Deobfuscation"),
+			REOBFUSCATION = Timings.of(Mirage.get(), "Reobfuscation"),
+			WRITING_CACHE = Timings.of(Mirage.get(), "Writing Cache"),
+			READING_CACHE = Timings.of(Mirage.get(), "Reading Cache"),
+			DYNAMISM = Timings.of(Mirage.get(), "Dynamism");
+}

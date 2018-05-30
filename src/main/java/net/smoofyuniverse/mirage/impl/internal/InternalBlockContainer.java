@@ -22,5 +22,14 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.internal;
 
+import net.smoofyuniverse.mirage.impl.network.NetworkBlockContainer;
+import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+
+public interface InternalBlockContainer {
+
+	void setNetworkChunk(NetworkChunk chunk);
+
+	NetworkBlockContainer getNetworkBlockContainer();
+}

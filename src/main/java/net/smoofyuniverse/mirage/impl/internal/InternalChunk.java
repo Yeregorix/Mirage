@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,26 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.internal;
 
+import net.smoofyuniverse.mirage.api.volume.ChunkStorage;
+import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+
+public interface InternalChunk extends ChunkStorage {
+
+	@Override
+	NetworkChunk getView();
+
+	@Override
+	InternalWorld getWorld();
+
+	long getValidCacheDate();
+
+	void setValidCacheDate(long value);
+
+	void bindContainer(int index);
+
+	void bindContainerSafely(int index);
+
+	void bindOrCreateContainer(int index);
+}

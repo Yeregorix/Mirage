@@ -22,5 +22,17 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.api.modifier;
 
+import net.smoofyuniverse.mirage.modifier.*;
+
+/**
+ * An enumeration of all modifiers included by default
+ */
+public class ChunkModifiers {
+	public static final ChunkModifier EMPTY = new EmptyModifier();
+	public static final ChunkModifier HIDEALL = new HideAllModifier();
+	public static final ChunkModifier OBVIOUS = new ObviousModifier();
+	public static final ChunkModifier RANDOM = new RandomModifier();
+	public static final ChunkModifier BEDROCK = new BedrockModifier();
+}

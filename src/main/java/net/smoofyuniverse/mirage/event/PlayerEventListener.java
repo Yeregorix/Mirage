@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,27 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.event;
 
+import net.smoofyuniverse.mirage.Mirage;
+import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.Order;
+import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.text.Text;
+
+public class PlayerEventListener {
+
+	@Listener(order = Order.LATE)
+	public void onClientConnection(ClientConnectionEvent.Join e) {
+		Text[] messages = Mirage.get().getUpdateMessages();
+		if (messages.length != 0) {
+			Player p = e.getTargetEntity();
+			if (p.hasPermission("mirage.update.notify")) {
+				Task.builder().delayTicks(Mirage.get().getGlobalConfig().updateCheck.playerDelay)
+						.execute(() -> p.sendMessages(messages)).submit(Mirage.get());
+			}
+		}
+	}
+}

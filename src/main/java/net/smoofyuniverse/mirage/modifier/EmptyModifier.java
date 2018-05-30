@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,46 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.modifier;
 
+import com.flowpowered.math.vector.Vector3i;
+import net.smoofyuniverse.mirage.Mirage;
+import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
+import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
+import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.api.volume.ChunkView;
+import ninja.leaping.configurate.ConfigurationNode;
+import org.spongepowered.api.world.storage.WorldProperties;
+
+import java.util.Random;
+
+/**
+ * This modifier does not modify anything.
+ */
+public class EmptyModifier extends ChunkModifier {
+
+	public EmptyModifier() {
+		super(Mirage.get(), "Empty");
+	}
+
+	@Override
+	public boolean shouldCache() {
+		return false;
+	}
+
+	@Override
+	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) {
+		return new Object();
+	}
+
+	@Override
+	public void appendSignature(Builder builder, Object config) {}
+
+	@Override
+	public boolean isReady(ChunkView view, Object config) {
+		return true;
+	}
+
+	@Override
+	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {}
+}

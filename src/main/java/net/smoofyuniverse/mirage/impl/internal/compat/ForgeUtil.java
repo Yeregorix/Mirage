@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,16 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.internal.compat;
 
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkWatchEvent;
+
+public class ForgeUtil {
+
+	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
+		MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(chunk, player));
+	}
+}

@@ -22,5 +22,34 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.config.serializer;
 
+import com.google.common.reflect.TypeToken;
+import net.smoofyuniverse.mirage.util.collection.BlockSet;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
+
+public class BlockSetSerializer implements TypeSerializer<BlockSet> {
+	private static final TypeToken<String> STRING = TypeToken.of(String.class);
+
+	@Override
+	public BlockSet deserialize(TypeToken<?> type, ConfigurationNode value) throws ObjectMappingException {
+		try {
+			BlockSet set = new BlockSet();
+			set.fromStringList(value.getList(STRING));
+			return set;
+		} catch (IllegalArgumentException e) {
+			throw new ObjectMappingException(e.getMessage());
+		}
+	}
+
+	@Override
+	public void serialize(TypeToken<?> type, BlockSet set, ConfigurationNode value) throws ObjectMappingException {
+		try {
+			value.setValue(set.toStringList());
+		} catch (IllegalArgumentException e) {
+			throw new ObjectMappingException(e.getMessage());
+		}
+	}
+}

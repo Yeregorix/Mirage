@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,26 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.network.change;
 
+import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
+
+import javax.annotation.Nullable;
+
+public interface ChunkChangeListener {
+
+	@Nullable
+	InternalChunk getChunk();
+
+	void addChange(int x, int y, int z);
+
+	void sendChanges();
+
+	void clearChanges();
+
+	void updateDynamism(int x, int y, int z, int distance);
+
+	void clearDynamism();
+
+	void markDirty();
+}

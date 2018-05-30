@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,27 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.util;
 
+public class MathUtil {
+
+	public static int clamp(int value, int min, int max) {
+		if (value < min)
+			return min;
+		if (value > max)
+			return max;
+		return value;
+	}
+
+	public static int squared(int value) {
+		return value * value;
+	}
+
+	public static int lengthSquared(int dx, int dz) {
+		return dx * dx + dz * dz;
+	}
+
+	public static int lengthSquared(int dx, int dy, int dz) {
+		return dx * dx + dy * dy + dz * dz;
+	}
+}

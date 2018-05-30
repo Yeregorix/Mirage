@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,17 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.ore.object;
 
+import java.time.Instant;
+import java.util.List;
+
+public class VersionInfo {
+	public String name, pluginId, md5, href, author;
+	public List<DependencyInfo> dependencies;
+	public List<TagInfo> tags;
+	public ChannelInfo channel;
+	public Instant createdAt;
+	public int id, fileSize, downloads;
+	public boolean staffApproved;
+}

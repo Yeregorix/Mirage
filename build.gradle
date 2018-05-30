@@ -68,7 +68,7 @@ minecraft {
 
 sourceSets {
     main {
-        ext.refMap = 'mixins.antixray.refmap.json'
+        ext.refMap = 'mixins.mirage.refmap.json'
     }
 }
 
@@ -77,8 +77,8 @@ jar {
         attributes(
                 'FMLCorePluginContainsFMLMod': 'true',
                 'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
-                'MixinConfigs': 'mixins.antixray.json',
-                'FMLAT': 'antixray_at.cfg',
+                'MixinConfigs': 'mixins.mirage.json',
+                'FMLAT': 'mirage_at.cfg',
                 'ForceLoadAsMod' : true
         )
     }
@@ -97,11 +97,11 @@ dependencies {
 
 task updatePlugin <<{
     copy {
-        from 'build/libs/AntiXray.jar'
+        from 'build/libs/Mirage.jar'
         into spongestart.forgeServerFolder + '/mods'
     }
     copy {
-        from 'build/libs/AntiXray.jar'
+        from 'build/libs/Mirage.jar'
         into spongestart.vanillaServerFolder + '/mods'
     }
 }

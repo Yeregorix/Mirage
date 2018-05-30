@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,28 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.config.global;
 
+import com.google.common.reflect.TypeToken;
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+
+@ConfigSerializable
+public class GlobalConfig {
+	public static final TypeToken<GlobalConfig> TOKEN = TypeToken.of(GlobalConfig.class);
+
+	@Setting(value = "UpdateCheck")
+	public UpdateCheckConfig updateCheck = new UpdateCheckConfig();
+
+	public Immutable toImmutable() {
+		return new Immutable(this.updateCheck.toImmutable());
+	}
+
+	public static class Immutable {
+		public final UpdateCheckConfig.Immutable updateCheck;
+
+		public Immutable(UpdateCheckConfig.Immutable updateCheck) {
+			this.updateCheck = updateCheck;
+		}
+	}
+}

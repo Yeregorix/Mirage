@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,32 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.config.global;
 
+import ninja.leaping.configurate.objectmapping.Setting;
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+
+@ConfigSerializable
+public class UpdateCheckConfig {
+	@Setting(value = "Enabled", comment = "Enable or disable automatic update checking")
+	public boolean enabled = true;
+	@Setting(value = "ConsoleDelay", comment = "Delay in ticks before sending a message to the console, between -1 and 100")
+	public int consoleDelay = 20;
+	@Setting(value = "PlayerDelay", comment = "Delay in ticks before sending a message after a player connection, between -1 and 100")
+	public int playerDelay = 20;
+
+	public Immutable toImmutable() {
+		return new Immutable(this.enabled, this.consoleDelay, this.playerDelay);
+	}
+
+	public static class Immutable {
+		public final boolean enabled;
+		public final int consoleDelay, playerDelay;
+
+		public Immutable(boolean enabled, int consoleDelay, int playerDelay) {
+			this.enabled = enabled;
+			this.consoleDelay = consoleDelay;
+			this.playerDelay = playerDelay;
+		}
+	}
+}

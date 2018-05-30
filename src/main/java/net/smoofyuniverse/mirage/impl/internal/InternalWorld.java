@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,24 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.impl.internal;
 
+import net.smoofyuniverse.mirage.api.volume.WorldStorage;
+import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
+
+public interface InternalWorld extends WorldStorage {
+
+	@Override
+	NetworkWorld getView();
+
+	@Nullable
+	InternalChunk getChunk(int x, int z);
+
+	boolean isChunkLoaded(int x, int z);
+
+	@Override
+	Collection<InternalChunk> getLoadedChunkStorages();
+}

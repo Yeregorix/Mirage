@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,5 +20,28 @@
  * SOFTWARE.
  */
 
-rootProject.name = 'Mirage'
+package net.smoofyuniverse.mirage.ore.adapter;
 
+import com.google.gson.*;
+
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+
+public final class InstantAdapter implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
+	public static final DateTimeFormatter FORMAT = new DateTimeFormatterBuilder()
+			.append(DateTimeFormatter.ISO_LOCAL_DATE).appendLiteral(' ')
+			.append(DateTimeFormatter.ISO_LOCAL_TIME).toFormatter().withZone(ZoneId.systemDefault());
+
+	@Override
+	public JsonElement serialize(Instant object, Type type, JsonSerializationContext context) {
+		return new JsonPrimitive(FORMAT.format(object));
+	}
+
+	@Override
+	public Instant deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+		return FORMAT.parse(json.getAsString(), Instant::from);
+	}
+}
