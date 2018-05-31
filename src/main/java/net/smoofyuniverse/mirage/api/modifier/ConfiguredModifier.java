@@ -22,6 +22,9 @@
 
 package net.smoofyuniverse.mirage.api.modifier;
 
+/**
+ * A simple object to hold a modifier and its configuration
+ */
 public final class ConfiguredModifier {
 	public final ChunkModifier modifier;
 	public final Object config;
