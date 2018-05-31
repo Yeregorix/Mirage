@@ -78,6 +78,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
@@ -262,20 +263,33 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public void addPendingSave(int x, int z, ChunkSnapshot chunk) {
-		if (this.regionCache != null)
-			this.chunksToSave.put(NetworkChunk.asLong(x, z), chunk);
+		if (this.regionCache == null)
+			return;
+
+		synchronized (this.chunksToSave) {
+			this.chunksToSave.put(asLong(x, z), chunk);
+		}
 	}
 
 	public void removePendingSave(int x, int z) {
-		this.chunksToSave.remove(NetworkChunk.asLong(x, z));
+		if (this.regionCache == null)
+			return;
+
+		synchronized (this.chunksToSave) {
+			this.chunksToSave.remove(asLong(x, z));
+		}
 	}
 
 	public void savePendingChunk(int x, int z) {
-		if (this.regionCache != null) {
-			ChunkSnapshot chunk = this.chunksToSave.remove(NetworkChunk.asLong(x, z));
-			if (chunk != null)
-				saveToCache(x, z, chunk);
+		if (this.regionCache == null)
+			return;
+
+		ChunkSnapshot chunk;
+		synchronized (this.chunksToSave) {
+			chunk = this.chunksToSave.remove(asLong(x, z));
 		}
+		if (chunk != null)
+			saveToCache(x, z, chunk);
 	}
 
 	public void saveToCache(int x, int z, ChunkSnapshot chunk) {
