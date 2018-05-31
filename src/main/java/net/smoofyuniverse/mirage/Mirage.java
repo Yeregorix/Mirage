@@ -69,7 +69,7 @@ import java.nio.file.Path;
 
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
-@Plugin(id = "mirage", name = "Mirage", version = "1.3.0", authors = "Yeregorix", description = "A powerful solution against xray users")
+@Plugin(id = "mirage", name = "Mirage", version = "1.3.0", authors = "Yeregorix", description = "The best solution against xray users")
 public class Mirage {
 	public static final int CURRENT_CONFIG_VERSION = 1, MINIMUM_CONFIG_VERSION = 1;
 
