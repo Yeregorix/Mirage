@@ -46,7 +46,11 @@ public abstract class MixinWorld implements InternalWorld {
 	@Shadow
 	@Final
 	public boolean isRemote;
-	private NetworkWorld networkWorld = new NetworkWorld(this);
+
+	@Override
+	public NetworkWorld getView() {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {
@@ -64,11 +68,6 @@ public abstract class MixinWorld implements InternalWorld {
 	public boolean canSeeTheSky(int x, int y, int z) {
 		InternalChunk chunk = getChunk(x >> 4, z >> 4);
 		return chunk != null && chunk.canSeeTheSky(x & 15, y, z & 15);
-	}
-
-	@Override
-	public NetworkWorld getView() {
-		return this.networkWorld;
 	}
 
 	@Nullable

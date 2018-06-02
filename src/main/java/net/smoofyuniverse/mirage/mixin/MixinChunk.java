@@ -41,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.common.world.SpongeEmptyChunk;
 
 @Mixin(value = Chunk.class, priority = 1100)
 public abstract class MixinChunk implements InternalChunk {
@@ -79,6 +80,9 @@ public abstract class MixinChunk implements InternalChunk {
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
+		if (((Object) this) instanceof SpongeEmptyChunk)
+			return;
+
 		NetworkWorld netWorld = ((InternalWorld) this.world).getView();
 		if (netWorld.isEnabled())
 			this.netChunk = new NetworkChunk(this, netWorld);

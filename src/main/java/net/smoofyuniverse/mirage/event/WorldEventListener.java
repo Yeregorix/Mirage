@@ -23,7 +23,6 @@
 package net.smoofyuniverse.mirage.event;
 
 import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
@@ -36,7 +35,6 @@ import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.filter.type.Exclude;
 import org.spongepowered.api.event.world.ExplosionEvent;
-import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.event.world.SaveWorldEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -45,17 +43,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class WorldEventListener {
-
-	@Listener(order = Order.POST)
-	public void onWorldLoad(LoadWorldEvent e) {
-		World world = e.getTargetWorld();
-		Mirage.LOGGER.info("Loading configuration for world " + world.getName() + " ..");
-		try {
-			((InternalWorld) world).getView().loadConfig();
-		} catch (Exception ex) {
-			Mirage.LOGGER.error("Failed to load configuration for world " + world.getName(), ex);
-		}
-	}
 
 	@Listener
 	public void onWorldSave(SaveWorldEvent.Pre e) {
