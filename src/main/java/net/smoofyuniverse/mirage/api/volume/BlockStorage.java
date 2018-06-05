@@ -67,7 +67,6 @@ public interface BlockStorage extends ImmutableBlockVolume {
 
 	/**
 	 * Checks if the block at the given position is exposed to the view of normal users.
-	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
 	 *
 	 * @param pos The position
 	 * @return Whether the block is exposed
@@ -78,7 +77,6 @@ public interface BlockStorage extends ImmutableBlockVolume {
 
 	/**
 	 * Checks if the block at the given position is exposed to the view of normal users.
-	 * This can be done by checking the FullBlockSelectionBoxProperty of each surrounding block but this method is optimized for performances.
 	 *
 	 * @param x The X position
 	 * @param y The Y position
