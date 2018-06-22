@@ -26,11 +26,15 @@ import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 
 public class MirageTimings {
-	public static final Timing OBFUSCATION = Timings.of(Mirage.get(), "Obfuscation"),
-			PREOBFUSCATION = Timings.of(Mirage.get(), "Preobfuscation"),
-			DEOBFUSCATION = Timings.of(Mirage.get(), "Deobfuscation"),
-			REOBFUSCATION = Timings.of(Mirage.get(), "Reobfuscation"),
-			WRITING_CACHE = Timings.of(Mirage.get(), "Writing Cache"),
-			READING_CACHE = Timings.of(Mirage.get(), "Reading Cache"),
-			DYNAMISM = Timings.of(Mirage.get(), "Dynamism");
+	public static final Timing OBFUSCATION = of("Obfuscation"),
+			PREOBFUSCATION = of("Preobfuscation"),
+			DEOBFUSCATION = of("Deobfuscation"),
+			REOBFUSCATION = of("Reobfuscation"),
+			WRITING_CACHE = of("Writing Cache"),
+			READING_CACHE = of("Reading Cache"),
+			DYNAMISM = of("Dynamism");
+
+	public static Timing of(String name) {
+		return Timings.of(Mirage.get(), name);
+	}
 }

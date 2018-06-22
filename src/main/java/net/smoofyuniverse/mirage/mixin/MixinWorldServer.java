@@ -20,8 +20,8 @@ public abstract class MixinWorldServer extends MixinWorld {
 		Mirage.LOGGER.info("Loading configuration for world " + getName() + " ..");
 		try {
 			this.networkWorld.loadConfig();
-		} catch (Exception ex) {
-			Mirage.LOGGER.error("Failed to load configuration for world " + getName(), ex);
+		} catch (Exception e) {
+			Mirage.LOGGER.error("Failed to load configuration for world " + getName(), e);
 		}
 	}
 
