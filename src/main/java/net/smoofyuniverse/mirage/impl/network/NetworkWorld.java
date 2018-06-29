@@ -42,6 +42,7 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
+import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.mirage.util.ModifierUtil;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -119,7 +120,7 @@ public class NetworkWorld implements WorldView {
 
 		CommentedConfigurationNode root = loader.load();
 		int version = root.getNode("Version").getInt();
-		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && Mirage.get().backupFile(file)) {
+		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && IOUtil.backupFile(file)) {
 			Mirage.LOGGER.info("Your config version is not supported. A new one will be generated.");
 			root = loader.createEmptyNode();
 		}

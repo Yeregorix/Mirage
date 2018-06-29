@@ -28,6 +28,7 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
 @ConfigSerializable
 public class GlobalConfig {
+	public static final int CURRENT_VERSION = 1, MINIMUM_VERSION = 1;
 	public static final TypeToken<GlobalConfig> TOKEN = TypeToken.of(GlobalConfig.class);
 
 	@Setting(value = "UpdateCheck")

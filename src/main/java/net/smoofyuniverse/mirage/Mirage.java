@@ -34,6 +34,7 @@ import net.smoofyuniverse.mirage.event.WorldEventListener;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.ore.OreAPI;
+import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
@@ -71,8 +72,6 @@ import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 @Plugin(id = "mirage", name = "Mirage", version = "1.3.0", authors = "Yeregorix", description = "The best solution against xray users")
 public class Mirage {
-	public static final int CURRENT_CONFIG_VERSION = 1, MINIMUM_CONFIG_VERSION = 1;
-
 	public static final Logger LOGGER = LoggerFactory.getLogger("Mirage");
 	private static Mirage instance;
 
@@ -82,10 +81,9 @@ public class Mirage {
 	@ConfigDir(sharedRoot = false)
 	private Path configDir;
 	@Inject
-	private GuiceObjectMapperFactory factory;
-	@Inject
 	private PluginContainer container;
-
+	@Inject
+	private GuiceObjectMapperFactory factory;
 	@Inject
 	private MetricsLite metrics;
 
@@ -138,7 +136,7 @@ public class Mirage {
 
 		CommentedConfigurationNode root = loader.load();
 		int version = root.getNode("Version").getInt();
-		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && backupFile(file)) {
+		if ((version > GlobalConfig.CURRENT_VERSION || version < GlobalConfig.MINIMUM_VERSION) && IOUtil.backupFile(file)) {
 			LOGGER.info("Your global config version is not supported. A new one will be generated.");
 			root = loader.createEmptyNode();
 		}
@@ -152,7 +150,7 @@ public class Mirage {
 		if (cfg.updateCheck.consoleDelay == -1 && cfg.updateCheck.playerDelay == -1)
 			cfg.updateCheck.enabled = false;
 
-		version = CURRENT_CONFIG_VERSION;
+		version = GlobalConfig.CURRENT_VERSION;
 		root.getNode("Version").setValue(version);
 		cfgNode.setValue(GlobalConfig.TOKEN, cfg);
 		loader.save(root);
@@ -232,21 +230,6 @@ public class Mirage {
 		return HoconConfigurationLoader.builder().setPath(file).setDefaultOptions(this.configOptions).build();
 	}
 
-	public boolean backupFile(Path file) throws IOException {
-		if (!Files.exists(file))
-			return false;
-
-		String fn = file.getFileName() + ".backup";
-		Path backup = null;
-		for (int i = 0; i < 100; i++) {
-			backup = file.resolveSibling(fn + i);
-			if (!Files.exists(backup))
-				break;
-		}
-		Files.move(file, backup);
-		return true;
-	}
-
 	public Path getWorldConfigsDirectory() {
 		return this.worldConfigsDir;
 	}
@@ -263,6 +246,10 @@ public class Mirage {
 
 	public Text[] getUpdateMessages() {
 		return this.updateMessages;
+	}
+
+	public PluginContainer getContainer() {
+		return this.container;
 	}
 
 	public static Mirage get() {
