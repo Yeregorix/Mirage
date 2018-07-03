@@ -39,8 +39,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.common.world.SpongeEmptyChunk;
 
 @Mixin(value = Chunk.class, priority = 1100)
@@ -73,9 +73,18 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
-	@Inject(method = "setBlockState", at = @At("RETURN"))
-	public void onSetBlockState(BlockPos pos, IBlockState state, CallbackInfoReturnable<IBlockState> ci) {
-		bindContainerSafely(pos.getY() >> 4);
+	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
+	public void onInitWithPrimer(CallbackInfo ci) {
+		if (this.netChunk == null)
+			return;
+
+		try {
+			synchronized (this.containersLock) {
+				this.netChunk.setContainers(this.storageArrays);
+			}
+		} catch (Exception e) {
+			Mirage.LOGGER.error("Failed to set containers of a network chunk", e);
+		}
 	}
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
@@ -88,8 +97,8 @@ public abstract class MixinChunk implements InternalChunk {
 			this.netChunk = new NetworkChunk(this, netWorld);
 	}
 
-	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
-	public void onInitWithPrimer(CallbackInfo ci) {
+	@Inject(method = "setStorageArrays", at = @At("RETURN"))
+	public void onSetStorageArrays(CallbackInfo ci) {
 		if (this.netChunk == null)
 			return;
 
@@ -98,7 +107,15 @@ public abstract class MixinChunk implements InternalChunk {
 				this.netChunk.setContainers(this.storageArrays);
 			}
 		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to update containers of a network chunk", e);
+			Mirage.LOGGER.error("Failed to set containers of a network chunk", e);
+			return;
+		}
+
+		try {
+			if (this.netChunk.getState() != State.OBFUSCATED)
+				this.netChunk.loadFromCacheNow();
+		} catch (Exception e) {
+			Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
 		}
 	}
 
@@ -129,56 +146,8 @@ public abstract class MixinChunk implements InternalChunk {
 		this.cacheDate = value;
 	}
 
-	@Inject(method = "setStorageArrays", at = @At("RETURN"))
-	public void onSetStorageArrays(CallbackInfo ci) {
-		if (this.netChunk == null)
-			return;
-
-		try {
-			synchronized (this.containersLock) {
-				this.netChunk.setContainers(this.storageArrays);
-			}
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to update containers of a network chunk", e);
-			return;
-		}
-
-		try {
-			if (this.netChunk.getState() != State.OBFUSCATED)
-				this.netChunk.loadFromCacheNow();
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
-		}
-	}
-
 	@Override
 	public void bindContainer(int index) {
-		if (this.netChunk == null)
-			return;
-
-		ExtendedBlockStorage storage = this.storageArrays[index];
-		if (storage != null) {
-			synchronized (this.containersLock) {
-				if (this.netChunk.needContainer(index)) {
-					this.netChunk.setContainer(index, storage);
-					if (!storage.isEmpty())
-						this.netChunk.setSaved(false);
-				}
-			}
-		}
-	}
-
-	@Override
-	public void bindContainerSafely(int index) {
-		try {
-			bindContainer(index);
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to bind a container of a network chunk", e);
-		}
-	}
-
-	@Override
-	public void bindOrCreateContainer(int index) {
 		if (this.netChunk == null)
 			return;
 
@@ -187,9 +156,9 @@ public abstract class MixinChunk implements InternalChunk {
 				ExtendedBlockStorage storage = this.storageArrays[index];
 				if (storage == null) {
 					storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
+					this.netChunk.setContainer(index, storage);
 					this.storageArrays[index] = storage;
 					generateSkylightMap();
-					this.netChunk.setContainer(index, storage);
 				} else {
 					this.netChunk.setContainer(index, storage);
 					if (!storage.isEmpty())
@@ -199,13 +168,39 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	@Inject(method = "setLightFor", at = @At("RETURN"))
-	public void onSetLightFor(EnumSkyBlock type, BlockPos pos, int value, CallbackInfo ci) {
-		bindContainerSafely(pos.getY() >> 4);
-	}
-
 	@Shadow
 	public abstract void generateSkylightMap();
+
+	@SuppressWarnings("UnresolvedMixinReference")
+	@Redirect(method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/block/BlockSnapshot;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
+	public ExtendedBlockStorage initExtendedBlockStorage1(int y, boolean storeSkylight) {
+		return createStorage(y >> 4, storeSkylight);
+	}
+
+	public ExtendedBlockStorage createStorage(int index, boolean storeSkylight) {
+		ExtendedBlockStorage storage = new ExtendedBlockStorage(index << 4, storeSkylight);
+
+		if (this.netChunk != null) {
+			try {
+				synchronized (this.containersLock) {
+					if (this.netChunk.needContainer(index)) {
+						this.netChunk.setContainer(index, storage);
+						if (!storage.isEmpty())
+							this.netChunk.setSaved(false);
+					}
+				}
+			} catch (Exception e) {
+				Mirage.LOGGER.error("Failed to set a container of a network chunk", e);
+			}
+		}
+
+		return storage;
+	}
+
+	@Redirect(method = "setLightFor", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"))
+	public ExtendedBlockStorage initExtendedBlockStorage2(int y, boolean storeSkylight) {
+		return createStorage(y >> 4, storeSkylight);
+	}
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {

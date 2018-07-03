@@ -14,7 +14,6 @@
     "MixinPlayerChunkMapEntry",
     "MixinSPacketChunkData",
     "MixinStateImplementation",
-    "MixinTrackingUtil",
     "MixinWorld",
     "MixinWorldServer"
   ],

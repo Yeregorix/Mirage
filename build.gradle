@@ -59,7 +59,7 @@ spongestart {
 }
 
 minecraft {
-    version = '1.12.2-14.23.4.2703'
+    version = '1.12.2-14.23.4.2705'
     mappings = 'snapshot_20171007'
 
     runDir = 'run'

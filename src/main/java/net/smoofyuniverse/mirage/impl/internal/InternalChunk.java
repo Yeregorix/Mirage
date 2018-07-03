@@ -38,8 +38,4 @@ public interface InternalChunk extends ChunkStorage {
 	void setValidCacheDate(long value);
 
 	void bindContainer(int index);
-
-	void bindContainerSafely(int index);
-
-	void bindOrCreateContainer(int index);
 }

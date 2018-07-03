@@ -410,7 +410,7 @@ public class NetworkChunk implements ChunkView {
 
 		NetworkBlockContainer container = this.containers[y >> 4];
 		if (container == null) {
-			this.chunk.bindOrCreateContainer(y >> 4);
+			this.chunk.bindContainer(y >> 4);
 			container = this.containers[y >> 4];
 		}
 
@@ -642,7 +642,7 @@ public class NetworkChunk implements ChunkView {
 
 		NetworkBlockContainer container = this.containers[y >> 4];
 		if (container == null) {
-			this.chunk.bindOrCreateContainer(y >> 4);
+			this.chunk.bindContainer(y >> 4);
 			container = this.containers[y >> 4];
 		}
 
