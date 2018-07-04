@@ -58,7 +58,9 @@ public class HideAllModifier extends ChunkModifier {
 
 	@Override
 	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN, new Config());
+		Config cfg = node.getValue(Config.TOKEN);
+		if (cfg == null)
+			cfg = new Config();
 
 		DimensionType dimType = world.getDimensionType();
 		if (preset.equals("water_dungeons")) {

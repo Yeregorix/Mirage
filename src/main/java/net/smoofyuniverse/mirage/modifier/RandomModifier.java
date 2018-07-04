@@ -59,7 +59,9 @@ public class RandomModifier extends ChunkModifier {
 
 	@Override
 	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN, new Config());
+		Config cfg = node.getValue(Config.TOKEN);
+		if (cfg == null)
+			cfg = new Config();
 
 		DimensionType dimType = world.getDimensionType();
 		if (cfg.blocks == null) {

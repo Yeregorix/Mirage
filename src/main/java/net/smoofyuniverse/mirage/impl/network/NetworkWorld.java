@@ -86,7 +86,7 @@ import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
  * Represents the world viewed for the network (akka online players)
  */
 public class NetworkWorld implements WorldView {
-	public static final int CURRENT_CONFIG_VERSION = 1, MINIMUM_CONFIG_VERSION = 1;
+	public static final int CURRENT_CONFIG_VERSION = 2, MINIMUM_CONFIG_VERSION = 1;
 
 	private final Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
 	private final Vector3i blockMin, blockMax, blockSize;
@@ -120,13 +120,18 @@ public class NetworkWorld implements WorldView {
 
 		CommentedConfigurationNode root = loader.load();
 		int version = root.getNode("Version").getInt();
-		if ((version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) && IOUtil.backupFile(file)) {
-			Mirage.LOGGER.info("Your config version is not supported. A new one will be generated.");
-			root = loader.createEmptyNode();
+		if (version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) {
+			version = CURRENT_CONFIG_VERSION;
+			if (IOUtil.backupFile(file)) {
+				Mirage.LOGGER.info("Your config version is not supported. A new one will be generated.");
+				root = loader.createEmptyNode();
+			}
 		}
 
 		ConfigurationNode cfgNode = root.getNode("Config");
-		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN, new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END));
+		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN);
+		if (cfg == null)
+			cfg = new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END);
 
 		if (cfg.preobf.blocks == null) {
 			cfg.preobf.blocks = new BlockSet();
@@ -148,28 +153,45 @@ public class NetworkWorld implements WorldView {
 		}
 
 		ConfigurationNode modsNode = root.getNode("Modifiers");
+
+		if (version == 1) {
+			// Conversion "Id" -> "Type"
+			for (ConfigurationNode node : modsNode.getChildrenList()) {
+				ConfigurationNode typeNode = node.getNode("Type");
+				if (typeNode.isVirtual()) {
+					ConfigurationNode idNode = node.getNode("Id");
+					if (!idNode.isVirtual()) {
+						typeNode.setValue(idNode.getValue());
+						node.removeChild("Id");
+					}
+				}
+			}
+
+			version = 2;
+		}
+
 		if (modsNode.isVirtual()) {
 			if (dimType == DimensionTypes.OVERWORLD) {
-				modsNode.getAppendedNode().getNode("Id").setValue("bedrock");
+				modsNode.getAppendedNode().getNode("Type").setValue("bedrock");
 
 				ConfigurationNode water_dungeons = modsNode.getAppendedNode();
-				water_dungeons.getNode("Id").setValue("obvious");
+				water_dungeons.getNode("Type").setValue("obvious");
 				water_dungeons.getNode("Preset").setValue("water_dungeons");
 			}
 
-			modsNode.getAppendedNode().getNode("Id").setValue("obvious");
+			modsNode.getAppendedNode().getNode("Type").setValue("obvious");
 		}
 
 		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
 		if (cfg.enabled) {
 			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				String id = node.getNode("Id").getString();
-				if (id == null)
+				String type = node.getNode("Type").getString();
+				if (type == null)
 					continue;
 
-				ChunkModifier mod = ChunkModifierRegistryModule.get().getById(id).orElse(null);
+				ChunkModifier mod = ChunkModifierRegistryModule.get().getById(type).orElse(null);
 				if (mod == null) {
-					Mirage.LOGGER.warn("Modifier '" + id + "' does not exists.");
+					Mirage.LOGGER.warn("Modifier '" + type + "' does not exists.");
 					continue;
 				}
 
@@ -180,7 +202,8 @@ public class NetworkWorld implements WorldView {
 
 				Object modCfg;
 				try {
-					modCfg = mod.loadConfiguration(node.getNode("Options"), properties, node.getNode("Preset").getString("").toLowerCase());
+					String preset = node.getNode("Preset").getString();
+					modCfg = mod.loadConfiguration(node.getNode("Options"), properties, preset == null ? "" : preset.toLowerCase());
 					node.removeChild("Preset");
 				} catch (Exception e) {
 					Mirage.LOGGER.warn("Modifier " + mod.getId() + " failed to loaded his configuration. This modifier will be ignored.", e);
@@ -239,7 +262,6 @@ public class NetworkWorld implements WorldView {
 			}
 		}
 
-		version = CURRENT_CONFIG_VERSION;
 		root.getNode("Version").setValue(version);
 		cfgNode.setValue(WorldConfig.TOKEN, cfg);
 		loader.save(root);

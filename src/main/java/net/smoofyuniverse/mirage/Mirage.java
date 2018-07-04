@@ -136,13 +136,18 @@ public class Mirage {
 
 		CommentedConfigurationNode root = loader.load();
 		int version = root.getNode("Version").getInt();
-		if ((version > GlobalConfig.CURRENT_VERSION || version < GlobalConfig.MINIMUM_VERSION) && IOUtil.backupFile(file)) {
-			LOGGER.info("Your global config version is not supported. A new one will be generated.");
-			root = loader.createEmptyNode();
+		if (version > GlobalConfig.CURRENT_VERSION || version < GlobalConfig.MINIMUM_VERSION) {
+			version = GlobalConfig.CURRENT_VERSION;
+			if (IOUtil.backupFile(file)) {
+				LOGGER.info("Your global config version is not supported. A new one will be generated.");
+				root = loader.createEmptyNode();
+			}
 		}
 
 		ConfigurationNode cfgNode = root.getNode("Config");
-		GlobalConfig cfg = cfgNode.getValue(GlobalConfig.TOKEN, new GlobalConfig());
+		GlobalConfig cfg = cfgNode.getValue(GlobalConfig.TOKEN);
+		if (cfg == null)
+			cfg = new GlobalConfig();
 
 		cfg.updateCheck.consoleDelay = clamp(cfg.updateCheck.consoleDelay, -1, 100);
 		cfg.updateCheck.playerDelay = clamp(cfg.updateCheck.playerDelay, -1, 100);
@@ -150,7 +155,6 @@ public class Mirage {
 		if (cfg.updateCheck.consoleDelay == -1 && cfg.updateCheck.playerDelay == -1)
 			cfg.updateCheck.enabled = false;
 
-		version = GlobalConfig.CURRENT_VERSION;
 		root.getNode("Version").setValue(version);
 		cfgNode.setValue(GlobalConfig.TOKEN, cfg);
 		loader.save(root);

@@ -59,11 +59,15 @@ public class BedrockModifier extends ChunkModifier {
 
 	@Override
 	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN, new Config());
+		Config cfg = node.getValue(Config.TOKEN);
+		if (cfg == null)
+			cfg = new Config();
+
 		if (cfg.ground == null)
 			cfg.ground = ModifierUtil.getCommonGround(world.getDimensionType());
 		if (cfg.height < 0)
 			cfg.height = 0;
+
 		node.setValue(Config.TOKEN, cfg);
 		return cfg.toImmutable();
 	}
