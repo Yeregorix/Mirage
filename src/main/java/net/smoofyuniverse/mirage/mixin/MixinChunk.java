@@ -73,19 +73,8 @@ public abstract class MixinChunk implements InternalChunk {
 	@Shadow
 	public abstract int getLightFor(EnumSkyBlock type, BlockPos pos);
 
-	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
-	public void onInitWithPrimer(CallbackInfo ci) {
-		if (this.netChunk == null)
-			return;
-
-		try {
-			synchronized (this.containersLock) {
-				this.netChunk.setContainers(this.storageArrays);
-			}
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to set containers of a network chunk", e);
-		}
-	}
+	@Shadow
+	public abstract void generateSkylightMap();
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
@@ -97,25 +86,35 @@ public abstract class MixinChunk implements InternalChunk {
 			this.netChunk = new NetworkChunk(this, netWorld);
 	}
 
-	@Inject(method = "setStorageArrays", at = @At("RETURN"))
-	public void onSetStorageArrays(CallbackInfo ci) {
+	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
+	public void onInitWithPrimer(CallbackInfo ci) {
+		bindContainers();
+	}
+
+	public boolean bindContainers() {
 		if (this.netChunk == null)
-			return;
+			return false;
 
 		try {
 			synchronized (this.containersLock) {
 				this.netChunk.setContainers(this.storageArrays);
 			}
+			return true;
 		} catch (Exception e) {
 			Mirage.LOGGER.error("Failed to set containers of a network chunk", e);
-			return;
+			return false;
 		}
+	}
 
-		try {
-			if (this.netChunk.getState() != State.OBFUSCATED)
-				this.netChunk.loadFromCacheNow();
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
+	@Inject(method = "setStorageArrays", at = @At("RETURN"))
+	public void onSetStorageArrays(CallbackInfo ci) {
+		if (bindContainers()) {
+			try {
+				if (this.netChunk.getState() != State.OBFUSCATED)
+					this.netChunk.loadFromCacheNow();
+			} catch (Exception e) {
+				Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
+			}
 		}
 	}
 
@@ -168,12 +167,15 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	@Shadow
-	public abstract void generateSkylightMap();
-
 	@SuppressWarnings("UnresolvedMixinReference")
 	@Redirect(method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/block/BlockSnapshot;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
-	public ExtendedBlockStorage initExtendedBlockStorage1(int y, boolean storeSkylight) {
+	public ExtendedBlockStorage onBlockChange_newStorage(int y, boolean storeSkylight) {
+		return createStorage(y >> 4, storeSkylight);
+	}
+
+	@SuppressWarnings("UnresolvedMixinReference")
+	@Redirect(method = "fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
+	public ExtendedBlockStorage onFill_newStorage(int y, boolean storeSkylight) {
 		return createStorage(y >> 4, storeSkylight);
 	}
 
@@ -198,7 +200,7 @@ public abstract class MixinChunk implements InternalChunk {
 	}
 
 	@Redirect(method = "setLightFor", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"))
-	public ExtendedBlockStorage initExtendedBlockStorage2(int y, boolean storeSkylight) {
+	public ExtendedBlockStorage onLightChange_newStorage(int y, boolean storeSkylight) {
 		return createStorage(y >> 4, storeSkylight);
 	}
 
