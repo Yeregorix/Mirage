@@ -35,4 +35,5 @@ public class ChunkModifiers {
 	public static final ChunkModifier OBVIOUS = new ObviousModifier();
 	public static final ChunkModifier RANDOM = new RandomModifier();
 	public static final ChunkModifier BEDROCK = new BedrockModifier();
+	public static final ChunkModifier FAKEGEN = new FakeGenModifier();
 }

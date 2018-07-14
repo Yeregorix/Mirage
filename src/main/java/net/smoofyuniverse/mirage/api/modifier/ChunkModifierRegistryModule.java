@@ -63,6 +63,7 @@ public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryMod
 		register(ChunkModifiers.OBVIOUS);
 		register(ChunkModifiers.RANDOM);
 		register(ChunkModifiers.BEDROCK);
+		register(ChunkModifiers.FAKEGEN);
 	}
 
 	private void register(ChunkModifier modifier) {

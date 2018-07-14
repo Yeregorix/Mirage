@@ -24,12 +24,24 @@ package net.smoofyuniverse.mirage.util;
 
 public class MathUtil {
 
+	public static double clamp(double value, double min, double max) {
+		if (value < min)
+			return min;
+		if (value > max)
+			return max;
+		return value;
+	}
+
 	public static int clamp(int value, int min, int max) {
 		if (value < min)
 			return min;
 		if (value > max)
 			return max;
 		return value;
+	}
+
+	public static float squared(float value) {
+		return value * value;
 	}
 
 	public static int squared(int value) {
