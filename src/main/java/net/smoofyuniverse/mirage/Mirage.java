@@ -67,7 +67,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
+import static java.lang.Integer.max;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 @Plugin(id = "mirage", name = "Mirage", version = "1.3.1", authors = "Yeregorix", description = "The best solution against xray users")
@@ -149,6 +151,7 @@ public class Mirage {
 		if (cfg == null)
 			cfg = new GlobalConfig();
 
+		cfg.updateCheck.repetitionInterval = max(cfg.updateCheck.repetitionInterval, 0);
 		cfg.updateCheck.consoleDelay = clamp(cfg.updateCheck.consoleDelay, -1, 100);
 		cfg.updateCheck.playerDelay = clamp(cfg.updateCheck.playerDelay, -1, 100);
 
@@ -188,13 +191,15 @@ public class Mirage {
 		}
 
 		if (this.globalConfig.updateCheck.enabled)
-			Task.builder().async().execute(this::checkForUpdate).submit(this);
+			Task.builder().async().interval(this.globalConfig.updateCheck.repetitionInterval, TimeUnit.HOURS).execute(this::checkForUpdate).submit(this);
 	}
 
 	public void checkForUpdate() {
 		String version = this.container.getVersion().orElse(null);
 		if (version == null)
 			return;
+
+		LOGGER.debug("Checking for update ..");
 
 		String latestVersion = null;
 		try {

@@ -79,6 +79,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
@@ -474,7 +476,7 @@ public class NetworkWorld implements WorldView {
 
 				if (chunk.getState() != State.DEOBFUSCATED) {
 					int chunkMinX = chunkX << 4, chunkMinZ = chunkZ << 4;
-					chunk.deobfuscate(Math.max(minX, chunkMinX), minY, Math.max(minZ, chunkMinZ), Math.min(maxX, chunkMinX + 15), maxY, Math.min(maxZ, chunkMinZ + 15));
+					chunk.deobfuscate(max(minX, chunkMinX), minY, max(minZ, chunkMinZ), min(maxX, chunkMinX + 15), maxY, min(maxZ, chunkMinZ + 15));
 				}
 			}
 		}

@@ -26,6 +26,9 @@ import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 /**
  * A BlockView is a MutableBlockVolume associated with immutable BlockStorage. This object is used to represent a client-side BlockVolume.
  */
@@ -178,8 +181,8 @@ public interface BlockView extends MutableBlockVolume {
 			deobfuscate(x, y, z);
 		else {
 			Vector3i min = getBlockMin(), max = getBlockMax();
-			deobfuscateArea(Math.max(x - radius, min.getX()), Math.max(y - radius, min.getY()), Math.max(z - radius, min.getZ()),
-					Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()), silentFail);
+			deobfuscateArea(max(x - radius, min.getX()), max(y - radius, min.getY()), max(z - radius, min.getZ()),
+					min(x + radius, max.getX()), min(y + radius, max.getY()), min(z + radius, max.getZ()), silentFail);
 		}
 	}
 
@@ -238,8 +241,8 @@ public interface BlockView extends MutableBlockVolume {
 			throw new IllegalArgumentException("Negative radius");
 
 		Vector3i min = getBlockMin(), max = getBlockMax();
-		reobfuscateArea(Math.max(x - radius, min.getX()), Math.max(y - radius, min.getY()), Math.max(z - radius, min.getZ()),
-				Math.min(x + radius, max.getX()), Math.min(y + radius, max.getY()), Math.min(z + radius, max.getZ()), silentFail);
+		reobfuscateArea(max(x - radius, min.getX()), max(y - radius, min.getY()), max(z - radius, min.getZ()),
+				min(x + radius, max.getX()), min(y + radius, max.getY()), min(z + radius, max.getZ()), silentFail);
 	}
 
 	/**

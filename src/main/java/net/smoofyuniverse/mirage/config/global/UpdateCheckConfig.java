@@ -29,21 +29,24 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 public class UpdateCheckConfig {
 	@Setting(value = "Enabled", comment = "Enable or disable automatic update checking")
 	public boolean enabled = true;
+	@Setting(value = "RepetitionInterval", comment = "Interval in hours between update checking repetitions, 0 to disable")
+	public int repetitionInterval = 12;
 	@Setting(value = "ConsoleDelay", comment = "Delay in ticks before sending a message to the console, between -1 and 100")
 	public int consoleDelay = 20;
 	@Setting(value = "PlayerDelay", comment = "Delay in ticks before sending a message after a player connection, between -1 and 100")
 	public int playerDelay = 20;
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.consoleDelay, this.playerDelay);
+		return new Immutable(this.enabled, this.repetitionInterval, this.consoleDelay, this.playerDelay);
 	}
 
 	public static class Immutable {
 		public final boolean enabled;
-		public final int consoleDelay, playerDelay;
+		public final int repetitionInterval, consoleDelay, playerDelay;
 
-		public Immutable(boolean enabled, int consoleDelay, int playerDelay) {
+		public Immutable(boolean enabled, int repetitionInterval, int consoleDelay, int playerDelay) {
 			this.enabled = enabled;
+			this.repetitionInterval = repetitionInterval;
 			this.consoleDelay = consoleDelay;
 			this.playerDelay = playerDelay;
 		}
