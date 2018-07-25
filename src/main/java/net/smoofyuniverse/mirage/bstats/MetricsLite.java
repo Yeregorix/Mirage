@@ -20,6 +20,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -301,7 +302,7 @@ public class MetricsLite {
 	private static byte[] compress(String str) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		GZIPOutputStream gzip = new GZIPOutputStream(out);
-		gzip.write(str.getBytes("UTF-8"));
+		gzip.write(str.getBytes(StandardCharsets.UTF_8));
 		gzip.close();
 		return out.toByteArray();
 	}
