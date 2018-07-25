@@ -87,7 +87,7 @@ public class RandomModifier extends ChunkModifier {
 					cfg.replacements.remove(e.getKey());
 			}
 
-			cfg.replacements.put(ModifierUtil.getCommonGround(dimType), (double) cfg.replacements.size());
+			cfg.replacements.put(ModifierUtil.getCommonGround(dimType), (double) Math.max(cfg.replacements.size(), 1));
 		}
 
 		cfg.minY = clamp(cfg.minY, 0, 255);
