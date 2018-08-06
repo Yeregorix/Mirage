@@ -69,7 +69,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.Integer.max;
+import static java.lang.Math.max;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 @Plugin(id = "mirage", name = "Mirage", version = "1.3.2", authors = "Yeregorix", description = "The best solution against xray users")
