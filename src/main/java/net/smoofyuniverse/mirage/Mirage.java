@@ -116,7 +116,7 @@ public class Mirage {
 			Files.createDirectories(this.worldConfigsDir);
 		} catch (IOException ignored) {
 		}
-		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory).setShouldCopyDefaults(true);
+		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory);
 
 		LOGGER.info("Loading global configuration ..");
 		try {
