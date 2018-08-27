@@ -36,9 +36,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,30 +46,26 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 	@Shadow
 	@Final
 	private WorldServer world;
-	@Shadow
-	@Final
-	private List<EntityPlayerMP> players;
 
 	private Map<UUID, PlayerDynamismManager> dynamismManagers = new HashMap<>();
-
-	@Inject(method = "addPlayer", at = @At("HEAD"))
-	public void onAddPlayer(EntityPlayerMP player, CallbackInfo ci) {
-		if (isDynamismEnabled()) {
-			PlayerDynamismManager manager = new PlayerDynamismManager(player.getUniqueID());
-			manager.setCenter(((Player) player).getPosition().toInt());
-			this.dynamismManagers.put(manager.playerId, manager);
-		}
-	}
 
 	@Override
 	public boolean isDynamismEnabled() {
 		return ((InternalWorld) this.world).getView().isDynamismEnabled();
 	}
 
-	@Nullable
 	@Override
-	public PlayerDynamismManager getDynamismManager(UUID playerId) {
-		return this.dynamismManagers.get(playerId);
+	public PlayerDynamismManager getDynamismManager(Player player) {
+		PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueId());
+		if (manager == null) {
+			if (!isDynamismEnabled())
+				throw new UnsupportedOperationException();
+
+			manager = new PlayerDynamismManager(player.getUniqueId());
+			manager.setCenter(player.getPosition().toInt());
+			this.dynamismManagers.put(manager.playerId, manager);
+		}
+		return manager;
 	}
 
 	@Inject(method = "removePlayer", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(Ljava/lang/Object;)Z"))
@@ -82,11 +76,10 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 
 	@Inject(method = "updateMovingPlayer", at = @At("RETURN"))
 	public void onUpdateMovingPlayer(EntityPlayerMP player, CallbackInfo ci) {
-		if (!isDynamismEnabled())
-			return;
-
-		PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueID());
-		if (manager != null)
-			manager.update((Player) player);
+		if (isDynamismEnabled()) {
+			PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueID());
+			if (manager != null)
+				manager.update((Player) player);
+		}
 	}
 }

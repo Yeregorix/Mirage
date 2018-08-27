@@ -23,14 +23,11 @@
 package net.smoofyuniverse.mirage.impl.internal;
 
 import net.smoofyuniverse.mirage.impl.network.dynamism.PlayerDynamismManager;
-
-import javax.annotation.Nullable;
-import java.util.UUID;
+import org.spongepowered.api.entity.living.player.Player;
 
 public interface InternalChunkMap {
 
 	boolean isDynamismEnabled();
 
-	@Nullable
-	PlayerDynamismManager getDynamismManager(UUID playerId);
+	PlayerDynamismManager getDynamismManager(Player player);
 }
