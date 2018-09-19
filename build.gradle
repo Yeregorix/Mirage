@@ -92,7 +92,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongecommon:7.1.0-SNAPSHOT:dev'
+    compile 'org.spongepowered:spongecommon:7.1.0:dev'
 }
 
 task updatePlugin <<{
