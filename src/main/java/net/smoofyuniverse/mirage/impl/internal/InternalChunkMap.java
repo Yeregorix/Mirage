@@ -25,9 +25,16 @@ package net.smoofyuniverse.mirage.impl.internal;
 import net.smoofyuniverse.mirage.impl.network.dynamism.PlayerDynamismManager;
 import org.spongepowered.api.entity.living.player.Player;
 
+import java.util.Optional;
+import java.util.UUID;
+
 public interface InternalChunkMap {
 
 	boolean isDynamismEnabled();
 
-	PlayerDynamismManager getDynamismManager(Player player);
+	PlayerDynamismManager getOrCreateDynamismManager(Player player);
+
+	Optional<PlayerDynamismManager> getDynamismManager(UUID id);
+
+	Optional<PlayerDynamismManager> removeDynamismManager(UUID id);
 }

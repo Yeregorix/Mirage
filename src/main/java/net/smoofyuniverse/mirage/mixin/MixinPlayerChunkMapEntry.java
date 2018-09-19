@@ -94,7 +94,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 	private void addDynamicChunk(EntityPlayerMP player) {
 		DynamicChunk chunk = new DynamicChunk(this.pos.x, this.pos.z);
 		this.dynamicChunks.put(player, chunk);
-		((InternalChunkMap) this.playerChunkMap).getDynamismManager((Player) player).addChunk(chunk, this);
+		((InternalChunkMap) this.playerChunkMap).getOrCreateDynamismManager((Player) player).addChunk(chunk, this);
 	}
 
 	@Inject(method = "removePlayer", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(Ljava/lang/Object;)Z", shift = Shift.AFTER))
@@ -105,7 +105,7 @@ public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
 
 	private void removeDynamicChunk(EntityPlayerMP player) {
 		this.dynamicChunks.remove(player);
-		((InternalChunkMap) this.playerChunkMap).getDynamismManager((Player) player).removeChunk(this.pos.x, this.pos.z);
+		((InternalChunkMap) this.playerChunkMap).getDynamismManager(player.getUniqueID()).ifPresent(m -> m.removeChunk(this.pos.x, this.pos.z));
 	}
 
 	/**

@@ -38,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(PlayerChunkMap.class)
@@ -55,7 +56,7 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 	}
 
 	@Override
-	public PlayerDynamismManager getDynamismManager(Player player) {
+	public PlayerDynamismManager getOrCreateDynamismManager(Player player) {
 		PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueId());
 		if (manager == null) {
 			if (!isDynamismEnabled())
@@ -68,18 +69,25 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 		return manager;
 	}
 
+	@Override
+	public Optional<PlayerDynamismManager> getDynamismManager(UUID id) {
+		return Optional.ofNullable(this.dynamismManagers.get(id));
+	}
+
+	@Override
+	public Optional<PlayerDynamismManager> removeDynamismManager(UUID id) {
+		return Optional.ofNullable(this.dynamismManagers.remove(id));
+	}
+
 	@Inject(method = "removePlayer", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(Ljava/lang/Object;)Z"))
 	public void onRemovePlayer(EntityPlayerMP player, CallbackInfo ci) {
 		if (isDynamismEnabled())
-			this.dynamismManagers.remove(player.getUniqueID());
+			removeDynamismManager(player.getUniqueID());
 	}
 
 	@Inject(method = "updateMovingPlayer", at = @At("RETURN"))
 	public void onUpdateMovingPlayer(EntityPlayerMP player, CallbackInfo ci) {
-		if (isDynamismEnabled()) {
-			PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueID());
-			if (manager != null)
-				manager.update((Player) player);
-		}
+		if (isDynamismEnabled())
+			getDynamismManager(player.getUniqueID()).ifPresent(m -> m.update((Player) player));
 	}
 }
