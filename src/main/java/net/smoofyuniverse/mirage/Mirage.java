@@ -31,6 +31,7 @@ import net.smoofyuniverse.mirage.config.global.GlobalConfig;
 import net.smoofyuniverse.mirage.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.mirage.event.PlayerEventListener;
 import net.smoofyuniverse.mirage.event.WorldEventListener;
+import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.ore.OreAPI;
@@ -125,7 +126,8 @@ public class Mirage {
 			LOGGER.error("Failed to load global configuration", ex);
 		}
 
-		this.game.getEventManager().registerListeners(this, new WorldEventListener());
+		if (this.game.getServer() instanceof InternalServer)
+			this.game.getEventManager().registerListeners(this, new WorldEventListener());
 		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
 	}
 
@@ -175,7 +177,7 @@ public class Mirage {
 
 	@Listener
 	public void onServerStarted(GameStartedServerEvent e) {
-		if (this.game.getServer().getWorlds().iterator().next() instanceof InternalWorld) {
+		if (this.game.getServer() instanceof InternalServer) {
 			this.updateTask = Task.builder().execute(() -> {
 				for (World w : this.game.getServer().getWorlds()) {
 					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {

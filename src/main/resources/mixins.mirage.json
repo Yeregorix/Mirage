@@ -10,6 +10,7 @@
     "MixinBlockStateContainer",
     "MixinChunk",
     "MixinExtendedBlockStorage",
+    "MixinMinecraftServer",
     "MixinPlayerChunkMap",
     "MixinPlayerChunkMapEntry",
     "MixinSPacketChunkData",
