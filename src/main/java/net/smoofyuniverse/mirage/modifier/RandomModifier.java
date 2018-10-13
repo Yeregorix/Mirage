@@ -25,13 +25,12 @@ package net.smoofyuniverse.mirage.modifier;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
-import it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
+import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import net.smoofyuniverse.mirage.util.collection.WeightedList;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -39,13 +38,12 @@ import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.*;
 
+import static net.smoofyuniverse.mirage.resource.Categories.*;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
@@ -63,31 +61,18 @@ public class RandomModifier extends ChunkModifier {
 		if (cfg == null)
 			cfg = new Config();
 
-		DimensionType dimType = world.getDimensionType();
-		if (cfg.blocks == null) {
-			cfg.blocks = new BlockSet();
-			ModifierUtil.getCommonResources(cfg.blocks, dimType);
-			ModifierUtil.getRareResources(cfg.blocks, dimType);
-			cfg.blocks.add(ModifierUtil.getCommonGround(dimType).getType());
-		}
+		if (cfg.blocks == null)
+			cfg.blocks = Resources.of(world).getBlocks(GROUND, COMMON, RARE);
 
 		if (cfg.replacements == null) {
 			cfg.replacements = new HashMap<>();
 
-			BlockSet set = new BlockSet();
-			ModifierUtil.getCommonResources(set, dimType);
+			BlockSet set = Resources.of(world).getBlocks(COMMON);
 
-			for (BlockType type : set.getInternalTypes())
-				cfg.replacements.put(type.getDefaultState(), 1d);
+			for (BlockState state : set.getAll())
+				cfg.replacements.put(state, 1d);
 
-			for (Entry<BlockState> e : set.getInternalStates().object2BooleanEntrySet()) {
-				if (e.getBooleanValue())
-					cfg.replacements.put(e.getKey(), 1d);
-				else
-					cfg.replacements.remove(e.getKey());
-			}
-
-			cfg.replacements.put(ModifierUtil.getCommonGround(dimType), (double) Math.max(cfg.replacements.size(), 1));
+			cfg.replacements.put(Resources.of(world).getGround(), Math.max(cfg.replacements.size(), 1d));
 		}
 
 		cfg.minY = clamp(cfg.minY, 0, 255);
@@ -147,7 +132,7 @@ public class RandomModifier extends ChunkModifier {
 		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), WeightedList.of(this.replacements), this.minY, this.maxY);
+			return new Immutable(this.blocks.getAll(), WeightedList.of(this.replacements), this.minY, this.maxY);
 		}
 
 		public static final class Immutable {

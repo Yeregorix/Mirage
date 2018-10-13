@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,10 +23,7 @@
 package net.smoofyuniverse.mirage.util.collection;
 
 import com.google.common.reflect.TypeToken;
-import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
-import it.unimi.dsi.fastutil.objects.Object2BooleanMap.Entry;
-import it.unimi.dsi.fastutil.objects.Object2BooleanMaps;
-import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
+import net.smoofyuniverse.mirage.Mirage;
 import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
@@ -39,54 +34,54 @@ import java.util.*;
 public final class BlockSet {
 	public static final TypeToken<BlockSet> TOKEN = TypeToken.of(BlockSet.class);
 
-	private final Object2BooleanMap<BlockState> states = new Object2BooleanOpenHashMap<>(), unmodState = Object2BooleanMaps.unmodifiable(this.states);
-	private final Set<BlockType> types = new HashSet<>(), unmodTypes = Collections.unmodifiableSet(this.types);
+	private final Set<BlockState> states = new LinkedHashSet<>(), unmodState = Collections.unmodifiableSet(this.states);
 
-	public Object2BooleanMap<BlockState> getInternalStates() {
+	public Set<BlockState> getAll() {
 		return this.unmodState;
 	}
 
-	public Set<BlockType> getInternalTypes() {
-		return this.unmodTypes;
+	public Optional<BlockState> first() {
+		return this.states.isEmpty() ? Optional.empty() : Optional.of(this.states.iterator().next());
 	}
 
-	public Set<BlockState> toSet() {
-		Set<BlockState> set = new HashSet<>();
+	public void serialize(Collection<String> col, SerializationPredicate predicate) {
+		for (Map.Entry<BlockType, List<BlockState>> e : asMap().entrySet()) {
+			BlockType t = e.getKey();
+			List<BlockState> l = e.getValue();
 
-		for (BlockType type : this.types)
-			set.addAll(type.getAllBlockStates());
+			if (predicate.mode(l.size(), t.getAllBlockStates().size())) {
+				col.add(t.getId());
 
-		for (Entry<BlockState> e : this.states.object2BooleanEntrySet()) {
-			if (e.getBooleanValue())
-				set.add(e.getKey());
-			else
-				set.remove(e.getKey());
+				for (BlockState b : t.getAllBlockStates()) {
+					if (!l.contains(b))
+						col.add("-" + b.getId());
+				}
+			} else {
+				for (BlockState b : l)
+					col.add(b.getId());
+			}
+		}
+	}
+
+	public Map<BlockType, List<BlockState>> asMap() {
+		Map<BlockType, List<BlockState>> map = new LinkedHashMap<>();
+
+		for (BlockState state : this.states) {
+			List<BlockState> set = map.get(state.getType());
+			if (set == null) {
+				set = new ArrayList<>();
+				map.put(state.getType(), set);
+			}
+			set.add(state);
 		}
 
-		return set;
+		return map;
 	}
 
-	public List<String> toStringList() {
-		List<String> list = new ArrayList<>();
-
-		for (BlockType type : this.types)
-			list.add(type.getId());
-
-		for (Entry<BlockState> e : this.states.object2BooleanEntrySet()) {
-			String id = e.getKey().getId();
-			if (!e.getBooleanValue())
-				id = "-" + id;
-			list.add(id);
-		}
-
-		return list;
-	}
-
-	public void fromStringList(List<String> list) {
-		clear();
+	public void deserialize(Collection<String> col, boolean skipErrors) {
 		GameRegistry reg = Sponge.getRegistry();
 
-		for (String id : list) {
+		for (String id : col) {
 			boolean value = id.charAt(0) != '-';
 			if (!value)
 				id = id.substring(1);
@@ -109,38 +104,69 @@ public final class BlockSet {
 				continue;
 			}
 
-			throw new IllegalArgumentException("Id '" + id + "' is not a valid BlockType or BlockState");
+			if (skipErrors)
+				Mirage.LOGGER.warn("Id '" + id + "' is not a valid BlockType or BlockState");
+			else
+				throw new IllegalArgumentException("Id '" + id + "' is not a valid BlockType or BlockState");
 		}
+	}
+
+	public void add(BlockType type) {
+		this.states.addAll(type.getAllBlockStates());
+	}
+
+	public void remove(BlockType type) {
+		this.states.removeAll(type.getAllBlockStates());
+	}
+
+	public void add(BlockState state) {
+		this.states.add(state);
+	}
+
+	public void remove(BlockState state) {
+		this.states.remove(state);
+	}
+
+	public int size() {
+		return this.states.size();
 	}
 
 	public void clear() {
 		this.states.clear();
-		this.types.clear();
 	}
 
-	public void add(BlockType type) {
-		for (BlockState state : type.getAllBlockStates())
-			this.states.remove(state);
-		this.types.add(type);
+	public boolean contains(BlockState state) {
+		return this.states.contains(state);
 	}
 
-	public void remove(BlockType type) {
-		for (BlockState state : type.getAllBlockStates())
-			this.states.remove(state);
-		this.types.remove(type);
+	public void retain(BlockType type) {
+		this.states.retainAll(type.getAllBlockStates());
 	}
 
-	public void add(BlockState state) {
-		if (this.types.contains(state.getType()))
-			this.states.remove(state);
-		else
-			this.states.put(state, true);
+	public void add(BlockSet set) {
+		this.states.addAll(set.states);
 	}
 
-	public void remove(BlockState state) {
-		if (this.types.contains(state.getType()))
-			this.states.put(state, false);
-		else
-			this.states.remove(state);
+	public void remove(BlockSet set) {
+		this.states.removeAll(set.states);
+	}
+
+	public void retain(BlockSet set) {
+		this.states.retainAll(set.states);
+	}
+
+	public BlockSet copy() {
+		BlockSet set = new BlockSet();
+		set.states.addAll(this.states);
+		return set;
+	}
+
+	public static interface SerializationPredicate {
+
+		boolean mode(int states, int max);
+
+		public static SerializationPredicate limit(float f) {
+			return (states, max) -> states / (float) max > f;
+		}
 	}
 }

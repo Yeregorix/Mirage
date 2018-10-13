@@ -30,7 +30,7 @@ import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
+import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -38,13 +38,14 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
 
+import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
+import static net.smoofyuniverse.mirage.resource.Categories.RARE;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
@@ -62,23 +63,22 @@ public class ObviousModifier extends ChunkModifier {
 		if (cfg == null)
 			cfg = new Config();
 
-		DimensionType dimType = world.getDimensionType();
 		if (preset.equals("water_dungeons")) {
 			cfg.blocks = new BlockSet();
-			ModifierUtil.getWaterResources(cfg.blocks, dimType);
+			cfg.blocks.add(BlockTypes.SEA_LANTERN);
+			cfg.blocks.add(BlockTypes.PRISMARINE);
+			cfg.blocks.add(BlockTypes.GOLD_BLOCK);
+
 			cfg.replacement = BlockTypes.WATER.getDefaultState();
 
 			cfg.dynamism = 8;
 			cfg.minY = 30;
 			cfg.maxY = 64;
 		} else {
-			if (cfg.blocks == null) {
-				cfg.blocks = new BlockSet();
-				ModifierUtil.getCommonResources(cfg.blocks, dimType);
-				ModifierUtil.getRareResources(cfg.blocks, dimType);
-			}
+			if (cfg.blocks == null)
+				cfg.blocks = Resources.of(world).getBlocks(COMMON, RARE);
 			if (cfg.replacement == null)
-				cfg.replacement = ModifierUtil.getCommonGround(dimType);
+				cfg.replacement = Resources.of(world).getGround();
 
 			cfg.dynamism = clamp(cfg.dynamism, 0, 10);
 			cfg.minY = clamp(cfg.minY, 0, 255);
@@ -150,7 +150,7 @@ public class ObviousModifier extends ChunkModifier {
 		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), this.replacement, this.dynamism, this.minY, this.maxY);
+			return new Immutable(this.blocks.getAll(), this.replacement, this.dynamism, this.minY, this.maxY);
 		}
 
 		public static final class Immutable {

@@ -20,34 +20,9 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.util;
+package net.smoofyuniverse.mirage.impl.internal;
 
-import net.smoofyuniverse.mirage.Mirage;
+public interface InternalBlockState {
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
-
-public class IOUtil {
-
-	public static boolean backupFile(Path file) throws IOException {
-		if (!Files.exists(file))
-			return false;
-
-		String fn = file.getFileName() + ".backup";
-		Path backup = null;
-		for (int i = 0; i < 100; i++) {
-			backup = file.resolveSibling(fn + i);
-			if (!Files.exists(backup))
-				break;
-		}
-		Files.move(file, backup);
-		return true;
-	}
-
-	public static Optional<URL> getLocalResource(String path) {
-		return Optional.ofNullable(Mirage.class.getClassLoader().getResource(path));
-	}
+	void optimizeExpositionCheck();
 }

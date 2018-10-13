@@ -31,7 +31,7 @@ import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.WorldView;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
+import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -51,6 +51,7 @@ import java.util.function.Predicate;
 import static com.flowpowered.math.GenericMath.floor;
 import static com.flowpowered.math.TrigMath.cos;
 import static com.flowpowered.math.TrigMath.sin;
+import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 import static net.smoofyuniverse.mirage.util.MathUtil.squared;
 
@@ -70,10 +71,8 @@ public class FakeGenModifier extends ChunkModifier {
 		if (cfg == null)
 			cfg = new Config();
 
-		if (cfg.blocks == null) {
-			cfg.blocks = new BlockSet();
-			ModifierUtil.getCommonResources(cfg.blocks, world.getDimensionType());
-		}
+		if (cfg.blocks == null)
+			cfg.blocks = Resources.of(world).getBlocks(COMMON);
 
 		cfg.density = clamp(cfg.density, 0.1, 10);
 		cfg.dynamism = clamp(cfg.dynamism, 0, 10);
@@ -237,7 +236,7 @@ public class FakeGenModifier extends ChunkModifier {
 		public int maxY = 128;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.toSet(), this.density, this.dynamism, this.minY, this.maxY);
+			return new Immutable(this.blocks.getAll(), this.density, this.dynamism, this.minY, this.maxY);
 		}
 
 		public static final class Immutable {

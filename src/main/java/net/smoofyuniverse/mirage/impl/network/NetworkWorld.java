@@ -42,9 +42,8 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
+import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.IOUtil;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
-import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -82,6 +81,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
+import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
+import static net.smoofyuniverse.mirage.resource.Categories.RARE;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
@@ -135,13 +136,10 @@ public class NetworkWorld implements WorldView {
 		if (cfg == null)
 			cfg = new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END);
 
-		if (cfg.preobf.blocks == null) {
-			cfg.preobf.blocks = new BlockSet();
-			ModifierUtil.getCommonResources(cfg.preobf.blocks, dimType);
-			ModifierUtil.getRareResources(cfg.preobf.blocks, dimType);
-		}
+		if (cfg.preobf.blocks == null)
+			cfg.preobf.blocks = Resources.of(dimType).getBlocks(COMMON, RARE);
 		if (cfg.preobf.replacement == null)
-			cfg.preobf.replacement = ModifierUtil.getCommonGround(dimType);
+			cfg.preobf.replacement = Resources.of(dimType).getGround();
 
 		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
 		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);

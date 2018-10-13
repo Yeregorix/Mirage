@@ -22,32 +22,12 @@
 
 package net.smoofyuniverse.mirage.util;
 
-import net.smoofyuniverse.mirage.Mirage;
+import net.minecraft.block.state.IBlockState;
+import org.spongepowered.api.block.BlockState;
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
+public class BlockUtil {
 
-public class IOUtil {
-
-	public static boolean backupFile(Path file) throws IOException {
-		if (!Files.exists(file))
-			return false;
-
-		String fn = file.getFileName() + ".backup";
-		Path backup = null;
-		for (int i = 0; i < 100; i++) {
-			backup = file.resolveSibling(fn + i);
-			if (!Files.exists(backup))
-				break;
-		}
-		Files.move(file, backup);
-		return true;
-	}
-
-	public static Optional<URL> getLocalResource(String path) {
-		return Optional.ofNullable(Mirage.class.getClassLoader().getResource(path));
+	public static boolean isOpaque(BlockState state) {
+		return ((IBlockState) state).isOpaqueCube();
 	}
 }

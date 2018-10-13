@@ -29,7 +29,7 @@ import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
+import net.smoofyuniverse.mirage.resource.Resources;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -64,7 +64,7 @@ public class BedrockModifier extends ChunkModifier {
 			cfg = new Config();
 
 		if (cfg.ground == null)
-			cfg.ground = ModifierUtil.getCommonGround(world.getDimensionType());
+			cfg.ground = Resources.of(world).getGround();
 		if (cfg.height < 0)
 			cfg.height = 0;
 

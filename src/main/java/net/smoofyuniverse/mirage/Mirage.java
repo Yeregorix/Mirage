@@ -31,12 +31,15 @@ import net.smoofyuniverse.mirage.config.global.GlobalConfig;
 import net.smoofyuniverse.mirage.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.mirage.event.PlayerEventListener;
 import net.smoofyuniverse.mirage.event.WorldEventListener;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.ore.OreAPI;
+import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
+import net.smoofyuniverse.mirage.util.collection.BlockSet.SerializationPredicate;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -49,12 +52,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GameConstructionEvent;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
-import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
+import org.spongepowered.api.event.game.state.*;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.scheduler.Task;
@@ -92,7 +93,7 @@ public class Mirage {
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
-	private Path cacheDir, worldConfigsDir;
+	private Path cacheDir, worldConfigsDir, resourcesDir;
 
 	private GlobalConfig.Immutable globalConfig;
 	private Text[] updateMessages = new Text[0];
@@ -106,19 +107,30 @@ public class Mirage {
 	@Listener
 	public void onGameConstruction(GameConstructionEvent e) {
 		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
-		TypeSerializers.getDefaultSerializers().registerType(BlockSet.TOKEN, new BlockSetSerializer());
+		TypeSerializers.getDefaultSerializers().registerType(BlockSet.TOKEN, new BlockSetSerializer(SerializationPredicate.limit(0.6f)));
 	}
 
 	@Listener
 	public void onGamePreInit(GamePreInitializationEvent e) {
 		this.cacheDir = this.game.getGameDirectory().resolve("mirage-cache");
 		this.worldConfigsDir = this.configDir.resolve("worlds");
+		this.resourcesDir = this.configDir.resolve("resources");
+
 		try {
 			Files.createDirectories(this.worldConfigsDir);
 		} catch (IOException ignored) {
 		}
-		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory);
 
+		try {
+			Files.createDirectories(this.resourcesDir);
+		} catch (IOException ignored) {
+		}
+
+		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory);
+	}
+
+	@Listener
+	public void onGameInit(GameInitializationEvent e) {
 		LOGGER.info("Loading global configuration ..");
 		try {
 			loadGlobalConfig();
@@ -126,9 +138,53 @@ public class Mirage {
 			LOGGER.error("Failed to load global configuration", ex);
 		}
 
+		LOGGER.info("Optimizing exposition check performances ..");
+		for (BlockState b : this.game.getRegistry().getAllOf(BlockState.class)) {
+			try {
+				((InternalBlockState) b).optimizeExpositionCheck();
+			} catch (Exception ex) {
+				LOGGER.warn("Failed to optimize block: " + b.getId(), ex);
+			}
+		}
+
+		try {
+			Resources.loadResources();
+		} catch (Exception ex) {
+			LOGGER.warn("Failed to load resources", ex);
+		}
+
 		if (this.game.getServer() instanceof InternalServer)
 			this.game.getEventManager().registerListeners(this, new WorldEventListener());
 		this.game.getEventManager().registerListeners(this, new PlayerEventListener());
+	}
+
+	@Listener
+	public void onServerStarted(GameStartedServerEvent e) {
+		if (this.game.getServer() instanceof InternalServer) {
+			this.updateTask = Task.builder().execute(() -> {
+				for (World w : this.game.getServer().getWorlds()) {
+					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
+						if (chunk.getState() == State.PREOBFUSCATED)
+							chunk.obfuscate();
+					}
+				}
+			}).intervalTicks(1).submit(this);
+
+			LOGGER.info("Mirage " + this.container.getVersion().orElse("?") + " was loaded successfully.");
+		} else {
+			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
+		}
+
+		if (this.globalConfig.updateCheck.enabled)
+			Task.builder().async().interval(this.globalConfig.updateCheck.repetitionInterval, TimeUnit.HOURS).execute(this::checkForUpdate).submit(this);
+	}
+
+	@Listener
+	public void onServerStopping(GameStoppingServerEvent e) {
+		if (this.updateTask != null) {
+			this.updateTask.cancel();
+			this.updateTask = null;
+		}
 	}
 
 	public void loadGlobalConfig() throws IOException, ObjectMappingException {
@@ -165,35 +221,6 @@ public class Mirage {
 		loader.save(root);
 
 		this.globalConfig = cfg.toImmutable();
-	}
-
-	@Listener
-	public void onServerStopping(GameStoppingServerEvent e) {
-		if (this.updateTask != null) {
-			this.updateTask.cancel();
-			this.updateTask = null;
-		}
-	}
-
-	@Listener
-	public void onServerStarted(GameStartedServerEvent e) {
-		if (this.game.getServer() instanceof InternalServer) {
-			this.updateTask = Task.builder().execute(() -> {
-				for (World w : this.game.getServer().getWorlds()) {
-					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
-						if (chunk.getState() == State.PREOBFUSCATED)
-							chunk.obfuscate();
-					}
-				}
-			}).intervalTicks(1).submit(this);
-
-			LOGGER.info("Mirage " + this.container.getVersion().orElse("?") + " was loaded successfully.");
-		} else {
-			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
-		}
-
-		if (this.globalConfig.updateCheck.enabled)
-			Task.builder().async().interval(this.globalConfig.updateCheck.repetitionInterval, TimeUnit.HOURS).execute(this::checkForUpdate).submit(this);
 	}
 
 	public void checkForUpdate() {
@@ -239,6 +266,10 @@ public class Mirage {
 
 	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {
 		return HoconConfigurationLoader.builder().setPath(file).setDefaultOptions(this.configOptions).build();
+	}
+
+	public Path getResourcesDirectory() {
+		return this.resourcesDir;
 	}
 
 	public Path getWorldConfigsDirectory() {

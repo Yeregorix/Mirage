@@ -26,7 +26,7 @@ import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
-import net.smoofyuniverse.mirage.util.ModifierUtil;
+import net.smoofyuniverse.mirage.util.BlockUtil;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.entity.living.player.Player;
@@ -59,7 +59,7 @@ public class WorldEventListener {
 				continue;
 
 			BlockSnapshot original = t.getOriginal();
-			boolean wasOpaque = ModifierUtil.isOpaque(original.getState()), isOpaque = ModifierUtil.isOpaque(t.getFinal().getState());
+			boolean wasOpaque = BlockUtil.isOpaque(original.getState()), isOpaque = BlockUtil.isOpaque(t.getFinal().getState());
 			if (wasOpaque == isOpaque)
 				continue;
 

@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,18 +24,28 @@ package net.smoofyuniverse.mirage.config.serializer;
 
 import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
+import net.smoofyuniverse.mirage.util.collection.BlockSet.SerializationPredicate;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BlockSetSerializer implements TypeSerializer<BlockSet> {
 	private static final TypeToken<String> STRING = TypeToken.of(String.class);
+
+	public final SerializationPredicate predicate;
+
+	public BlockSetSerializer(SerializationPredicate predicate) {
+		this.predicate = predicate;
+	}
 
 	@Override
 	public BlockSet deserialize(TypeToken<?> type, ConfigurationNode value) throws ObjectMappingException {
 		try {
 			BlockSet set = new BlockSet();
-			set.fromStringList(value.getList(STRING));
+			set.deserialize(value.getList(STRING), false);
 			return set;
 		} catch (IllegalArgumentException e) {
 			throw new ObjectMappingException(e.getMessage());
@@ -47,7 +55,9 @@ public class BlockSetSerializer implements TypeSerializer<BlockSet> {
 	@Override
 	public void serialize(TypeToken<?> type, BlockSet set, ConfigurationNode value) throws ObjectMappingException {
 		try {
-			value.setValue(set.toStringList());
+			List<String> l = new ArrayList<>();
+			set.serialize(l, this.predicate);
+			value.setValue(l);
 		} catch (IllegalArgumentException e) {
 			throw new ObjectMappingException(e.getMessage());
 		}

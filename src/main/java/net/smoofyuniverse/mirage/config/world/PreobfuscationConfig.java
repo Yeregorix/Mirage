@@ -41,7 +41,7 @@ public class PreobfuscationConfig {
 	public BlockState replacement;
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.blocks.toSet(), this.replacement);
+		return new Immutable(this.enabled, this.blocks.getAll(), this.replacement);
 	}
 
 	public static class Immutable {

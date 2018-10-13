@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -35,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
-public class MixinStateImplementation {
+public class MixinStateImplementation implements InternalBlockState {
 	@Shadow
 	@Final
 	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
@@ -50,6 +51,13 @@ public class MixinStateImplementation {
 	@Inject(method = "<init>", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
 		this.hashCode = this.properties.hashCode();
+	}
+
+	/**
+	 * This method is called after all blocks have been registered to avoid errors with some mods
+	 */
+	@Override
+	public void optimizeExpositionCheck() {
 		this.isOpaqueCube = this.block.isOpaqueCube((IBlockState) this);
 	}
 
