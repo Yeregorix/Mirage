@@ -30,6 +30,7 @@ import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.plugin.PluginManager;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -158,6 +159,8 @@ public final class Resources {
 			}
 		}
 
+		PluginManager pm = Sponge.getPluginManager();
+
 		try (Stream<Path> st = Files.list(Mirage.get().getResourcesDirectory())) {
 			Iterator<Path> it = st.iterator();
 			while (it.hasNext()) {
@@ -169,7 +172,17 @@ public final class Resources {
 					Mirage.LOGGER.info("Reading pack: " + p.name + " ..");
 					try {
 						p.read(file);
-						packs.add(p);
+
+						Set<String> missingMods = new HashSet<>();
+						for (String id : p.required) {
+							if (!pm.isLoaded(id))
+								missingMods.add(id);
+						}
+
+						if (!missingMods.isEmpty())
+							Mirage.LOGGER.info("The following mods are required to load this pack but are missing: [" + String.join(", ", missingMods) + "]");
+						else
+							packs.add(p);
 					} catch (Exception e) {
 						Mirage.LOGGER.error("Failed to read pack: " + p.name, e);
 					}

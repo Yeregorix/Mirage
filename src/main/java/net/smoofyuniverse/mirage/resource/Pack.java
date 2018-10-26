@@ -39,7 +39,9 @@ import java.util.*;
 public final class Pack implements Comparable<Pack> {
 	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 	public static final int CURRENT_VERSION = 1, MINIMUM_VERSION = 1;
+
 	public final String name;
+	public final Set<String> required = new HashSet<>();
 	private final Map<String, Section> sections = new HashMap<>();
 	private final Collection<Section> unmodSections = Collections.unmodifiableCollection(this.sections.values());
 	public int priority;
@@ -114,6 +116,11 @@ public final class Pack implements Comparable<Pack> {
 			line = line.trim();
 			if (line.isEmpty())
 				continue;
+
+			if (line.startsWith("require ")) {
+				this.required.add(line.substring(8).trim());
+				continue;
+			}
 
 			if (line.startsWith("priority=")) {
 				this.priority = Integer.parseInt(line.substring(9).trim());

@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,6 +23,7 @@
 package net.smoofyuniverse.mirage.api.modifier;
 
 import com.google.common.collect.ImmutableList;
+import net.smoofyuniverse.mirage.Mirage;
 import org.spongepowered.api.registry.AdditionalCatalogRegistryModule;
 import org.spongepowered.api.registry.RegistrationPhase;
 import org.spongepowered.api.registry.util.DelayedRegistration;
@@ -39,6 +38,7 @@ import java.util.Optional;
  */
 public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryModule<ChunkModifier> {
 	private static final ChunkModifierRegistryModule INSTANCE = new ChunkModifierRegistryModule();
+	private static final String DEFAULT_PREFIX = Mirage.get().getContainer().getId() + ":";
 
 	private final Map<String, ChunkModifier> modifiers = new HashMap<>();
 
@@ -47,7 +47,7 @@ public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryMod
 	@Override
 	public Optional<ChunkModifier> getById(String id) {
 		id = id.toLowerCase();
-		return Optional.ofNullable(this.modifiers.get(id.indexOf(':') == -1 ? ("mirage:" + id) : id));
+		return Optional.ofNullable(this.modifiers.get(id.indexOf(':') == -1 ? (DEFAULT_PREFIX + id) : id));
 	}
 
 	@Override
