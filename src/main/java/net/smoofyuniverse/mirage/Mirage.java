@@ -26,7 +26,6 @@ import com.google.inject.Inject;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
-import net.smoofyuniverse.mirage.bstats.MetricsLite;
 import net.smoofyuniverse.mirage.config.global.GlobalConfig;
 import net.smoofyuniverse.mirage.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.mirage.event.PlayerEventListener;
@@ -48,6 +47,7 @@ import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import org.bstats.sponge.MetricsLite2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
@@ -89,7 +89,7 @@ public class Mirage {
 	@Inject
 	private GuiceObjectMapperFactory factory;
 	@Inject
-	private MetricsLite metrics;
+	private MetricsLite2 metrics;
 
 	private ConfigurationOptions configOptions;
 	private Task updateTask;
