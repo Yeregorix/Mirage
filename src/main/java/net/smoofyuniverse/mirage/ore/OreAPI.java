@@ -66,37 +66,65 @@ public class OreAPI {
 		return new URL(URL_BASE.getProtocol(), URL_BASE.getHost(), URL_BASE.getPort(), URL_BASE.getFile() + suffix);
 	}
 
-	public static Optional<String> getLatestVersion(List<VersionInfo> versions, String... spongeApiVersions) {
+	public static Optional<String> getLatestVersion(List<VersionInfo> versions, VersionPredicate predicate) {
 		String version = null;
 		Instant date = null;
 
 		for (VersionInfo info : versions) {
 			if (date == null || info.createdAt.isAfter(date)) {
-				String spongeApiVersion = null;
-				for (DependencyInfo d : info.dependencies) {
-					if (d.pluginId.equals("spongeapi")) {
-						spongeApiVersion = d.version;
-						break;
-					}
-				}
-
-				if (spongeApiVersion != null) {
-					boolean valid = false;
-					for (String v : spongeApiVersions) {
-						if (spongeApiVersion.startsWith(v)) {
-							valid = true;
+				if (predicate != null) {
+					String apiVersion = null;
+					for (DependencyInfo d : info.dependencies) {
+						if (d.pluginId.equals("spongeapi")) {
+							apiVersion = d.version;
 							break;
 						}
 					}
 
-					if (valid) {
-						version = info.name;
-						date = info.createdAt;
+					if (apiVersion == null)
+						continue;
+
+					int i = apiVersion.indexOf('.');
+					if (i == -1)
+						continue;
+
+					int major;
+					try {
+						major = Integer.parseInt(apiVersion.substring(0, i));
+					} catch (NumberFormatException e) {
+						continue;
 					}
+
+					String temp = apiVersion.substring(i + 1);
+
+					i = temp.indexOf('-');
+					if (i != -1)
+						temp = temp.substring(0, i);
+
+					i = temp.indexOf('.');
+					if (i != -1)
+						temp = temp.substring(0, i);
+
+					int minor;
+					try {
+						minor = Integer.parseInt(temp);
+					} catch (NumberFormatException e) {
+						continue;
+					}
+
+					if (!predicate.test(major, minor))
+						continue;
 				}
+
+				version = info.name;
+				date = info.createdAt;
 			}
 		}
 
 		return Optional.ofNullable(version);
+	}
+
+	public static interface VersionPredicate {
+		boolean test(int major, int minor);
 	}
 }
