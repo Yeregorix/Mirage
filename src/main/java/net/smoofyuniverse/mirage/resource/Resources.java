@@ -34,13 +34,12 @@ import org.spongepowered.api.plugin.PluginManager;
 import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.io.IOException;
 import java.net.URL;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Stream;
 
 import static net.smoofyuniverse.mirage.resource.Categories.GROUND;
 
@@ -161,10 +160,8 @@ public final class Resources {
 
 		PluginManager pm = Sponge.getPluginManager();
 
-		try (Stream<Path> st = Files.list(Mirage.get().getResourcesDirectory())) {
-			Iterator<Path> it = st.iterator();
-			while (it.hasNext()) {
-				Path file = it.next();
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(Mirage.get().getResourcesDirectory())) {
+			for (Path file : st) {
 				String fn = file.getFileName().toString();
 
 				if (fn.endsWith(".pack")) {
@@ -188,7 +185,7 @@ public final class Resources {
 					}
 				}
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			Mirage.LOGGER.error("Failed to list packs", e);
 		}
 

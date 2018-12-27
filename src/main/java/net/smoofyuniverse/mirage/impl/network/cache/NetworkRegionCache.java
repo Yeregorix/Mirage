@@ -31,11 +31,10 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.stream.Stream;
 
 public class NetworkRegionCache {
 	public static final int CURRENT_VERSION = 2, MINIMUM_VERSION = 1;
@@ -100,10 +99,8 @@ public class NetworkRegionCache {
 	private void deleteRegionFiles() throws IOException {
 		IOException error = null;
 
-		try (Stream<Path> st = Files.list(this.dir)) {
-			Iterator<Path> it = st.iterator();
-			while (it.hasNext()) {
-				Path p = it.next();
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(this.dir)) {
+			for (Path p : st) {
 				if (isRegionFile(p.getFileName().toString())) {
 					try {
 						Files.delete(p);
@@ -112,6 +109,8 @@ public class NetworkRegionCache {
 					}
 				}
 			}
+		} catch (DirectoryIteratorException e) {
+			throw e.getCause();
 		}
 
 		if (error != null)
