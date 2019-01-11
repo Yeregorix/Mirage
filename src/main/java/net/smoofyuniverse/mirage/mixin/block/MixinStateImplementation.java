@@ -20,11 +20,12 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin;
+package net.smoofyuniverse.mirage.mixin.block;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.state.BlockStateContainer.StateImplementation;
 import net.minecraft.block.state.IBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import org.spongepowered.asm.mixin.Final;
@@ -35,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(net.minecraft.block.state.BlockStateContainer.StateImplementation.class)
+@Mixin(StateImplementation.class)
 public class MixinStateImplementation implements InternalBlockState {
 	@Shadow
 	@Final

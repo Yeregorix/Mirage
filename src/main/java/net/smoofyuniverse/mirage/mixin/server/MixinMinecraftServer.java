@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin;
+package net.smoofyuniverse.mirage.mixin.server;
 
 import net.minecraft.server.MinecraftServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;

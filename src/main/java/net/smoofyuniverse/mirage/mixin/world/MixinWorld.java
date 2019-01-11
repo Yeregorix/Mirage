@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin;
+package net.smoofyuniverse.mirage.mixin.world;
 
 import com.google.common.collect.ImmutableList;
 import net.minecraft.world.World;
@@ -92,7 +92,6 @@ public abstract class MixinWorld implements InternalWorld {
 		return getChunkStorage(x >> 4, 0, z >> 4);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Collection<InternalChunk> getLoadedChunkStorages() {
 		if (this.isRemote)

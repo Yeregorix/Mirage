@@ -20,42 +20,37 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin;
+package net.smoofyuniverse.mirage.mixin.world;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.world.chunk.BlockStateContainer;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
-import net.smoofyuniverse.mirage.impl.network.NetworkBlockContainer;
-import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.smoofyuniverse.mirage.Mirage;
+import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(BlockStateContainer.class)
-public class MixinBlockStateContainer implements InternalBlockContainer {
-	private NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
-	private NetworkChunk chunk;
+@Mixin(WorldServer.class)
+public abstract class MixinWorldServer extends MixinWorld {
+	private NetworkWorld networkWorld;
 
-	@Override
-	public void setNetworkChunk(NetworkChunk chunk) {
-		this.chunk = chunk;
+	@Inject(method = "init", at = @At("RETURN"))
+	public void onInit(CallbackInfoReturnable<World> ci) {
+		this.networkWorld = new NetworkWorld(this);
+
+		Mirage.LOGGER.info("Loading configuration for world " + getName() + " ..");
+		try {
+			this.networkWorld.loadConfig();
+		} catch (Exception e) {
+			Mirage.LOGGER.error("Failed to load configuration for world " + getName(), e);
+		}
 	}
 
 	@Override
-	public NetworkBlockContainer getNetworkBlockContainer() {
-		return this.networkContainer;
-	}
-
-	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void onSet(int index, IBlockState state, CallbackInfo ci) {
-		this.networkContainer.set(index, state);
-		if (this.chunk != null)
-			this.chunk.setSaved(false);
-	}
-
-	@Inject(method = "setBits(I)V", at = @At("HEAD"))
-	public void onSetBits(int bits, CallbackInfo ci) {
-		this.networkContainer.setBits(bits);
+	public NetworkWorld getView() {
+		if (this.networkWorld == null)
+			throw new IllegalStateException("NetworkWorld not available");
+		return this.networkWorld;
 	}
 }

@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin;
+package net.smoofyuniverse.mirage.mixin.block;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
