@@ -62,12 +62,8 @@ public class MixinStateImplementation implements InternalBlockState {
 		this.isOpaqueCube = this.block.isOpaqueCube((IBlockState) this);
 	}
 
-	/**
-	 * @author Yeregorix
-	 * @reason Improves exposition check performances
-	 */
-	@Overwrite
-	public boolean isOpaqueCube() {
+	@Override
+	public boolean isOpaque() {
 		return this.isOpaqueCube;
 	}
 

@@ -33,6 +33,7 @@ import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.config.world.PreobfuscationConfig;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.network.cache.BlockContainerSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
@@ -448,7 +449,7 @@ public class NetworkChunk implements ChunkView {
 
 	private boolean isOpaque1(int x, int y, int z) {
 		NetworkBlockContainer c = this.containers[y >> 4];
-		return c != null && c.get(x, y & 15, z).isOpaqueCube();
+		return c != null && ((InternalBlockState) c.get(x, y & 15, z)).isOpaque();
 	}
 
 	private boolean isOpaque2(int x, int y, int z) {

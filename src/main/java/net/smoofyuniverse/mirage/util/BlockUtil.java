@@ -22,12 +22,12 @@
 
 package net.smoofyuniverse.mirage.util;
 
-import net.minecraft.block.state.IBlockState;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import org.spongepowered.api.block.BlockState;
 
 public class BlockUtil {
 
 	public static boolean isOpaque(BlockState state) {
-		return ((IBlockState) state).isOpaqueCube();
+		return ((InternalBlockState) state).isOpaque();
 	}
 }

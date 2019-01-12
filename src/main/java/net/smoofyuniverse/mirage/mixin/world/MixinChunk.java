@@ -30,6 +30,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
@@ -219,10 +220,6 @@ public abstract class MixinChunk implements InternalChunk {
 		return !(isOpaque2(x + 1, y, z) && isOpaque2(x - 1, y, z) && isOpaque2(x, y, z + 1) && isOpaque2(x, y, z - 1));
 	}
 
-	private boolean isOpaque1(int x, int y, int z) {
-		return getBlockState(x, y, z).isOpaqueCube();
-	}
-
 	private boolean isOpaque2(int x, int y, int z) {
 		int dx = 0, dz = 0;
 		if (x < 0) {
@@ -244,7 +241,11 @@ public abstract class MixinChunk implements InternalChunk {
 			return isOpaque1(x, y, z);
 
 		InternalChunk neighbor = ((InternalWorld) this.world).getChunk(this.x + dx, this.z + dz);
-		return neighbor != null && ((Chunk) neighbor).getBlockState(x, y, z).isOpaqueCube();
+		return neighbor != null && ((InternalBlockState) ((Chunk) neighbor).getBlockState(x, y, z)).isOpaque();
+	}
+
+	private boolean isOpaque1(int x, int y, int z) {
+		return ((InternalBlockState) getBlockState(x, y, z)).isOpaque();
 	}
 
 	@Override

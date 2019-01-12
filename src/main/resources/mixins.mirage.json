@@ -6,7 +6,6 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "mixins.mirage.refmap.json",
   "server": [
-    "block.MixinBlock",
     "block.MixinStateImplementation",
     "network.MixinSPacketChunkData",
     "server.MixinMinecraftServer",
