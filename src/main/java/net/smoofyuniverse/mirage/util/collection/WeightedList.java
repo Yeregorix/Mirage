@@ -1,6 +1,4 @@
 /*
- * The MIT License (MIT)
- *
  * Copyright (c) 2018 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -76,7 +74,6 @@ public final class WeightedList<T> {
 		return of(list);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static <T> WeightedList<T> of(Iterable<Entry<T>> it) {
 		List<Entry<T>> list = ImmutableList.sortedCopyOf(it);
 		if (list.isEmpty())

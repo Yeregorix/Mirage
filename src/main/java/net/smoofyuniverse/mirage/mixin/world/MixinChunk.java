@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.mixin.world;
 
+import com.flowpowered.math.vector.Vector2i;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
@@ -212,50 +213,73 @@ public abstract class MixinChunk implements InternalChunk {
 		x &= 15;
 		z &= 15;
 
-		if (y != 255 && !isOpaque1(x, y + 1, z))
+		// y + 1
+		if (y == 255 || !isOpaque(x, y + 1, z))
 			return true;
-		if (y != 0 && !isOpaque1(x, y - 1, z))
+
+		// y - 1
+		if (y == 0 || !isOpaque(x, y - 1, z))
 			return true;
 
-		return !(isOpaque2(x + 1, y, z) && isOpaque2(x - 1, y, z) && isOpaque2(x, y, z + 1) && isOpaque2(x, y, z - 1));
-	}
+		// x + 1
+		if (x == 15) {
+			InternalChunk c = ((InternalWorld) this.world).getChunk(this.x + 1, this.z);
+			if (c == null || !c.isOpaque(0, y, z))
+				return true;
+		} else if (!isOpaque(x + 1, y, z))
+			return true;
 
-	private boolean isOpaque2(int x, int y, int z) {
-		int dx = 0, dz = 0;
-		if (x < 0) {
-			dx--;
-			x += 16;
-		} else if (x >= 16) {
-			dx++;
-			x -= 16;
-		}
-		if (z < 0) {
-			dz--;
-			z += 16;
-		} else if (z >= 16) {
-			dz++;
-			z -= 16;
-		}
+		// x - 1
+		if (x == 0) {
+			InternalChunk c = ((InternalWorld) this.world).getChunk(this.x - 1, this.z);
+			if (c == null || !c.isOpaque(15, y, z))
+				return true;
+		} else if (!isOpaque(x - 1, y, z))
+			return true;
 
-		if (dx == 0 && dz == 0)
-			return isOpaque1(x, y, z);
+		// z + 1
+		if (z == 15) {
+			InternalChunk c = ((InternalWorld) this.world).getChunk(this.x, this.z + 1);
+			if (c == null || !c.isOpaque(x, y, 0))
+				return true;
+		} else if (!isOpaque(x, y, z + 1))
+			return true;
 
-		InternalChunk neighbor = ((InternalWorld) this.world).getChunk(this.x + dx, this.z + dz);
-		return neighbor != null && ((InternalBlockState) ((Chunk) neighbor).getBlockState(x, y, z)).isOpaque();
-	}
+		// z - 1
+		if (z == 0) {
+			InternalChunk c = ((InternalWorld) this.world).getChunk(this.x, this.z - 1);
+			if (c == null || !c.isOpaque(x, y, 15))
+				return true;
+		} else if (!isOpaque(x, y, z - 1))
+			return true;
 
-	private boolean isOpaque1(int x, int y, int z) {
-		return ((InternalBlockState) getBlockState(x, y, z)).isOpaque();
+		return false;
 	}
 
 	@Override
-	public int getBlockLightLevel(int x, int y, int z) {
-		return getLightFor(EnumSkyBlock.BLOCK, new BlockPos(x, y, z));
+	public boolean isOpaque(int x, int y, int z) {
+		ExtendedBlockStorage storage = this.storageArrays[y >> 4];
+		return storage != null && ((InternalBlockState) storage.get(x, y & 15, z)).isOpaque();
 	}
 
 	@Override
-	public boolean canSeeTheSky(int x, int y, int z) {
-		return y >= getHeightValue(x & 15, z & 15);
+	public Vector2i getLightLevels(int x, int y, int z) {
+		checkBlockPosition(x, y, z);
+
+		x &= 15;
+		z &= 15;
+
+		ExtendedBlockStorage storage = this.storageArrays[y >> 4];
+		if (storage == null)
+			return y >= getHeightValue(x & 15, z & 15) ? new Vector2i(0, 15) : Vector2i.ZERO;
+
+		return new Vector2i(storage.getBlockLight(x, y & 15, z), this.world.provider.hasSkyLight() ? storage.getSkyLight(x, y & 15, z) : 0);
+	}
+
+	@Override
+	public int getHighestY(int x, int z) {
+		checkBlockPosition(x, 0, z);
+		return getHeightValue(x & 15, z & 15);
 	}
 
 	@Override

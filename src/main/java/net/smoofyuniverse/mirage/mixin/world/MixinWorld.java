@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.mixin.world;
 
+import com.flowpowered.math.vector.Vector2i;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunkProvider;
@@ -55,19 +56,19 @@ public abstract class MixinWorld implements InternalWorld {
 	@Override
 	public boolean isExposed(int x, int y, int z) {
 		InternalChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.isExposed(x & 15, y, z & 15);
+		return chunk != null && chunk.isExposed(x, y, z);
 	}
 
 	@Override
-	public int getBlockLightLevel(int x, int y, int z) {
+	public Vector2i getLightLevels(int x, int y, int z) {
 		InternalChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk == null ? 0 : chunk.getBlockLightLevel(x & 15, y, z & 15);
+		return chunk == null ? Vector2i.ZERO : chunk.getLightLevels(x, y, z);
 	}
 
 	@Override
-	public boolean canSeeTheSky(int x, int y, int z) {
+	public int getHighestY(int x, int z) {
 		InternalChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk != null && chunk.canSeeTheSky(x & 15, y, z & 15);
+		return chunk == null ? 0 : chunk.getHighestY(x, z);
 	}
 
 	@Nullable

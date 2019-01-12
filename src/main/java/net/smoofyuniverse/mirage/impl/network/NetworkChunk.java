@@ -439,41 +439,52 @@ public class NetworkChunk implements ChunkView {
 		x &= 15;
 		z &= 15;
 
-		if (y != 255 && !isOpaque1(x, y + 1, z))
-			return true;
-		if (y != 0 && !isOpaque1(x, y - 1, z))
+		// y + 1
+		if (y == 255 || !isOpaque(x, y + 1, z))
 			return true;
 
-		return !(isOpaque2(x + 1, y, z) && isOpaque2(x - 1, y, z) && isOpaque2(x, y, z + 1) && isOpaque2(x, y, z - 1));
+		// y - 1
+		if (y == 0 || !isOpaque(x, y - 1, z))
+			return true;
+
+		// x + 1
+		if (x == 15) {
+			NetworkChunk c = this.world.getChunk(this.x + 1, this.z);
+			if (c == null || !c.isOpaque(0, y, z))
+				return true;
+		} else if (!isOpaque(x + 1, y, z))
+			return true;
+
+		// x - 1
+		if (x == 0) {
+			NetworkChunk c = this.world.getChunk(this.x - 1, this.z);
+			if (c == null || !c.isOpaque(15, y, z))
+				return true;
+		} else if (!isOpaque(x - 1, y, z))
+			return true;
+
+		// z + 1
+		if (z == 15) {
+			NetworkChunk c = this.world.getChunk(this.x, this.z + 1);
+			if (c == null || !c.isOpaque(x, y, 0))
+				return true;
+		} else if (!isOpaque(x, y, z + 1))
+			return true;
+
+		// z - 1
+		if (z == 0) {
+			NetworkChunk c = this.world.getChunk(this.x, this.z - 1);
+			if (c == null || !c.isOpaque(x, y, 15))
+				return true;
+		} else if (!isOpaque(x, y, z - 1))
+			return true;
+
+		return false;
 	}
 
-	private boolean isOpaque1(int x, int y, int z) {
+	private boolean isOpaque(int x, int y, int z) {
 		NetworkBlockContainer c = this.containers[y >> 4];
 		return c != null && ((InternalBlockState) c.get(x, y & 15, z)).isOpaque();
-	}
-
-	private boolean isOpaque2(int x, int y, int z) {
-		int dx = 0, dz = 0;
-		if (x < 0) {
-			dx--;
-			x += 16;
-		} else if (x >= 16) {
-			dx++;
-			x -= 16;
-		}
-		if (z < 0) {
-			dz--;
-			z += 16;
-		} else if (z >= 16) {
-			dz++;
-			z -= 16;
-		}
-
-		if (dx == 0 && dz == 0)
-			return isOpaque1(x, y, z);
-
-		NetworkChunk neighbor = this.world.getChunk(this.x + dx, this.z + dz);
-		return neighbor != null && neighbor.isOpaque1(x, y, z);
 	}
 
 	@Override

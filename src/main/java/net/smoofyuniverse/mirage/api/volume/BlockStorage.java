@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
+import com.flowpowered.math.vector.Vector2i;
 import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.ImmutableBlockVolume;
@@ -87,33 +88,32 @@ public interface BlockStorage extends ImmutableBlockVolume {
 
 	/**
 	 * @param pos The position
-	 * @return The block light level at the given position
+	 * @return A vector containing the block light level as X and the sky light level as Y.
 	 */
-	default int getBlockLightLevel(Vector3i pos) {
-		return getBlockLightLevel(pos.getX(), pos.getY(), pos.getZ());
+	default Vector2i getLightLevels(Vector3i pos) {
+		return getLightLevels(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	/**
 	 * @param x The X position
 	 * @param y The Y position
 	 * @param z The Z position
-	 * @return The block light level at the given position
+	 * @return A vector containing the block light level as X and the sky light level as Y.
 	 */
-	int getBlockLightLevel(int x, int y, int z);
+	Vector2i getLightLevels(int x, int y, int z);
 
 	/**
-	 * @param pos The position
-	 * @return Whether the block at the given position is directly exposed to the sky
+	 * @param column The position
+	 * @return The y value of the highest opaque block
 	 */
-	default boolean canSeeTheSky(Vector3i pos) {
-		return canSeeTheSky(pos.getX(), pos.getY(), pos.getZ());
+	default int getHighestY(Vector2i column) {
+		return getHighestY(column.getX(), column.getY());
 	}
 
 	/**
 	 * @param x The X position
-	 * @param y The Y position
 	 * @param z The Z position
-	 * @return Whether the block at the given position is directly exposed to the sky
+	 * @return The y value of the highest opaque block
 	 */
-	boolean canSeeTheSky(int x, int y, int z);
+	int getHighestY(int x, int z);
 }
