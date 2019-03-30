@@ -5,7 +5,7 @@ The best solution against xray users.
 
 * Ore page: https://ore.spongepowered.org/Yeregorix/Mirage
 
-To setup your workspace run `gradle setupServer setupDecompWorkspace`
+To setup your workspace run `gradle setupVanillaServer setupForgeServer setupDecompWorkspace`
 then add run configurations that points to `run\vanilla\server.jar` and `run\forge\server.jar`
 and configure them to run `gradle updatePlugin` before each run.
 
