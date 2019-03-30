@@ -42,7 +42,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.qixalite.spongestart' version '1.6.2'
+    id 'com.qixalite.spongestart2' version '4.0.0'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -52,9 +52,9 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 spongestart {
-    eula true
     minecraft '1.12.2'
-    type 'stable'
+    spongeVanilla '1.12.2-7.1.6-RC157'
+    spongeForge '1.12.2-2768-7.1.6-RC3634'
 }
 
 minecraft {
