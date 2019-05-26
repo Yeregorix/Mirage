@@ -543,7 +543,7 @@ public class NetworkChunk implements ChunkView {
 	public MutableBlockVolume getBlockCopy(StorageType type) {
 		switch (type) {
 			case STANDARD:
-				return new ArrayMutableBlockBuffer(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
+				return new ArrayMutableBlockBuffer(GlobalPalette.getBlockPalette(), getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
 			case THREAD_SAFE:
 			default:
 				throw new UnsupportedOperationException(type.name());
@@ -552,7 +552,7 @@ public class NetworkChunk implements ChunkView {
 
 	@Override
 	public ImmutableBlockVolume getImmutableBlockCopy() {
-		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
+		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.getBlockPalette(), getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
 	}
 
 	protected void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {

@@ -82,7 +82,7 @@ configurations {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongecommon:7.1.0:dev'
+    compile 'org.spongepowered:spongecommon:1.12.2-7.1.6-SNAPSHOT:dev'
     shade 'org.bstats.bStats-Metrics:bstats-sponge-lite:1.4'
 }
 

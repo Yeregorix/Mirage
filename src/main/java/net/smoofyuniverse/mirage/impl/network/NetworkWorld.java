@@ -619,7 +619,7 @@ public class NetworkWorld implements WorldView {
 	public MutableBlockVolume getBlockCopy(StorageType type) {
 		switch (type) {
 			case STANDARD:
-				return new ArrayMutableBlockBuffer(GlobalPalette.instance, this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
+				return new ArrayMutableBlockBuffer(GlobalPalette.getBlockPalette(), this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
 			case THREAD_SAFE:
 			default:
 				throw new UnsupportedOperationException(type.name());
@@ -628,7 +628,7 @@ public class NetworkWorld implements WorldView {
 
 	@Override
 	public ImmutableBlockVolume getImmutableBlockCopy() {
-		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.instance, this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
+		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.getBlockPalette(), this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
 	}
 
 	@Override
