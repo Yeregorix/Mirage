@@ -42,7 +42,6 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.qixalite.spongestart2' version '4.0.0'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -51,14 +50,8 @@ apply plugin: 'org.spongepowered.mixin'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-spongestart {
-    minecraft '1.12.2'
-    spongeVanilla '1.12.2-7.1.6-RC157'
-    spongeForge '1.12.2-2768-7.1.6-RC3634'
-}
-
 minecraft {
-    version = '1.12.2-14.23.5.2768'
+    version = '1.12.2-14.23.5.2825'
     mappings = 'snapshot_20180808'
 
     runDir = 'run'
@@ -114,11 +107,11 @@ jar {
 task updatePlugin <<{
     copy {
         from 'build/libs/Mirage.jar'
-        into spongestart.forgeServerFolder + '/mods'
+        into 'run/forge/mods'
     }
     copy {
         from 'build/libs/Mirage.jar'
-        into spongestart.vanillaServerFolder + '/mods'
+        into 'run/vanilla/mods'
     }
 }
 updatePlugin.dependsOn build
