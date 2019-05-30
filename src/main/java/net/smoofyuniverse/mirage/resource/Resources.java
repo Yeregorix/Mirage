@@ -55,6 +55,20 @@ public final class Resources {
 		return this.ground;
 	}
 
+	public static Resources of(DimensionType type) {
+		if (type == null)
+			throw new IllegalArgumentException("type");
+
+		Resources r = map.get(type);
+		if (r == null) {
+			Mirage.LOGGER.warn("Unregistered resources for dimension type: " + type.getId());
+			r = new Resources();
+			r.setGround();
+			map.put(type, r);
+		}
+		return r;
+	}
+
 	public BlockSet getBlocks(String category) {
 		BlockSet set = this.blocks.get(category);
 		return set == null ? new BlockSet() : set.copy();
@@ -94,8 +108,16 @@ public final class Resources {
 		return of(world.getDimensionType());
 	}
 
-	public static Resources of(DimensionType type) {
-		return map.get(type);
+	private void setGround() {
+		BlockSet set = this.blocks.get(GROUND);
+		this.ground = set == null ? null : set.first().orElse(null);
+
+		if (this.ground == null) {
+			this.ground = BlockTypes.STONE.getDefaultState();
+			set = new BlockSet();
+			set.add(this.ground);
+			this.blocks.put(GROUND, set);
+		}
 	}
 
 	public static void loadResources() {
@@ -128,17 +150,7 @@ public final class Resources {
 				}
 			}
 
-			BlockSet set = r.blocks.get(GROUND);
-			if (set != null)
-				r.ground = set.first().orElse(null);
-
-			if (r.ground == null) {
-				r.ground = BlockTypes.STONE.getDefaultState();
-				set = new BlockSet();
-				set.add(r.ground);
-				r.blocks.put(GROUND, set);
-			}
-
+			r.setGround();
 			map.put(type, r);
 		}
 	}
