@@ -70,29 +70,13 @@ repositories {
         name = 'sponge'
         url = 'https://repo.spongepowered.org/maven'
     }
-    maven {
-        name = 'jitpack'
-        url = 'https://jitpack.io'
-    }
-}
-
-configurations {
-    shade
-    compile.extendsFrom shade
 }
 
 dependencies {
     compile 'org.spongepowered:spongecommon:1.12.2-7.1.6-SNAPSHOT:dev'
-    shade 'org.bstats.bStats-Metrics:bstats-sponge-lite:1.4'
 }
 
 jar {
-    configurations.shade.each { dep ->
-        from(project.zipTree(dep)) {
-            exclude 'META-INF', 'META-INF/**'
-        }
-    }
-
     manifest {
         attributes(
                 'FMLCorePluginContainsFMLMod': 'true',
