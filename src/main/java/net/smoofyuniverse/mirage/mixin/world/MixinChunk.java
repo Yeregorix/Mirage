@@ -170,13 +170,13 @@ public abstract class MixinChunk implements InternalChunk {
 	}
 
 	@SuppressWarnings("UnresolvedMixinReference")
-	@Redirect(method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
+	@Redirect(method = "bridge$setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
 	public ExtendedBlockStorage onBlockChange_newStorage(int y, boolean storeSkylight) {
 		return createStorage(y >> 4, storeSkylight);
 	}
 
 	@SuppressWarnings("UnresolvedMixinReference")
-	@Redirect(method = "fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
+	@Redirect(method = "bridge$fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
 	public ExtendedBlockStorage onFill_newStorage(int y, boolean storeSkylight) {
 		return createStorage(y >> 4, storeSkylight);
 	}
