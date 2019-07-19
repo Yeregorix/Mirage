@@ -60,6 +60,7 @@ import org.spongepowered.api.world.extent.StorageType;
 import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
 import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
 import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.common.SpongeImpl;
 import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
 import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
@@ -328,7 +329,9 @@ public class NetworkWorld implements WorldView {
 			Mirage.LOGGER.warn("Failed to save chunk data " + x + " " + z + " to cache in world " + this.world.getName() + ".", e);
 		}
 
-		MirageTimings.WRITING_CACHE.stopTimingIfSync();
+		// Fix a sponge issue with Timings
+		if (SpongeImpl.getServer().isCallingFromMinecraftThread())
+			MirageTimings.WRITING_CACHE.stopTimingIfSync();
 	}
 
 	@Nullable
