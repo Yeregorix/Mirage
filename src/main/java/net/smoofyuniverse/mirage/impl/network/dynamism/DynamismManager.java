@@ -28,29 +28,13 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.smoofyuniverse.mirage.MirageTimings;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.util.Tuple;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public final class PlayerDynamismManager {
-	public final UUID playerId;
+public final class DynamismManager {
 	private Long2ObjectMap<Tuple<DynamicChunk, ChunkChangeListener>> chunks = new Long2ObjectOpenHashMap<>();
 	private Vector3i center;
-
-	public PlayerDynamismManager(UUID playerId) {
-		this.playerId = playerId;
-	}
-
-	public void update(Player player) {
-		if (!player.getUniqueId().equals(this.playerId))
-			throw new IllegalArgumentException("Player");
-
-		Vector3i pos = player.getPosition().toInt();
-		if (this.center == null || !this.center.equals(pos))
-			setCenter(pos);
-	}
 
 	private void setCenter(DynamicChunk dynChunk, ChunkChangeListener listener) {
 		dynChunk.setCenter(this.center);
@@ -68,6 +52,9 @@ public final class PlayerDynamismManager {
 	}
 
 	public void setCenter(Vector3i center) {
+		if (this.center != null && this.center.equals(center))
+			return;
+
 		MirageTimings.DYNAMISM.startTiming();
 
 		this.center = center;

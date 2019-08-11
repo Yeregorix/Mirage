@@ -27,7 +27,7 @@ import net.minecraft.server.management.PlayerChunkMap;
 import net.minecraft.world.WorldServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunkMap;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
-import net.smoofyuniverse.mirage.impl.network.dynamism.PlayerDynamismManager;
+import net.smoofyuniverse.mirage.impl.network.dynamism.DynamismManager;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,7 +48,7 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 	@Final
 	private WorldServer world;
 
-	private Map<UUID, PlayerDynamismManager> dynamismManagers = new HashMap<>();
+	private Map<UUID, DynamismManager> dynamismManagers = new HashMap<>();
 
 	@Override
 	public boolean isDynamismEnabled() {
@@ -56,26 +56,26 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 	}
 
 	@Override
-	public PlayerDynamismManager getOrCreateDynamismManager(Player player) {
-		PlayerDynamismManager manager = this.dynamismManagers.get(player.getUniqueId());
+	public DynamismManager getOrCreateDynamismManager(Player player) {
+		DynamismManager manager = this.dynamismManagers.get(player.getUniqueId());
 		if (manager == null) {
 			if (!isDynamismEnabled())
 				throw new UnsupportedOperationException();
 
-			manager = new PlayerDynamismManager(player.getUniqueId());
-			manager.setCenter(player.getPosition().toInt());
-			this.dynamismManagers.put(manager.playerId, manager);
+			manager = new DynamismManager();
+			manager.setCenter(player.getPosition().add(0, 1.62, 0).toInt());
+			this.dynamismManagers.put(player.getUniqueId(), manager);
 		}
 		return manager;
 	}
 
 	@Override
-	public Optional<PlayerDynamismManager> getDynamismManager(UUID id) {
+	public Optional<DynamismManager> getDynamismManager(UUID id) {
 		return Optional.ofNullable(this.dynamismManagers.get(id));
 	}
 
 	@Override
-	public Optional<PlayerDynamismManager> removeDynamismManager(UUID id) {
+	public Optional<DynamismManager> removeDynamismManager(UUID id) {
 		return Optional.ofNullable(this.dynamismManagers.remove(id));
 	}
 
@@ -88,6 +88,6 @@ public class MixinPlayerChunkMap implements InternalChunkMap {
 	@Inject(method = "updateMovingPlayer", at = @At("RETURN"))
 	public void onUpdateMovingPlayer(EntityPlayerMP player, CallbackInfo ci) {
 		if (isDynamismEnabled())
-			getDynamismManager(player.getUniqueID()).ifPresent(m -> m.update((Player) player));
+			getDynamismManager(player.getUniqueID()).ifPresent(m -> m.setCenter(((Player) player).getPosition().add(0, 1.62, 0).toInt()));
 	}
 }

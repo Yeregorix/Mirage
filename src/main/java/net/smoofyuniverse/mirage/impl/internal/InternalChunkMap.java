@@ -22,7 +22,7 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
-import net.smoofyuniverse.mirage.impl.network.dynamism.PlayerDynamismManager;
+import net.smoofyuniverse.mirage.impl.network.dynamism.DynamismManager;
 import org.spongepowered.api.entity.living.player.Player;
 
 import java.util.Optional;
@@ -32,9 +32,9 @@ public interface InternalChunkMap {
 
 	boolean isDynamismEnabled();
 
-	PlayerDynamismManager getOrCreateDynamismManager(Player player);
+	DynamismManager getOrCreateDynamismManager(Player player);
 
-	Optional<PlayerDynamismManager> getDynamismManager(UUID id);
+	Optional<DynamismManager> getDynamismManager(UUID id);
 
-	Optional<PlayerDynamismManager> removeDynamismManager(UUID id);
+	Optional<DynamismManager> removeDynamismManager(UUID id);
 }
