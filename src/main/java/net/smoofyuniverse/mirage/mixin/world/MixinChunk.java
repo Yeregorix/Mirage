@@ -36,11 +36,13 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.common.world.SpongeEmptyChunk;
@@ -169,24 +171,18 @@ public abstract class MixinChunk implements InternalChunk {
 		}
 	}
 
-	@SuppressWarnings("UnresolvedMixinReference")
-	@Redirect(method = "bridge$setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
-	public ExtendedBlockStorage onBlockChange_newStorage(int y, boolean storeSkylight) {
-		return createStorage(y >> 4, storeSkylight);
+	@Dynamic
+	@ModifyVariable(method = "bridge$setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "STORE", ordinal = 1), remap = false)
+	public ExtendedBlockStorage onBlockChange_newStorage(ExtendedBlockStorage storage) {
+		captureStorage(storage);
+		return storage;
 	}
 
-	@SuppressWarnings("UnresolvedMixinReference")
-	@Redirect(method = "bridge$fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
-	public ExtendedBlockStorage onFill_newStorage(int y, boolean storeSkylight) {
-		return createStorage(y >> 4, storeSkylight);
-	}
-
-	public ExtendedBlockStorage createStorage(int index, boolean storeSkylight) {
-		ExtendedBlockStorage storage = new ExtendedBlockStorage(index << 4, storeSkylight);
-
+	private void captureStorage(ExtendedBlockStorage storage) {
 		if (this.netChunk != null) {
 			try {
 				synchronized (this.containersLock) {
+					int index = storage.getYLocation() >> 4;
 					if (this.netChunk.needContainer(index)) {
 						this.netChunk.setContainer(index, storage);
 						if (!storage.isEmpty())
@@ -197,13 +193,20 @@ public abstract class MixinChunk implements InternalChunk {
 				Mirage.LOGGER.error("Failed to set a container of a network chunk", e);
 			}
 		}
+	}
 
+	@Dynamic
+	@Redirect(method = "bridge$fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
+	public ExtendedBlockStorage onFill_newStorage(int y, boolean storeSkylight) {
+		ExtendedBlockStorage storage = new ExtendedBlockStorage(y, storeSkylight);
+		captureStorage(storage);
 		return storage;
 	}
 
-	@Redirect(method = "setLightFor", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"))
-	public ExtendedBlockStorage onLightChange_newStorage(int y, boolean storeSkylight) {
-		return createStorage(y >> 4, storeSkylight);
+	@ModifyVariable(method = "setLightFor", at = @At(value = "STORE", ordinal = 1))
+	public ExtendedBlockStorage onLightChange_newStorage(ExtendedBlockStorage storage) {
+		captureStorage(storage);
+		return storage;
 	}
 
 	@Override
