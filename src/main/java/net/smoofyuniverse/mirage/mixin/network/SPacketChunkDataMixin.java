@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(SPacketChunkData.class)
-public abstract class MixinSPacketChunkData {
+public abstract class SPacketChunkDataMixin {
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/BlockStateContainer;write(Lnet/minecraft/network/PacketBuffer;)V"))
 	public void writeModified(BlockStateContainer container, PacketBuffer buffer) {

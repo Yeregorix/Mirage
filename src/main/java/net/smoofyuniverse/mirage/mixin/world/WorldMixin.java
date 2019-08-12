@@ -40,7 +40,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 @Mixin(World.class)
-public abstract class MixinWorld implements InternalWorld {
+public abstract class WorldMixin implements InternalWorld {
 	@Shadow
 	protected IChunkProvider chunkProvider;
 

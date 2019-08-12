@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mixin(value = PlayerChunkMapEntry.class, priority = 900)
-public abstract class MixinPlayerChunkMapEntry implements ChunkChangeListener {
+public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 	@Shadow
 	private Chunk chunk;
 	@Shadow

@@ -48,7 +48,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.common.world.SpongeEmptyChunk;
 
 @Mixin(value = Chunk.class, priority = 1100)
-public abstract class MixinChunk implements InternalChunk {
+public abstract class ChunkMixin implements InternalChunk {
 	@Shadow
 	@Final
 	public int x;

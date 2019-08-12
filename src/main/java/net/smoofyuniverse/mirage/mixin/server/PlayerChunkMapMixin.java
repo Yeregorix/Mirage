@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(PlayerChunkMap.class)
-public class MixinPlayerChunkMap implements InternalChunkMap {
+public class PlayerChunkMapMixin implements InternalChunkMap {
 
 	@Shadow
 	@Final

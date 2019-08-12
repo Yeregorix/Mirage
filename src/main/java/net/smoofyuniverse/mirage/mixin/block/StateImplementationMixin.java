@@ -20,42 +20,60 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin.world;
+package net.smoofyuniverse.mirage.mixin.block;
 
+import com.google.common.collect.ImmutableMap;
+import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.state.BlockStateContainer.StateImplementation;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.world.chunk.BlockStateContainer;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
-import net.smoofyuniverse.mirage.impl.network.NetworkBlockContainer;
-import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(BlockStateContainer.class)
-public class MixinBlockStateContainer implements InternalBlockContainer {
-	private NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
-	private NetworkChunk chunk;
+@Mixin(StateImplementation.class)
+public class StateImplementationMixin implements InternalBlockState {
+	@Shadow
+	@Final
+	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
+
+	@Shadow
+	@Final
+	private Block block;
+
+	private boolean isOpaqueCube;
+	private int hashCode;
+
+	@Inject(method = "<init>", at = @At("RETURN"))
+	public void onInit(CallbackInfo ci) {
+		this.hashCode = this.properties.hashCode();
+	}
+
+	/**
+	 * This method is called after all blocks have been registered to avoid errors with some mods
+	 */
+	@Override
+	public void optimizeExpositionCheck() {
+		this.isOpaqueCube = this.block.isOpaqueCube((IBlockState) this);
+	}
 
 	@Override
-	public void setNetworkChunk(NetworkChunk chunk) {
-		this.chunk = chunk;
+	public boolean isOpaque() {
+		return this.isOpaqueCube;
 	}
 
+	/**
+	 * @author Yeregorix
+	 * @reason Improves HashSet and HashMap performances
+	 */
 	@Override
-	public NetworkBlockContainer getNetworkBlockContainer() {
-		return this.networkContainer;
-	}
-
-	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void onSet(int index, IBlockState state, CallbackInfo ci) {
-		this.networkContainer.set(index, state);
-		if (this.chunk != null)
-			this.chunk.setSaved(false);
-	}
-
-	@Inject(method = "setBits(I)V", at = @At("HEAD"))
-	public void onSetBits(int bits, CallbackInfo ci) {
-		this.networkContainer.setBits(bits);
+	@Overwrite
+	public int hashCode() {
+		return this.hashCode;
 	}
 }

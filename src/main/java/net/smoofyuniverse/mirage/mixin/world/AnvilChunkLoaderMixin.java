@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(AnvilChunkLoader.class)
-public class MixinAnvilChunkLoader {
+public class AnvilChunkLoaderMixin {
 	private InternalWorld world;
 
 	@Inject(method = "writeChunkToNBT", at = @At("RETURN"))
