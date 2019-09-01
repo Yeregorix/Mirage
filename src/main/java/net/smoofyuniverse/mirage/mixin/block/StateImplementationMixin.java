@@ -32,9 +32,6 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(StateImplementation.class)
 public class StateImplementationMixin implements InternalBlockState {
@@ -47,12 +44,9 @@ public class StateImplementationMixin implements InternalBlockState {
 	private Block block;
 
 	private boolean isOpaqueCube;
-	private int hashCode;
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	public void onInit(CallbackInfo ci) {
-		this.hashCode = this.properties.hashCode();
-	}
+	private boolean cacheHashCode = true;
+	private int hashCode;
 
 	/**
 	 * This method is called after all blocks have been registered to avoid errors with some mods
@@ -69,11 +63,15 @@ public class StateImplementationMixin implements InternalBlockState {
 
 	/**
 	 * @author Yeregorix
-	 * @reason Improves HashSet and HashMap performances
+	 * @reason Improve HashSet and HashMap performance
 	 */
 	@Override
 	@Overwrite
 	public int hashCode() {
+		if (this.cacheHashCode) {
+			this.hashCode = this.properties.hashCode();
+			this.cacheHashCode = false;
+		}
 		return this.hashCode;
 	}
 }
