@@ -26,9 +26,6 @@ import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
 /**
  * A BlockView is a MutableBlockVolume associated with immutable BlockStorage. This object is used to represent a client-side BlockVolume.
  */
