@@ -73,7 +73,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongecommon:1.12.2-7.1.7-SNAPSHOT:dev'
+    compile 'org.spongepowered:spongecommon:1.12.2-7.1.7:dev'
 }
 
 jar {
