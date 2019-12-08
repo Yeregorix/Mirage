@@ -34,11 +34,13 @@ import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
-import net.smoofyuniverse.mirage.ore.OreAPI;
 import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import net.smoofyuniverse.mirage.util.collection.BlockSet.SerializationPredicate;
+import net.smoofyuniverse.ore.OreAPI;
+import net.smoofyuniverse.ore.project.OreProject;
+import net.smoofyuniverse.ore.project.OreVersion;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -92,6 +94,9 @@ public class Mirage {
 	private Path cacheDir, worldConfigsDir, resourcesDir;
 
 	private GlobalConfig.Immutable globalConfig;
+
+	private OreAPI oreAPI;
+	private OreProject oreProject;
 	private Text[] updateMessages = new Text[0];
 
 	public Mirage() {
@@ -171,8 +176,12 @@ public class Mirage {
 			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
 		}
 
-		if (this.globalConfig.updateCheck.enabled)
+		if (this.globalConfig.updateCheck.enabled) {
+			this.oreAPI = new OreAPI();
+			this.oreProject = new OreProject("mirage");
+			this.oreProject.setNamespace("Yeregorix", "Mirage");
 			Task.builder().async().interval(this.globalConfig.updateCheck.repetitionInterval, TimeUnit.HOURS).execute(this::checkForUpdate).submit(this);
+		}
 	}
 
 	@Listener
@@ -226,18 +235,16 @@ public class Mirage {
 
 		LOGGER.debug("Checking for update ..");
 
-		String latestVersion = null;
+		OreVersion latestVersion = null;
 		try {
-			latestVersion = OreAPI.getLatestVersion(OreAPI.getProjectVersions("mirage"), (major, minor) -> major == 7).orElse(null);
+			latestVersion = OreVersion.getLatest(this.oreProject.getVersions(this.oreAPI), v -> v.apiVersion.charAt(0) == '7').orElse(null);
 		} catch (Exception e) {
 			LOGGER.info("Failed to check for update", e);
 		}
 
 		if (latestVersion != null && !latestVersion.equals(version)) {
-			String downloadUrl = "https://ore.spongepowered.org/Yeregorix/Mirage/versions/" + latestVersion;
-
 			Text msg1 = Text.join(Text.of("A new version of Mirage is available: "),
-					Text.builder(latestVersion).color(TextColors.AQUA).build(),
+					Text.builder(latestVersion.name).color(TextColors.AQUA).build(),
 					Text.of(". You're currently using version: "),
 					Text.builder(version).color(TextColors.AQUA).build(),
 					Text.of("."));
@@ -245,7 +252,7 @@ public class Mirage {
 			Text msg2;
 			try {
 				msg2 = Text.builder("Click here to open the download page.").color(TextColors.GOLD)
-						.onClick(TextActions.openUrl(new URL(downloadUrl))).build();
+						.onClick(TextActions.openUrl(new URL(latestVersion.getPage()))).build();
 			} catch (MalformedURLException e) {
 				msg2 = null;
 			}

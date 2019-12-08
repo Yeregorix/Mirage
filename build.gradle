@@ -40,6 +40,7 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '4.0.4'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -65,16 +66,20 @@ sourceSets {
 repositories {
     mavenCentral()
     maven {
-        name = 'sponge'
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+    maven {
         url = 'https://repo.spongepowered.org/maven'
     }
 }
 
 dependencies {
     compile 'org.spongepowered:spongecommon:1.12.2-7.1.7:dev'
+    compile 'net.smoofyuniverse:smoofyoreapi:1.0.0-SNAPSHOT'
 }
 
 jar {
+    classifier 'base'
     manifest {
         attributes(
                 'FMLCorePluginContainsFMLMod': 'true',
@@ -83,6 +88,25 @@ jar {
                 'FMLAT': 'mirage_at.cfg',
                 'ForceLoadAsMod' : true
         )
+    }
+}
+
+reobf.jar.mappingType = 'SEARGE'
+
+shadowJar {
+    classifier ''
+    mainSpec.sourcePaths.clear()
+    dependsOn reobfJar
+
+    dependencies {
+        include dependency('net.smoofyuniverse:smoofyoreapi')
+    }
+
+    relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
+
+    exclude "dummyThing"
+    afterEvaluate {
+        from zipTree(reobfJar.jar)
     }
 }
 
@@ -96,6 +120,4 @@ task updatePlugin <<{
         into 'run/vanilla/mods'
     }
 }
-updatePlugin.dependsOn build
-
-reobf.jar.mappingType = 'SEARGE'
+updatePlugin.dependsOn shadowJar
