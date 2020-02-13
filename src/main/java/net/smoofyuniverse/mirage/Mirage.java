@@ -55,7 +55,10 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.*;
+import org.spongepowered.api.event.game.state.GameInitializationEvent;
+import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.event.game.state.GameStartedServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.scheduler.Task;
@@ -106,13 +109,10 @@ public class Mirage {
 	}
 
 	@Listener
-	public void onGameConstruction(GameConstructionEvent e) {
+	public void onGamePreInit(GamePreInitializationEvent e) {
 		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
 		TypeSerializers.getDefaultSerializers().registerType(BlockSet.TOKEN, new BlockSetSerializer(SerializationPredicate.limit(0.6f)));
-	}
 
-	@Listener
-	public void onGamePreInit(GamePreInitializationEvent e) {
 		this.cacheDir = this.game.getGameDirectory().resolve("mirage-cache");
 		this.worldConfigsDir = this.configDir.resolve("worlds");
 		this.resourcesDir = this.configDir.resolve("resources");
