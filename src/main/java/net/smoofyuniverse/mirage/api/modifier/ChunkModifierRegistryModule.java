@@ -25,8 +25,6 @@ package net.smoofyuniverse.mirage.api.modifier;
 import com.google.common.collect.ImmutableList;
 import net.smoofyuniverse.mirage.Mirage;
 import org.spongepowered.api.registry.AdditionalCatalogRegistryModule;
-import org.spongepowered.api.registry.RegistrationPhase;
-import org.spongepowered.api.registry.util.DelayedRegistration;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -55,7 +53,6 @@ public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryMod
 		return ImmutableList.copyOf(this.modifiers.values());
 	}
 
-	@DelayedRegistration(RegistrationPhase.PRE_INIT)
 	@Override
 	public void registerDefaults() {
 		register(ChunkModifiers.EMPTY);
