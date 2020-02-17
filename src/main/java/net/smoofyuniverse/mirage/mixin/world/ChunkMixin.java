@@ -171,7 +171,7 @@ public abstract class ChunkMixin implements InternalChunk {
 		}
 	}
 
-	@Dynamic
+	@Dynamic(mixin = org.spongepowered.common.mixin.core.world.chunk.ChunkMixin.class)
 	@ModifyVariable(method = "bridge$setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/block/state/IBlockState;Lorg/spongepowered/api/world/BlockChangeFlag;)Lnet/minecraft/block/state/IBlockState;", at = @At(value = "STORE", ordinal = 1), remap = false)
 	public ExtendedBlockStorage onBlockChange_newStorage(ExtendedBlockStorage storage) {
 		captureStorage(storage);
@@ -195,7 +195,7 @@ public abstract class ChunkMixin implements InternalChunk {
 		}
 	}
 
-	@Dynamic
+	@Dynamic(mixin = org.spongepowered.common.mixin.core.world.chunk.ChunkMixin.class)
 	@Redirect(method = "bridge$fill(Lnet/minecraft/world/chunk/ChunkPrimer;)V", at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/ExtendedBlockStorage"), remap = false)
 	public ExtendedBlockStorage onFill_newStorage(int y, boolean storeSkylight) {
 		ExtendedBlockStorage storage = new ExtendedBlockStorage(y, storeSkylight);
