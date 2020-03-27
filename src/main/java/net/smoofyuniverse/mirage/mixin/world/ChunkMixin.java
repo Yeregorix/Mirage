@@ -92,32 +92,40 @@ public abstract class ChunkMixin implements InternalChunk {
 
 	@Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/ChunkPrimer;II)V", at = @At("RETURN"))
 	public void onInitWithPrimer(CallbackInfo ci) {
-		bindContainers();
+		captureContainers();
 	}
 
-	public boolean bindContainers() {
+	@Override
+	public boolean captureContainers() {
 		if (this.netChunk == null)
 			return false;
 
 		try {
 			synchronized (this.containersLock) {
-				this.netChunk.setContainers(this.storageArrays);
+				for (ExtendedBlockStorage storage : this.storageArrays)
+					this.netChunk.captureContainer(storage);
 			}
 			return true;
 		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to set containers of a network chunk", e);
+			Mirage.LOGGER.error("Failed to capture the existing containers of a chunk", e);
 			return false;
 		}
 	}
 
-	@Inject(method = "setStorageArrays", at = @At("RETURN"))
-	public void onSetStorageArrays(CallbackInfo ci) {
-		if (bindContainers()) {
-			try {
-				if (this.netChunk.getState() != State.OBFUSCATED)
-					this.netChunk.loadFromCacheNow();
-			} catch (Exception e) {
-				Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
+	@Override
+	public void requireContainer(int index) {
+		if (this.netChunk == null)
+			return;
+
+		synchronized (this.containersLock) {
+			ExtendedBlockStorage storage = this.storageArrays[index];
+			if (storage == null) {
+				storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
+				this.netChunk.captureContainer(storage);
+				this.storageArrays[index] = storage;
+				generateSkylightMap();
+			} else {
+				this.netChunk.captureContainer(storage);
 			}
 		}
 	}
@@ -149,24 +157,14 @@ public abstract class ChunkMixin implements InternalChunk {
 		this.cacheDate = value;
 	}
 
-	@Override
-	public void bindContainer(int index) {
-		if (this.netChunk == null)
-			return;
-
-		synchronized (this.containersLock) {
-			if (this.netChunk.needContainer(index)) {
-				ExtendedBlockStorage storage = this.storageArrays[index];
-				if (storage == null) {
-					storage = new ExtendedBlockStorage(index << 4, this.world.provider.hasSkyLight());
-					this.netChunk.setContainer(index, storage);
-					this.storageArrays[index] = storage;
-					generateSkylightMap();
-				} else {
-					this.netChunk.setContainer(index, storage);
-					if (!storage.isEmpty())
-						this.netChunk.setSaved(false);
-				}
+	@Inject(method = "setStorageArrays", at = @At("RETURN"))
+	public void onSetStorageArrays(CallbackInfo ci) {
+		if (captureContainers()) {
+			try {
+				if (this.netChunk.getState() != State.OBFUSCATED)
+					this.netChunk.loadFromCacheNow();
+			} catch (Exception e) {
+				Mirage.LOGGER.error("Failed to load a network chunk from cache", e);
 			}
 		}
 	}
@@ -182,15 +180,10 @@ public abstract class ChunkMixin implements InternalChunk {
 		if (this.netChunk != null) {
 			try {
 				synchronized (this.containersLock) {
-					int index = storage.getYLocation() >> 4;
-					if (this.netChunk.needContainer(index)) {
-						this.netChunk.setContainer(index, storage);
-						if (!storage.isEmpty())
-							this.netChunk.setSaved(false);
-					}
+					this.netChunk.captureContainer(storage);
 				}
 			} catch (Exception e) {
-				Mirage.LOGGER.error("Failed to set a container of a network chunk", e);
+				Mirage.LOGGER.error("Failed to capture a container of a chunk", e);
 			}
 		}
 	}

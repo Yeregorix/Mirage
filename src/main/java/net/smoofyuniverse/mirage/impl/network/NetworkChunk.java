@@ -72,18 +72,18 @@ import static net.smoofyuniverse.mirage.util.MathUtil.*;
 public class NetworkChunk implements ChunkView {
 	public static final int maxDynamismDistance = 160, maxDynamismDistance2 = squared(160);
 
-	private final Vector3i position, blockMin, blockMax;
 	private final InternalChunk chunk;
+
 	private final NetworkWorld world;
+	private final Vector3i position, blockMin, blockMax;
 	public final int x, z;
 	private final boolean dynamismEnabled;
 	private final long seed;
 
-	private NetworkBlockContainer[] containers;
+	private final NetworkBlockContainer[] containers = new NetworkBlockContainer[16];
+	private final Random random = new Random();
 	private State state = State.DEOBFUSCATED;
 	private ChunkChangeListener listener;
-	private Random random = new Random();
-	private boolean saved = true;
 
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
@@ -102,53 +102,38 @@ public class NetworkChunk implements ChunkView {
 		this.seed = (long) this.x * k + (long) this.z * l ^ wSeed;
 	}
 
-	public void setContainers(ExtendedBlockStorage[] storages) {
-		NetworkBlockContainer[] containers = new NetworkBlockContainer[storages.length];
-		for (int i = 0; i < storages.length; i++) {
-			if (storages[i] != null)
-				containers[i] = ((InternalBlockContainer) storages[i].getData()).getNetworkBlockContainer();
+	public void captureContainer(ExtendedBlockStorage storage) {
+		if (storage != null)
+			captureContainer(((InternalBlockContainer) storage.getData()).getNetworkBlockContainer());
+	}
+
+	public void captureContainer(NetworkBlockContainer container) {
+		if (container == null)
+			return;
+
+		int index = container.getY() >> 4;
+		if (this.containers[index] == container)
+			return;
+
+		if (this.state != State.DEOBFUSCATED && !container.isEmpty())
+			Mirage.LOGGER.warn("A non-empty container has been captured while the chunk is not deobfuscated.");
+
+		this.containers[index] = container;
+	}
+
+	public void saveToCacheLater() {
+		if (shouldSave()) {
+			long date;
+			if (this.world.useCache()) {
+				ChunkSnapshot chunk = save(new ChunkSnapshot());
+				this.world.addPendingSave(this.x, this.z, chunk);
+				date = chunk.getDate();
+			} else
+				date = System.currentTimeMillis();
+			this.chunk.setValidCacheDate(date);
+			((Chunk) this.chunk).markDirty();
+			clearDirty();
 		}
-		setContainers(containers);
-	}
-
-	public void setContainers(NetworkBlockContainer[] containers) {
-		if (this.state != State.DEOBFUSCATED)
-			throw new IllegalStateException("Chunk must be deobfuscated");
-
-		if (this.containers != null) {
-			for (NetworkBlockContainer c : this.containers) {
-				if (c != null)
-					c.getInternalBlockContainer().setNetworkChunk(null);
-			}
-		}
-
-		if (containers != null) {
-			for (NetworkBlockContainer c : containers) {
-				if (c != null)
-					c.getInternalBlockContainer().setNetworkChunk(this);
-			}
-		}
-		this.containers = containers;
-	}
-
-	public void setContainer(int index, ExtendedBlockStorage s) {
-		setContainer(index, ((InternalBlockContainer) s.getData()).getNetworkBlockContainer());
-	}
-
-	public void setContainer(int index, NetworkBlockContainer c) {
-		if (this.containers == null)
-			throw new UnsupportedOperationException("Containers not initialized");
-		if (this.containers[index] != null)
-			throw new UnsupportedOperationException("Index already initialized");
-		if (c == null)
-			throw new IllegalArgumentException();
-
-		c.getInternalBlockContainer().setNetworkChunk(this);
-		this.containers[index] = c;
-	}
-
-	public boolean needContainer(int index) {
-		return this.containers != null && this.containers[index] == null;
 	}
 
 	public Optional<ChunkChangeListener> getListener() {
@@ -164,31 +149,39 @@ public class NetworkChunk implements ChunkView {
 		return this.state;
 	}
 
-	public boolean isSaved() {
-		return this.saved;
+	public boolean shouldSave() {
+		return this.state == State.OBFUSCATED && isDirty();
 	}
 
-	public void setSaved(boolean value) {
-		this.saved = value;
+	private void clearDirty() {
+		for (NetworkBlockContainer container : this.containers) {
+			if (container != null)
+				container.dirty = false;
+		}
 	}
 
-	public void saveToCacheLater() {
+	public boolean isDirty() {
+		for (NetworkBlockContainer container : this.containers) {
+			if (container != null && container.dirty)
+				return true;
+		}
+		return false;
+	}
+
+	public void saveToCacheNow() {
 		if (shouldSave()) {
 			long date;
 			if (this.world.useCache()) {
 				ChunkSnapshot chunk = save(new ChunkSnapshot());
-				this.world.addPendingSave(this.x, this.z, chunk);
+				this.world.removePendingSave(this.x, this.z);
+				this.world.saveToCache(this.x, this.z, chunk);
 				date = chunk.getDate();
 			} else
 				date = System.currentTimeMillis();
 			this.chunk.setValidCacheDate(date);
 			((Chunk) this.chunk).markDirty();
-			this.saved = true;
+			clearDirty();
 		}
-	}
-
-	public boolean shouldSave() {
-		return !this.saved && this.state == State.OBFUSCATED;
 	}
 
 	public ChunkSnapshot save(ChunkSnapshot out) {
@@ -205,22 +198,6 @@ public class NetworkChunk implements ChunkView {
 		return out;
 	}
 
-	public void saveToCacheNow() {
-		if (shouldSave()) {
-			long date;
-			if (this.world.useCache()) {
-				ChunkSnapshot chunk = save(new ChunkSnapshot());
-				this.world.removePendingSave(this.x, this.z);
-				this.world.saveToCache(this.x, this.z, chunk);
-				date = chunk.getDate();
-			} else
-				date = System.currentTimeMillis();
-			this.chunk.setValidCacheDate(date);
-			((Chunk) this.chunk).markDirty();
-			this.saved = true;
-		}
-	}
-
 	public void loadFromCacheNow() {
 		if (this.world.useCache()) {
 			ChunkSnapshot chunk = this.world.readFromCache(this.x, this.z);
@@ -229,12 +206,14 @@ public class NetworkChunk implements ChunkView {
 				load(chunk);
 
 				this.state = State.OBFUSCATED;
-				this.saved = true;
+				clearDirty();
 			}
 		}
 	}
 
 	public void load(ChunkSnapshot in) {
+		this.chunk.captureContainers();
+
 		for (BlockContainerSnapshot data : in.getContainers()) {
 			NetworkBlockContainer container = this.containers[data.getSection()];
 			if (container != null)
@@ -243,19 +222,11 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public InternalChunk getStorage() {
-		return this.chunk;
-	}
-
-	@Override
-	public boolean isDynamismEnabled() {
-		return this.dynamismEnabled;
-	}
-
-	@Override
 	public void obfuscate() {
 		if (this.state == State.OBFUSCATED)
 			return;
+
+		this.chunk.captureContainers();
 
 		MirageTimings.OBFUSCATION.startTiming();
 
@@ -305,6 +276,28 @@ public class NetworkChunk implements ChunkView {
 		}
 
 		MirageTimings.OBFUSCATION.stopTiming();
+	}
+
+	@Override
+	public InternalChunk getStorage() {
+		return this.chunk;
+	}
+
+	@Override
+	public boolean isDynamismEnabled() {
+		return this.dynamismEnabled;
+	}
+
+	@Override
+	public void setDynamism(int x, int y, int z, int distance) {
+		checkBlockPosition(x, y, z);
+		if (!this.dynamismEnabled)
+			return;
+
+		distance = clamp(distance, 0, 10);
+		requireContainer(y >> 4).setDynamism(x & 15, y & 15, z & 15, distance);
+		if (this.listener != null)
+			this.listener.updateDynamism(x & 15, y, z & 15, distance);
 	}
 
 	@Override
@@ -403,23 +396,13 @@ public class NetworkChunk implements ChunkView {
 		return this.position;
 	}
 
-	@Override
-	public void setDynamism(int x, int y, int z, int distance) {
-		checkBlockPosition(x, y, z);
-		if (!this.dynamismEnabled)
-			return;
-
-		NetworkBlockContainer container = this.containers[y >> 4];
+	private NetworkBlockContainer requireContainer(int index) {
+		NetworkBlockContainer container = this.containers[index];
 		if (container == null) {
-			this.chunk.bindContainer(y >> 4);
-			container = this.containers[y >> 4];
+			this.chunk.requireContainer(index);
+			container = this.containers[index];
 		}
-
-		distance = clamp(distance, 0, 10);
-		container.setDynamism(x & 15, y & 15, z & 15, distance);
-		if (this.listener != null)
-			this.listener.updateDynamism(x & 15, y, z & 15, distance);
-		this.saved = false;
+		return container;
 	}
 
 	@Override
@@ -494,11 +477,7 @@ public class NetworkChunk implements ChunkView {
 			return false;
 
 		NetworkBlockContainer container = this.containers[y >> 4];
-		if (container != null && container.deobfuscate(this.listener, x & 15, y & 15, z & 15)) {
-			this.saved = false;
-			return true;
-		}
-		return false;
+		return container != null && container.deobfuscate(this.listener, x & 15, y & 15, z & 15);
 	}
 
 	@Override
@@ -556,8 +535,6 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	protected void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		boolean modified = false;
-
 		for (int y = minY; y <= maxY; y++) {
 			NetworkBlockContainer container = this.containers[y >> 4];
 			if (container == null)
@@ -565,14 +542,10 @@ public class NetworkChunk implements ChunkView {
 
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
-					if (container.deobfuscate(this.listener, x & 15, y & 15, z & 15))
-						modified = true;
+					container.deobfuscate(this.listener, x & 15, y & 15, z & 15);
 				}
 			}
 		}
-
-		if (modified)
-			this.saved = false;
 	}
 
 	@Override
@@ -652,16 +625,9 @@ public class NetworkChunk implements ChunkView {
 	public boolean setBlock(int x, int y, int z, BlockState block) {
 		checkBlockPosition(x, y, z);
 
-		NetworkBlockContainer container = this.containers[y >> 4];
-		if (container == null) {
-			this.chunk.bindContainer(y >> 4);
-			container = this.containers[y >> 4];
-		}
-
-		container.set(x & 15, y & 15, z & 15, (IBlockState) block);
+		requireContainer(y >> 4).set(x & 15, y & 15, z & 15, (IBlockState) block);
 		if (this.listener != null)
 			this.listener.addChange(x & 15, y, z & 15);
-		this.saved = false;
 		return true;
 	}
 

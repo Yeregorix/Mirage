@@ -50,6 +50,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	private static final IBlockState AIR_BLOCK_STATE = BlockStateContainer.AIR_BLOCK_STATE;
 
 	private BlockStateContainer container;
+
 	private IBlockStatePalette palette;
 	private NibbleArray dynamism;
 	private BitArray storage;
@@ -57,6 +58,8 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 	private int[] dynCount = new int[16];
 	private int blockCount;
+
+	boolean dirty = false;
 
 	public NetworkBlockContainer(BlockStateContainer container) {
 		this.container = container;
@@ -88,6 +91,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	private void _set(int index, IBlockState state) {
 		int i = this.palette.idFor(state);
 		this.storage.setAt(index, i);
+		this.dirty = true;
 	}
 
 	public void setBits(int bits) {
@@ -158,6 +162,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			this.dynamism.setIndex(index, distance);
 			this.dynCount[oldD]--;
 			this.dynCount[distance]++;
+			this.dirty = true;
 		}
 	}
 
@@ -195,6 +200,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		this.dynamism = new NibbleArray();
 		Arrays.fill(this.dynCount, 0);
 		this.dynCount[0] = 4096;
+		this.dirty = true;
 	}
 
 	public void setDynamism(int x, int y, int z, int distance) {
@@ -308,6 +314,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		setDataFromNBT(in.getBlockIds(), new NibbleArray(in.getData()), in.getExtension() == null ? null : new NibbleArray(in.getExtension()));
 		this.dynamism = new NibbleArray(in.getDynamism().clone());
 		recalculateDynCount();
+		this.dirty = true;
 	}
 
 	private void setDataFromNBT(byte[] blockIds, NibbleArray data, @Nullable NibbleArray extension) {
