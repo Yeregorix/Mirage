@@ -25,6 +25,7 @@ package net.smoofyuniverse.mirage.mixin.world;
 import com.flowpowered.math.vector.Vector2i;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.smoofyuniverse.mirage.api.volume.ChunkStorage;
@@ -34,6 +35,7 @@ import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.common.bridge.world.chunk.ChunkProviderBridge;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -79,7 +81,10 @@ public abstract class WorldMixin implements InternalWorld {
 
 	@Override
 	public boolean isChunkLoaded(int x, int z) {
-		return getChunk(x, z) != null;
+		final Chunk chunk = ((ChunkProviderBridge) this.chunkProvider)
+				.bridge$getLoadedChunkWithoutMarkingActive(x, z);
+
+		return chunk != null && !chunk.unloadQueued;
 	}
 
 	@Override

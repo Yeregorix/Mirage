@@ -546,7 +546,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public boolean isChunkLoaded(int x, int z) {
-		return getChunk(x, z) != null;
+		return this.world.isChunkLoaded(x, z);
 	}
 
 	@Nullable
