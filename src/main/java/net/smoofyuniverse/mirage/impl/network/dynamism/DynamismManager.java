@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2020 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ import org.spongepowered.api.util.Tuple;
 import java.util.Optional;
 
 public final class DynamismManager {
-	private Long2ObjectMap<Tuple<DynamicChunk, ChunkChangeListener>> chunks = new Long2ObjectOpenHashMap<>();
+	private final Long2ObjectMap<Tuple<DynamicChunk, ChunkChangeListener>> chunks = new Long2ObjectOpenHashMap<>();
 	private Vector3i center;
 
 	private void setCenter(DynamicChunk dynChunk, ChunkChangeListener listener) {

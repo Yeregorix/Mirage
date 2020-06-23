@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2020 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,14 +49,14 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 	private static final IBlockStatePalette REGISTRY_BASED_PALETTE = BlockStateContainer.REGISTRY_BASED_PALETTE;
 	private static final IBlockState AIR_BLOCK_STATE = BlockStateContainer.AIR_BLOCK_STATE;
 
-	private BlockStateContainer container;
+	private final BlockStateContainer container;
 
 	private IBlockStatePalette palette;
 	private NibbleArray dynamism;
 	private BitArray storage;
 	private int bits, minY = -1;
 
-	private int[] dynCount = new int[16];
+	private final int[] dynCount = new int[16];
 	private int blockCount;
 
 	boolean dirty = false;

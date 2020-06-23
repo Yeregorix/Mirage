@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2020 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public class NetworkRegionFile {
-	private RegionFile delegate;
+	private final RegionFile delegate;
 	private boolean closed;
-	private Path file;
+	private final Path file;
 
 	public NetworkRegionFile(Path file) {
 		this.delegate = new RegionFile(file.toFile());

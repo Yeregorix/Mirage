@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2020 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,8 @@ import static net.smoofyuniverse.mirage.util.MathUtil.squared;
 public final class DynamicChunk {
 	public final int x, z;
 
-	private ShortSet nextPositions = new ShortOpenHashSet(), currentPositions = new ShortOpenHashSet();
+	private final ShortSet nextPositions = new ShortOpenHashSet();
+	private final ShortSet currentPositions = new ShortOpenHashSet();
 	private boolean modified;
 
 	private Vector3i center;
