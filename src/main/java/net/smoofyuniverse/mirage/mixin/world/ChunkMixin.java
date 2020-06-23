@@ -80,6 +80,9 @@ public abstract class ChunkMixin implements InternalChunk {
 	@Shadow
 	public abstract void generateSkylightMap();
 
+	@Shadow
+	public boolean unloadQueued;
+
 	@Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
 		if (((Object) this) instanceof SpongeEmptyChunk)
@@ -150,6 +153,11 @@ public abstract class ChunkMixin implements InternalChunk {
 	@Override
 	public InternalWorld getWorld() {
 		return (InternalWorld) this.world;
+	}
+
+	@Override
+	public void markActive() {
+		this.unloadQueued = false;
 	}
 
 	@Override

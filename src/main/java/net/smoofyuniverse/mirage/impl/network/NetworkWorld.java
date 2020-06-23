@@ -102,7 +102,7 @@ public class NetworkWorld implements WorldView {
 	private Signature signature;
 	private boolean enabled, dynamismEnabled;
 
-	private Random random = new Random();
+	private final Random random = new Random();
 
 	public NetworkWorld(InternalWorld world) {
 		this.world = world;
@@ -545,14 +545,27 @@ public class NetworkWorld implements WorldView {
 		MirageTimings.REOBFUSCATION.stopTiming();
 	}
 
-	public boolean isChunkLoaded(int x, int z) {
-		return getChunk(x, z) != null;
+	@Nullable
+	public NetworkChunk getChunk(int x, int z) {
+		NetworkChunk chunk = getChunkPassively(x, z);
+		if (chunk != null)
+			chunk.getStorage().markActive();
+		return chunk;
 	}
 
 	@Nullable
-	public NetworkChunk getChunk(int x, int z) {
-		InternalChunk chunk = this.world.getChunk(x, z);
+	public NetworkChunk getChunkPassively(int x, int z) {
+		InternalChunk chunk = this.world.getChunkPassively(x, z);
 		return chunk != null && chunk.isViewAvailable() ? chunk.getView() : null;
+	}
+
+	@Override
+	public boolean isChunkLoaded(int x, int y, int z) {
+		return isChunkLoaded(x, z);
+	}
+
+	public boolean isChunkLoaded(int x, int z) {
+		return getChunkPassively(x, z) != null;
 	}
 
 	@Override

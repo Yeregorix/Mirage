@@ -34,6 +34,7 @@ import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.common.bridge.world.chunk.ChunkProviderBridge;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -71,20 +72,34 @@ public abstract class WorldMixin implements InternalWorld {
 		return chunk == null ? 0 : chunk.getHighestY(x, z);
 	}
 
-	@Nullable
 	@Override
-	public InternalChunk getChunk(int x, int z) {
-		return (InternalChunk) this.chunkProvider.getLoadedChunk(x, z);
-	}
-
-	@Override
-	public boolean isChunkLoaded(int x, int z) {
-		return getChunk(x, z) != null;
+	public boolean isChunkLoaded(int x, int y, int z) {
+		return isChunkLoaded(x, z);
 	}
 
 	@Override
 	public Optional<ChunkStorage> getChunkStorage(int x, int y, int z) {
 		return Optional.ofNullable(getChunk(x, z));
+	}
+
+	@Nullable
+	@Override
+	public InternalChunk getChunk(int x, int z) {
+		InternalChunk chunk = getChunkPassively(x, z);
+		if (chunk != null)
+			chunk.markActive();
+		return chunk;
+	}
+
+	@Nullable
+	@Override
+	public InternalChunk getChunkPassively(int x, int z) {
+		return (InternalChunk) ((ChunkProviderBridge) this.chunkProvider).bridge$getLoadedChunkWithoutMarkingActive(x, z);
+	}
+
+	@Override
+	public boolean isChunkLoaded(int x, int z) {
+		return getChunkPassively(x, z) != null;
 	}
 
 

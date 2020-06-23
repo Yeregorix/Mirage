@@ -83,9 +83,7 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @param z The Z position
 	 * @return Whether the ChunkView at the given <strong>chunk</strong> position is loaded
 	 */
-	default boolean isChunkLoaded(int x, int y, int z) {
-		return getChunkView(x, y, z).isPresent();
-	}
+	boolean isChunkLoaded(int x, int y, int z);
 
 	/**
 	 * @param x The X position

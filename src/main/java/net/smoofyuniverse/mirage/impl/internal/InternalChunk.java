@@ -33,6 +33,8 @@ public interface InternalChunk extends ChunkStorage {
 	@Override
 	InternalWorld getWorld();
 
+	void markActive();
+
 	long getValidCacheDate();
 
 	void setValidCacheDate(long value);

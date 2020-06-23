@@ -36,6 +36,9 @@ public interface InternalWorld extends WorldStorage {
 	@Nullable
 	InternalChunk getChunk(int x, int z);
 
+	@Nullable
+	InternalChunk getChunkPassively(int x, int z);
+
 	boolean isChunkLoaded(int x, int z);
 
 	@Override
