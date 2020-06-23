@@ -235,13 +235,12 @@ public class NetworkChunk implements ChunkView {
 			Timing timing = mod.modifier.getTiming();
 			timing.startTiming();
 
-			if (!mod.modifier.isReady(this, mod.config)) {
-				ready = false;
-				timing.stopTiming();
-				break;
-			}
+			ready = mod.modifier.isReady(this, mod.config);
 
 			timing.stopTiming();
+
+			if (!ready)
+				break;
 		}
 
 		if (this.state == State.PREOBFUSCATED) {
