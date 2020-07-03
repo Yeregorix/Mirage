@@ -30,6 +30,8 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public final class BlockSet {
 	public static final TypeToken<BlockSet> TOKEN = TypeToken.of(BlockSet.class);
@@ -82,9 +84,29 @@ public final class BlockSet {
 		GameRegistry reg = Sponge.getRegistry();
 
 		for (String id : col) {
-			boolean value = id.charAt(0) != '-';
+			boolean value = !id.startsWith("-");
 			if (!value)
 				id = id.substring(1);
+
+			if (id.startsWith("regex!")) {
+				id = id.substring(6);
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(id, Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					if (skipErrors) {
+						Mirage.LOGGER.warn("String '" + id + "' is not a valid pattern", e);
+						continue;
+					}
+					throw new IllegalArgumentException("String '" + id + "' is not a valid pattern", e);
+				}
+
+				for (BlockState state : reg.getAllOf(BlockState.class)) {
+					if (pattern.matcher(state.getId()).matches())
+						add(state);
+				}
+				continue;
+			}
 
 			BlockType type = reg.getType(BlockType.class, id).orElse(null);
 			if (type != null) {
@@ -104,10 +126,11 @@ public final class BlockSet {
 				continue;
 			}
 
-			if (skipErrors)
-				Mirage.LOGGER.warn("Id '" + id + "' is not a valid BlockType or BlockState");
-			else
-				throw new IllegalArgumentException("Id '" + id + "' is not a valid BlockType or BlockState");
+			if (skipErrors) {
+				Mirage.LOGGER.warn("String '" + id + "' is not a valid BlockType or BlockState");
+				continue;
+			}
+			throw new IllegalArgumentException("String '" + id + "' is not a valid BlockType or BlockState");
 		}
 	}
 
