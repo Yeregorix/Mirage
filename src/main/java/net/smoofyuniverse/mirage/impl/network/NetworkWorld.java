@@ -44,6 +44,7 @@ import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
 import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.IOUtil;
+import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -111,10 +112,28 @@ public class NetworkWorld implements WorldView {
 		this.blockSize = world.getBlockSize();
 	}
 
-	public void loadConfig() throws IOException, ObjectMappingException {
+	public void loadConfig() {
 		if (this.config != null)
 			throw new IllegalStateException("Config already loaded");
 
+		Mirage.LOGGER.info("Loading configuration for world " + getName() + " ..");
+		try {
+			_loadConfig();
+		} catch (Exception e) {
+			Mirage.LOGGER.warn("Failed to load configuration for world " + getName(), e);
+		}
+
+		if (this.config == null) {
+			WorldConfig cfg = new WorldConfig(false);
+			cfg.preobf.blocks = new BlockSet();
+			this.config = cfg.toImmutable();
+		}
+
+		this.enabled = this.config.enabled;
+		this.dynamismEnabled = this.config.enabled && this.config.dynamism;
+	}
+
+	private void _loadConfig() throws IOException, ObjectMappingException {
 		Path file = Mirage.get().getWorldConfigsDirectory().resolve(getName() + ".conf");
 		ConfigurationLoader<CommentedConfigurationNode> loader = Mirage.get().createConfigLoader(file);
 
@@ -268,8 +287,6 @@ public class NetworkWorld implements WorldView {
 		loader.save(root);
 
 		this.config = cfg.toImmutable();
-		this.enabled = cfg.enabled;
-		this.dynamismEnabled = cfg.enabled && cfg.dynamism;
 	}
 
 	@Override
