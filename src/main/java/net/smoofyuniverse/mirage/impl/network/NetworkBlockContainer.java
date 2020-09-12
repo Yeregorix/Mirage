@@ -65,6 +65,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		this.container = container;
 		this.dynamism = new NibbleArray();
 		this.dynCount[0] = 4096;
+		setBits(4);
 	}
 
 	public InternalBlockContainer getInternalBlockContainer() {
@@ -94,7 +95,7 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		this.dirty = true;
 	}
 
-	public void setBits(int bits) {
+	private void setBits(int bits) {
 		if (this.bits != bits) {
 			this.bits = bits;
 
@@ -111,6 +112,21 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			this.palette.idFor(AIR_BLOCK_STATE);
 			this.storage = new BitArray(this.bits, 4096);
 		}
+	}
+
+	@Override
+	public int onResize(int bits, IBlockState state) {
+		BitArray oldStorage = this.storage;
+		IBlockStatePalette oldPalette = this.palette;
+		setBits(bits);
+
+		for (int i = 0; i < 4096; i++) {
+			IBlockState block = oldPalette.getBlockState(oldStorage.getAt(i));
+			if (block != null)
+				_set(i, block);
+		}
+
+		return this.palette.idFor(state);
 	}
 
 	public void deobfuscate(ChunkChangeListener listener) {
@@ -243,21 +259,6 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 			_set(index, state);
 		}
-	}
-
-	@Override
-	public int onResize(int bits, IBlockState state) {
-		BitArray oldStorage = this.storage;
-		IBlockStatePalette oldPalette = this.palette;
-		setBits(bits);
-
-		for (int i = 0; i < 4096; i++) {
-			IBlockState block = oldPalette.getBlockState(oldStorage.getAt(i));
-			if (block != null)
-				_set(i, block);
-		}
-
-		return this.palette.idFor(state);
 	}
 
 	public void write(PacketBuffer buf) {

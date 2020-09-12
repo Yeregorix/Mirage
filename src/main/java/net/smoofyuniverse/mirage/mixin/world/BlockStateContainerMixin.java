@@ -30,10 +30,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockStateContainer.class)
 public class BlockStateContainerMixin implements InternalBlockContainer {
 	private final NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
+	private boolean resizing = false;
 
 	@Override
 	public NetworkBlockContainer getNetworkBlockContainer() {
@@ -42,11 +44,17 @@ public class BlockStateContainerMixin implements InternalBlockContainer {
 
 	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
 	public void onSet(int index, IBlockState state, CallbackInfo ci) {
-		this.networkContainer.set(index, state);
+		if (!this.resizing)
+			this.networkContainer.set(index, state);
 	}
 
-	@Inject(method = "setBits(I)V", at = @At("HEAD"))
-	public void onSetBits(int bits, CallbackInfo ci) {
-		this.networkContainer.setBits(bits);
+	@Inject(method = "onResize", at = @At("HEAD"))
+	public void onResizeStart(int bits, IBlockState state, CallbackInfoReturnable<Integer> cir) {
+		this.resizing = true;
+	}
+
+	@Inject(method = "onResize", at = @At("RETURN"))
+	public void onResizeEnd(int bits, IBlockState state, CallbackInfoReturnable<Integer> cir) {
+		this.resizing = false;
 	}
 }
