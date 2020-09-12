@@ -112,11 +112,12 @@ public class NetworkChunk implements ChunkView {
 			return;
 
 		int index = container.getY() >> 4;
-		if (this.containers[index] == container)
+		NetworkBlockContainer old = this.containers[index];
+		if (old == container)
 			return;
 
-		if (this.state != State.DEOBFUSCATED && !container.isEmpty())
-			Mirage.LOGGER.warn("A non-empty container has been captured while the chunk is not deobfuscated.");
+		if (old != null && !old.isEmpty())
+			Mirage.LOGGER.warn("A new container has been captured and will replace a non-empty one (" + this.x + ", " + index + ", " + this.z + ").");
 
 		this.containers[index] = container;
 	}
