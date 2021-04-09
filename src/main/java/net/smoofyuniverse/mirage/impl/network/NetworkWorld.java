@@ -192,14 +192,14 @@ public class NetworkWorld implements WorldView {
 
 		if (modsNode.isVirtual()) {
 			if (dimType == DimensionTypes.OVERWORLD) {
-				modsNode.getAppendedNode().getNode("Type").setValue("bedrock");
+				modsNode.appendListNode().getNode("Type").setValue("bedrock");
 
-				ConfigurationNode water_dungeons = modsNode.getAppendedNode();
+				ConfigurationNode water_dungeons = modsNode.appendListNode();
 				water_dungeons.getNode("Type").setValue("obvious");
 				water_dungeons.getNode("Preset").setValue("water_dungeons");
 			}
 
-			modsNode.getAppendedNode().getNode("Type").setValue("obvious");
+			modsNode.appendListNode().getNode("Type").setValue("obvious");
 		}
 
 		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();

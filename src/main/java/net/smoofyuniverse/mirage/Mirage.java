@@ -48,7 +48,7 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Game;
@@ -111,7 +111,7 @@ public class Mirage {
 	@Listener
 	public void onGamePreInit(GamePreInitializationEvent e) {
 		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
-		TypeSerializers.getDefaultSerializers().registerType(BlockSet.TOKEN, new BlockSetSerializer(SerializationPredicate.limit(0.6f)));
+		TypeSerializerCollection.defaults().register(BlockSet.TOKEN, new BlockSetSerializer(SerializationPredicate.limit(0.6f)));
 
 		this.cacheDir = this.game.getGameDirectory().resolve("mirage-cache");
 		this.worldConfigsDir = this.configDir.resolve("worlds");
@@ -127,7 +127,7 @@ public class Mirage {
 		} catch (IOException ignored) {
 		}
 
-		this.configOptions = ConfigurationOptions.defaults().setObjectMapperFactory(this.factory);
+		this.configOptions = ConfigurationOptions.defaults().withObjectMapperFactory(this.factory);
 	}
 
 	@Listener
