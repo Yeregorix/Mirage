@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Math.max;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
-@Plugin(id = "mirage", name = "Mirage", version = "1.3.17", authors = "Yeregorix", description = "The best solution against xray users")
+@Plugin(id = "mirage", name = "Mirage", version = "1.4.0", authors = "Yeregorix", description = "The best solution against xray users")
 public class Mirage {
 	public static final Logger LOGGER = LoggerFactory.getLogger("Mirage");
 	private static Mirage instance;
