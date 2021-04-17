@@ -36,11 +36,9 @@ import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import net.smoofyuniverse.mirage.util.collection.BlockSet.SerializationPredicate;
 import net.smoofyuniverse.ore.update.UpdateChecker;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.GuiceObjectMapperFactory;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,10 +71,7 @@ public class Mirage {
 	private Path configDir;
 	@Inject
 	private PluginContainer container;
-	@Inject
-	private GuiceObjectMapperFactory factory;
 
-	private ConfigurationOptions configOptions;
 	private Task updateTask;
 	private Path cacheDir, worldConfigsDir, resourcesDir;
 
@@ -104,8 +99,6 @@ public class Mirage {
 			Files.createDirectories(this.resourcesDir);
 		} catch (IOException ignored) {
 		}
-
-		this.configOptions = ConfigurationOptions.defaults().withObjectMapperFactory(this.factory);
 	}
 
 	@Listener
@@ -159,7 +152,7 @@ public class Mirage {
 	}
 
 	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {
-		return HoconConfigurationLoader.builder().setPath(file).setDefaultOptions(this.configOptions).build();
+		return HoconConfigurationLoader.builder().setPath(file).build();
 	}
 
 	public Path getResourcesDirectory() {
