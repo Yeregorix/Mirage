@@ -22,7 +22,7 @@
 
 package net.smoofyuniverse.mirage.api.cache;
 
-import net.smoofyuniverse.mirage.util.collection.WeightedList;
+import net.smoofyuniverse.bingo.WeightedList;
 import org.spongepowered.api.CatalogType;
 
 import java.io.DataInputStream;
@@ -210,7 +210,7 @@ public class Signature {
 		}
 
 		public Builder append(WeightedList<? extends CatalogType> list) {
-			list.forEach((b, w) -> append(b).append(w));
+			list.forEach(e -> append(e.value).append(e.weight));
 			return this;
 		}
 

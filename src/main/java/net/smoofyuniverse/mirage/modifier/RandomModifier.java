@@ -25,6 +25,7 @@ package net.smoofyuniverse.mirage.modifier;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
+import net.smoofyuniverse.bingo.WeightedList;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
@@ -32,7 +33,6 @@ import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
-import net.smoofyuniverse.mirage.util.collection.WeightedList;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -112,7 +112,7 @@ public class RandomModifier extends ChunkModifier {
 						continue;
 
 					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, cfg.replacements.get(r));
+						view.setBlock(x, y, z, cfg.replacements.get(r).value);
 				}
 			}
 		}

@@ -74,6 +74,7 @@ repositories {
 dependencies {
     compile 'org.spongepowered:spongecommon:1.12.2-7.3.0:dev'
     compile 'net.smoofyuniverse:oreupdater:1.0.1'
+    compile 'net.smoofyuniverse:bingo:1.0.1'
 }
 
 jar {
@@ -99,9 +100,11 @@ shadowJar {
     dependencies {
         include dependency('net.smoofyuniverse:oreapi')
         include dependency('net.smoofyuniverse:oreupdater')
+        include dependency('net.smoofyuniverse:bingo')
     }
 
     relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
+    relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
 
     exclude "dummyThing"
     afterEvaluate {
