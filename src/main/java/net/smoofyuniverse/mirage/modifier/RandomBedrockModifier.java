@@ -40,10 +40,10 @@ import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Random;
 
-public class BedrockModifier extends ChunkModifier {
+public class RandomBedrockModifier extends ChunkModifier {
 
-	public BedrockModifier() {
-		super(Mirage.get(), "Bedrock");
+	public RandomBedrockModifier() {
+		super(Mirage.get(), "random_bedrock");
 	}
 
 	@Override

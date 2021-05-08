@@ -33,6 +33,7 @@ import net.smoofyuniverse.mirage.MirageTimings;
 import net.smoofyuniverse.mirage.api.cache.Signature;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
@@ -180,14 +181,14 @@ public class NetworkWorld implements WorldView {
 
 		if (modsNode.isVirtual()) {
 			if (dimType == DimensionTypes.OVERWORLD) {
-				modsNode.appendListNode().getNode("Type").setValue("bedrock");
+				modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.RANDOM_BEDROCK.getName());
 
 				ConfigurationNode water_dungeons = modsNode.appendListNode();
-				water_dungeons.getNode("Type").setValue("obvious");
+				water_dungeons.getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
 				water_dungeons.getNode("Preset").setValue("water_dungeons");
 			}
 
-			modsNode.appendListNode().getNode("Type").setValue("obvious");
+			modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
 		}
 
 		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();

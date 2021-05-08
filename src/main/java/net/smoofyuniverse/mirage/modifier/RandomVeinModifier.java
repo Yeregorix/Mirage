@@ -56,13 +56,13 @@ import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 import static net.smoofyuniverse.mirage.util.MathUtil.squared;
 
 /**
- * This modifier does not hide anything but generates fake ores
+ * This modifier does not hide anything but generates fake ore veins
  */
-public class FakeGenModifier extends ChunkModifier {
+public class RandomVeinModifier extends ChunkModifier {
 	private static final float PI = (float) Math.PI;
 
-	public FakeGenModifier() {
-		super(Mirage.get(), "FakeGen");
+	public RandomVeinModifier() {
+		super(Mirage.get(), "random_vein");
 	}
 
 	@Override

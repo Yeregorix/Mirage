@@ -53,7 +53,7 @@ import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 public class HideAllModifier extends ChunkModifier {
 
 	public HideAllModifier() {
-		super(Mirage.get(), "HideAll");
+		super(Mirage.get(), "hide_all");
 	}
 
 	@Override

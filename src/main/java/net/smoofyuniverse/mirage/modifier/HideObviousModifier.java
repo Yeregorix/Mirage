@@ -25,7 +25,6 @@ package net.smoofyuniverse.mirage.modifier;
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
-import net.smoofyuniverse.bingo.WeightedList;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
@@ -40,18 +39,21 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Random;
+import java.util.Set;
 
-import static net.smoofyuniverse.mirage.resource.Categories.*;
+import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
+import static net.smoofyuniverse.mirage.resource.Categories.RARE;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
- * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
+ * This modifier only hides ores which are not exposed to the view of normal users.
  */
-public class RandomModifier extends ChunkModifier {
+public class HideObviousModifier extends ChunkModifier {
 
-	public RandomModifier() {
-		super(Mirage.get(), "Random");
+	public HideObviousModifier() {
+		super(Mirage.get(), "hide_obvious");
 	}
 
 	@Override
@@ -60,27 +62,32 @@ public class RandomModifier extends ChunkModifier {
 		if (cfg == null)
 			cfg = new Config();
 
-		if (cfg.blocks == null)
-			cfg.blocks = Resources.of(world).getBlocks(GROUND, COMMON, RARE);
+		if (preset.equals("water_dungeons")) {
+			cfg.blocks = new BlockSet();
+			cfg.blocks.add(BlockTypes.SEA_LANTERN);
+			cfg.blocks.add(BlockTypes.PRISMARINE);
+			cfg.blocks.add(BlockTypes.GOLD_BLOCK);
 
-		if (cfg.replacements == null) {
-			cfg.replacements = new HashMap<>();
+			cfg.replacement = BlockTypes.WATER.getDefaultState();
 
-			BlockSet set = Resources.of(world).getBlocks(COMMON);
+			cfg.dynamism = 8;
+			cfg.minY = 30;
+			cfg.maxY = 64;
+		} else {
+			if (cfg.blocks == null)
+				cfg.blocks = Resources.of(world).getBlocks(COMMON, RARE);
+			if (cfg.replacement == null)
+				cfg.replacement = Resources.of(world).getGround();
 
-			for (BlockState state : set.getAll())
-				cfg.replacements.put(state, 1d);
+			cfg.dynamism = clamp(cfg.dynamism, 0, 10);
+			cfg.minY = clamp(cfg.minY, 0, 255);
+			cfg.maxY = clamp(cfg.maxY, 0, 255);
 
-			cfg.replacements.put(Resources.of(world).getGround(), Math.max(cfg.replacements.size(), 1d));
-		}
-
-		cfg.minY = clamp(cfg.minY, 0, 255);
-		cfg.maxY = clamp(cfg.maxY, 0, 255);
-
-		if (cfg.minY > cfg.maxY) {
-			int t = cfg.minY;
-			cfg.minY = cfg.maxY;
-			cfg.maxY = t;
+			if (cfg.minY > cfg.maxY) {
+				int t = cfg.minY;
+				cfg.minY = cfg.maxY;
+				cfg.maxY = t;
+			}
 		}
 
 		node.setValue(Config.TOKEN, cfg);
@@ -90,23 +97,32 @@ public class RandomModifier extends ChunkModifier {
 	@Override
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
-		builder.append(cfg.blocks).append(cfg.replacements).append(cfg.minY).append(cfg.maxY);
+		builder.append(cfg.blocks).append(cfg.replacement).append(cfg.dynamism).append(cfg.minY).append(cfg.maxY);
 	}
 
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
+		boolean useDynamism = cfg.dynamism != 0 && view.isDynamismEnabled();
 		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
 
 		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
 			for (int z = min.getZ(); z <= maxZ; z++) {
 				for (int x = min.getX(); x <= maxX; x++) {
 					BlockState b = view.getBlock(x, y, z);
-					if (b.getType() == BlockTypes.AIR)
+					if (b.getType() == BlockTypes.AIR || b == cfg.replacement)
 						continue;
 
-					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
-						view.setBlock(x, y, z, cfg.replacements.get(r).value);
+					if (cfg.blocks.contains(b)) {
+						if (view.isExposed(x, y, z)) {
+							if (useDynamism) {
+								view.setDynamism(x, y, z, cfg.dynamism);
+								view.setBlock(x, y, z, cfg.replacement);
+							}
+						} else {
+							view.setBlock(x, y, z, cfg.replacement);
+						}
+					}
 				}
 			}
 		}
@@ -118,25 +134,29 @@ public class RandomModifier extends ChunkModifier {
 
 		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
 		public BlockSet blocks;
-		@Setting(value = "Replacements", comment = "Blocks and their weight used to randomly replace hidden blocks")
-		public Map<BlockState, Double> replacements;
+		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
+		public BlockState replacement;
+		@Setting(value = "Dynamism", comment = "The dynamic obfuscation distance, between 0 and 10")
+		public int dynamism = 4;
 		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
 		public int minY = 0;
 		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
 		public int maxY = 255;
 
 		public Immutable toImmutable() {
-			return new Immutable(this.blocks.getAll(), WeightedList.of(this.replacements), this.minY, this.maxY);
+			return new Immutable(this.blocks.getAll(), this.replacement, this.dynamism, this.minY, this.maxY);
 		}
 
 		public static final class Immutable {
 			public final Set<BlockState> blocks;
-			public final WeightedList<BlockState> replacements;
+			public final BlockState replacement;
+			public final int dynamism;
 			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int minY, int maxY) {
+			public Immutable(Collection<BlockState> blocks, BlockState replacement, int dynamism, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
-				this.replacements = replacements;
+				this.replacement = replacement;
+				this.dynamism = dynamism;
 				this.minY = minY;
 				this.maxY = maxY;
 			}

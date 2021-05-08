@@ -55,12 +55,11 @@ public class ChunkModifierRegistryModule implements AdditionalCatalogRegistryMod
 
 	@Override
 	public void registerDefaults() {
-		register(ChunkModifiers.EMPTY);
-		register(ChunkModifiers.HIDEALL);
-		register(ChunkModifiers.OBVIOUS);
-		register(ChunkModifiers.RANDOM);
-		register(ChunkModifiers.BEDROCK);
-		register(ChunkModifiers.FAKEGEN);
+		register(ChunkModifiers.HIDE_ALL);
+		register(ChunkModifiers.HIDE_OBVIOUS);
+		register(ChunkModifiers.RANDOM_BEDROCK);
+		register(ChunkModifiers.RANDOM_BLOCK);
+		register(ChunkModifiers.RANDOM_VEIN);
 	}
 
 	private void register(ChunkModifier modifier) {

@@ -28,10 +28,9 @@ import net.smoofyuniverse.mirage.modifier.*;
  * An enumeration of all modifiers included by default
  */
 public class ChunkModifiers {
-	public static final ChunkModifier EMPTY = new EmptyModifier();
-	public static final ChunkModifier HIDEALL = new HideAllModifier();
-	public static final ChunkModifier OBVIOUS = new ObviousModifier();
-	public static final ChunkModifier RANDOM = new RandomModifier();
-	public static final ChunkModifier BEDROCK = new BedrockModifier();
-	public static final ChunkModifier FAKEGEN = new FakeGenModifier();
+	public static final ChunkModifier HIDE_ALL = new HideAllModifier();
+	public static final ChunkModifier HIDE_OBVIOUS = new HideObviousModifier();
+	public static final ChunkModifier RANDOM_BEDROCK = new RandomBedrockModifier();
+	public static final ChunkModifier RANDOM_BLOCK = new RandomBlockModifier();
+	public static final ChunkModifier RANDOM_VEIN = new RandomVeinModifier();
 }
