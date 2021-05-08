@@ -31,7 +31,6 @@ import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.MirageTimings;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import net.smoofyuniverse.mirage.config.world.PreobfuscationConfig;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
@@ -223,6 +222,19 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
+	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail) {
+		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
+
+		if (this.state != State.OBFUSCATED) {
+			if (silentFail)
+				return;
+			throw new IllegalStateException("Chunk must be obfuscated");
+		}
+
+		reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
+	}
+
+	@Override
 	public void obfuscate() {
 		if (this.state == State.OBFUSCATED)
 			return;
@@ -231,30 +243,17 @@ public class NetworkChunk implements ChunkView {
 
 		MirageTimings.OBFUSCATION.startTiming();
 
-		boolean ready = true;
+		boolean requireNeighbors = false;
 		for (ConfiguredModifier mod : this.world.getModifiers()) {
-			Timing timing = mod.modifier.getTiming();
-			timing.startTiming();
-
-			ready = mod.modifier.isReady(this, mod.config);
-
-			timing.stopTiming();
-
-			if (!ready)
+			if (mod.modifier.requireNeighborsLoaded(mod.config)) {
+				requireNeighbors = true;
 				break;
-		}
-
-		if (this.state == State.PREOBFUSCATED) {
-			if (!ready) {
-				MirageTimings.OBFUSCATION.stopTiming();
-				return;
 			}
-
-			if (this.world.getConfig().preobf.enabled)
-				deobfuscate();
 		}
 
-		if (ready) {
+		if (requireNeighbors && !areNeighborsLoaded()) {
+			this.state = State.OBFUSCATION_REQUESTED;
+		} else {
 			this.random.setSeed(this.seed);
 
 			for (ConfiguredModifier mod : this.world.getModifiers()) {
@@ -271,8 +270,6 @@ public class NetworkChunk implements ChunkView {
 			}
 
 			this.state = State.OBFUSCATED;
-		} else {
-			preobfuscate();
 		}
 
 		MirageTimings.OBFUSCATION.stopTiming();
@@ -325,38 +322,10 @@ public class NetworkChunk implements ChunkView {
 	@Override
 	public void reobfuscate() {
 		if (this.state != State.OBFUSCATED)
-			throw new IllegalStateException("Chunk must be fully obfuscated");
+			throw new IllegalStateException("Chunk must be obfuscated");
 
 		deobfuscate();
 		obfuscate();
-	}
-
-	protected void preobfuscate() {
-		if (this.state == State.OBFUSCATED)
-			throw new IllegalStateException("Chunk is already obfuscated");
-
-		if (this.state == State.PREOBFUSCATED)
-			return;
-
-		PreobfuscationConfig.Immutable cfg = this.world.getConfig().preobf;
-
-		if (cfg.enabled) {
-			MirageTimings.PREOBFUSCATION.startTiming();
-
-			for (NetworkBlockContainer c : this.containers) {
-				if (c != null) {
-					c.clearDynamism();
-					c.preobfuscate(this.listener, cfg.blocks, (IBlockState) cfg.replacement);
-				}
-			}
-
-			if (this.listener != null)
-				this.listener.clearDynamism();
-
-			MirageTimings.PREOBFUSCATION.stopTiming();
-		}
-
-		this.state = State.PREOBFUSCATED;
 	}
 
 	public void collectDynamicPositions(DynamicChunk chunk) {
@@ -568,18 +537,7 @@ public class NetworkChunk implements ChunkView {
 		return this.world.isChunkLoaded(this.x + 1, this.z) && this.world.isChunkLoaded(this.x, this.z + 1) && this.world.isChunkLoaded(this.x - 1, this.z) && this.world.isChunkLoaded(this.x, this.z - 1);
 	}
 
-	@Override
-	public void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail) {
-		checkBlockArea(minX, minY, minZ, maxX, maxY, maxZ);
 
-		if (this.state != State.OBFUSCATED) {
-			if (silentFail)
-				return;
-			throw new IllegalStateException("Chunk must be fully obfuscated");
-		}
-
-		reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
-	}
 
 	protected void reobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);

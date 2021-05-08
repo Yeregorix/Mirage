@@ -28,7 +28,6 @@ import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.resource.Resources;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -76,11 +75,6 @@ public class BedrockModifier extends ChunkModifier {
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
 		builder.append(cfg.ground).append(cfg.height);
-	}
-
-	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return view.areNeighborsLoaded();
 	}
 
 	@Override

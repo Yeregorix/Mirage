@@ -27,7 +27,6 @@ import co.aikar.timings.Timings;
 
 public class MirageTimings {
 	public static final Timing OBFUSCATION = of("Obfuscation"),
-			PREOBFUSCATION = of("Preobfuscation"),
 			DEOBFUSCATION = of("Deobfuscation"),
 			REOBFUSCATION = of("Reobfuscation"),
 			WRITING_CACHE = of("Writing Cache"),

@@ -27,7 +27,6 @@ import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import ninja.leaping.configurate.ConfigurationNode;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -56,8 +55,8 @@ public class EmptyModifier extends ChunkModifier {
 	public void appendSignature(Builder builder, Object config) {}
 
 	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return true;
+	public boolean requireNeighborsLoaded(Object config) {
+		return false;
 	}
 
 	@Override

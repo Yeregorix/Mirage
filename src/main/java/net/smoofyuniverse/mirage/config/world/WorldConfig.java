@@ -40,8 +40,6 @@ public class WorldConfig {
 	public long seed = 0;
 	@Setting(value = "Deobfuscation")
 	public DeobfuscationConfig deobf = new DeobfuscationConfig();
-	@Setting(value = "Preobfuscation", comment = "Temporary obfuscation when modifiers are not ready yet")
-	public PreobfuscationConfig preobf = new PreobfuscationConfig();
 
 	public WorldConfig(boolean enabled) {
 		this.enabled = enabled;
@@ -50,22 +48,20 @@ public class WorldConfig {
 	public WorldConfig() {}
 
 	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.cache, this.dynamism, this.seed, this.deobf.toImmutable(), this.preobf.toImmutable());
+		return new Immutable(this.enabled, this.cache, this.dynamism, this.seed, this.deobf.toImmutable());
 	}
 
 	public static class Immutable {
 		public final boolean enabled, cache, dynamism;
 		public final long seed;
 		public final DeobfuscationConfig.Immutable deobf;
-		public final PreobfuscationConfig.Immutable preobf;
 
-		public Immutable(boolean enabled, boolean cache, boolean dynamism, long seed, DeobfuscationConfig.Immutable deobf, PreobfuscationConfig.Immutable preobf) {
+		public Immutable(boolean enabled, boolean cache, boolean dynamism, long seed, DeobfuscationConfig.Immutable deobf) {
 			this.enabled = enabled;
 			this.cache = cache;
 			this.dynamism = dynamism;
 			this.seed = seed;
 			this.deobf = deobf;
-			this.preobf = preobf;
 		}
 	}
 }

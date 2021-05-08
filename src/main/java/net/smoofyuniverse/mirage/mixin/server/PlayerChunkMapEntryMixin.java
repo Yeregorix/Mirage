@@ -30,6 +30,7 @@ import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import net.smoofyuniverse.mirage.MirageTimings;
+import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunkMap;
 import net.smoofyuniverse.mirage.impl.internal.compat.CompatUtil;
@@ -121,8 +122,12 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 			return false;
 
 		InternalChunk chunk = (InternalChunk) this.chunk;
-		if (chunk.isViewAvailable())
+		if (chunk.isViewAvailable()) {
 			chunk.getView().obfuscate();
+
+			if (chunk.getView().getState() != State.OBFUSCATED)
+				return false;
+		}
 
 		clearChanges();
 		this.sentToPlayers = true;

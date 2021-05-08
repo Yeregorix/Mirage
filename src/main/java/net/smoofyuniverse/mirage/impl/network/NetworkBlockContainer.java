@@ -37,7 +37,6 @@ import net.smoofyuniverse.mirage.impl.network.dynamism.DynamicChunk;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Set;
 
 import static net.smoofyuniverse.mirage.util.MathUtil.lengthSquared;
 import static net.smoofyuniverse.mirage.util.MathUtil.squared;
@@ -179,28 +178,6 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 			this.dynCount[oldD]--;
 			this.dynCount[distance]++;
 			this.dirty = true;
-		}
-	}
-
-	public void preobfuscate(ChunkChangeListener listener, Set<?> ores, IBlockState ground) {
-		boolean notAirGround = ground.getBlock() != Blocks.AIR;
-
-		this.blockCount = 0;
-		for (int i = 0; i < 4096; i++) {
-			IBlockState state = get(i);
-
-			if (ores.contains(state)) {
-				if (notAirGround)
-					this.blockCount++;
-
-				_set(i, ground);
-
-				if (listener != null)
-					listener.addChange(i & 15, this.minY + (i >> 8 & 15), i >> 4 & 15);
-			} else {
-				if (state.getBlock() != Blocks.AIR)
-					this.blockCount++;
-			}
 		}
 	}
 

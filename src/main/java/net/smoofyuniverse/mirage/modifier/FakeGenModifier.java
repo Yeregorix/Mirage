@@ -96,11 +96,6 @@ public class FakeGenModifier extends ChunkModifier {
 	}
 
 	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return view.areNeighborsLoaded();
-	}
-
-	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
 		boolean useDynamism = cfg.dynamism != 0 && view.isDynamismEnabled();

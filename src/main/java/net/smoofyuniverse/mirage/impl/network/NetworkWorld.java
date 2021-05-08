@@ -42,9 +42,7 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
-import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.IOUtil;
-import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -83,8 +81,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
-import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
-import static net.smoofyuniverse.mirage.resource.Categories.RARE;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
@@ -123,11 +119,8 @@ public class NetworkWorld implements WorldView {
 			Mirage.LOGGER.warn("Failed to load configuration for world " + getName(), e);
 		}
 
-		if (this.config == null) {
-			WorldConfig cfg = new WorldConfig(false);
-			cfg.preobf.blocks = new BlockSet();
-			this.config = cfg.toImmutable();
-		}
+		if (this.config == null)
+			this.config = new WorldConfig(false).toImmutable();
 
 		this.enabled = this.config.enabled;
 		this.dynamismEnabled = this.config.enabled && this.config.dynamism;
@@ -155,11 +148,6 @@ public class NetworkWorld implements WorldView {
 		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN);
 		if (cfg == null)
 			cfg = new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END);
-
-		if (cfg.preobf.blocks == null)
-			cfg.preobf.blocks = Resources.of(dimType).getBlocks(COMMON, RARE);
-		if (cfg.preobf.replacement == null)
-			cfg.preobf.replacement = Resources.of(dimType).getGround();
 
 		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
 		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);
@@ -518,7 +506,7 @@ public class NetworkWorld implements WorldView {
 			if (chunk.getState() != State.OBFUSCATED) {
 				if (silentFail)
 					return;
-				throw new IllegalStateException("Chunk must be fully obfuscated");
+				throw new IllegalStateException("Chunk must be obfuscated");
 			}
 
 			chunk.reobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
@@ -536,7 +524,7 @@ public class NetworkWorld implements WorldView {
 				if (chunk.getState() != State.OBFUSCATED) {
 					if (silentFail)
 						return;
-					throw new IllegalStateException("Chunks must be fully obfuscated");
+					throw new IllegalStateException("Chunks must be obfuscated");
 				}
 			}
 		}

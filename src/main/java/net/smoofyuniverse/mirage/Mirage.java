@@ -72,7 +72,7 @@ public class Mirage {
 	@Inject
 	private PluginContainer container;
 
-	private Task updateTask;
+	private Task obfuscationTask;
 	private Path cacheDir, worldConfigsDir, resourcesDir;
 
 	public Mirage() {
@@ -128,10 +128,10 @@ public class Mirage {
 	@Listener
 	public void onServerStarted(GameStartedServerEvent e) {
 		if (this.game.getServer() instanceof InternalServer) {
-			this.updateTask = Task.builder().execute(() -> {
+			this.obfuscationTask = Task.builder().execute(() -> {
 				for (World w : this.game.getServer().getWorlds()) {
 					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
-						if (chunk.getState() == State.PREOBFUSCATED)
+						if (chunk.getState() == State.OBFUSCATION_REQUESTED)
 							chunk.obfuscate();
 					}
 				}
@@ -145,9 +145,9 @@ public class Mirage {
 
 	@Listener
 	public void onServerStopping(GameStoppingServerEvent e) {
-		if (this.updateTask != null) {
-			this.updateTask.cancel();
-			this.updateTask = null;
+		if (this.obfuscationTask != null) {
+			this.obfuscationTask.cancel();
+			this.obfuscationTask = null;
 		}
 	}
 

@@ -152,10 +152,10 @@ public interface WorldView extends BlockView, Identifiable {
 	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
 	 *
-	 * @param pos The position
-	 * @param player Use player reobf radius
+	 * @param pos        The position
+	 * @param player     Use player reobf radius
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(Vector3i pos, boolean player, boolean silentFail) {
 		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player, silentFail);
@@ -169,7 +169,7 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @param z The Z position
 	 * @param player Use player reobf radius
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
 		DeobfuscationConfig.Immutable cfg = getConfig().deobf;

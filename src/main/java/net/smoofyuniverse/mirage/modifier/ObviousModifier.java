@@ -29,7 +29,6 @@ import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -99,11 +98,6 @@ public class ObviousModifier extends ChunkModifier {
 	public void appendSignature(Builder builder, Object config) {
 		Config.Immutable cfg = (Config.Immutable) config;
 		builder.append(cfg.blocks).append(cfg.replacement).append(cfg.dynamism).append(cfg.minY).append(cfg.maxY);
-	}
-
-	@Override
-	public boolean isReady(ChunkView view, Object config) {
-		return view.areNeighborsLoaded();
 	}
 
 	@Override

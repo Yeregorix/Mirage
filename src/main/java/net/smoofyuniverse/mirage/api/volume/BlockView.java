@@ -215,10 +215,10 @@ public interface BlockView extends MutableBlockVolume {
 	/**
 	 * Reobfuscates all blocks around the given position according to the radius.
 	 *
-	 * @param pos    The position
-	 * @param radius The radius
+	 * @param pos        The position
+	 * @param radius     The radius
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(Vector3i pos, int radius, boolean silentFail) {
 		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius, silentFail);
@@ -232,7 +232,7 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param z      The Z position
 	 * @param radius The radius
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(int x, int y, int z, int radius, boolean silentFail) {
 		checkBlockPosition(x, y, z);
@@ -255,7 +255,7 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param maxY The Y maximum position
 	 * @param maxZ The Z maximum position
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	void reobfuscateArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean silentFail);
 
@@ -265,7 +265,7 @@ public interface BlockView extends MutableBlockVolume {
 	 * @param min The minimum position
 	 * @param max The maximum position
 	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not fully obfuscated and silent fail is disabled
+	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateArea(Vector3i min, Vector3i max, boolean silentFail) {
 		reobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ(), silentFail);

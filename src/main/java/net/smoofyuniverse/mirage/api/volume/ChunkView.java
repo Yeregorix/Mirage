@@ -93,7 +93,7 @@ public interface ChunkView extends BlockView {
 	void deobfuscate();
 
 	/**
-	 * Deofuscates and then reobfuscates all blocks inside this chunk.
+	 * Deofuscates and then obfuscates all blocks inside this chunk.
 	 */
 	void reobfuscate();
 
@@ -103,6 +103,18 @@ public interface ChunkView extends BlockView {
 	void clearDynamism();
 
 	public enum State {
-		DEOBFUSCATED, PREOBFUSCATED, OBFUSCATED
+		/**
+		 * All blocks in the chunk are visible.
+		 */
+		DEOBFUSCATED,
+		/**
+		 * All blocks in the chunk are visible.
+		 * The chunk will be obfuscated as soon as possible.
+		 */
+		OBFUSCATION_REQUESTED,
+		/**
+		 * All modifiers have been applied.
+		 */
+		OBFUSCATED
 	}
 }

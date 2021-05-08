@@ -92,12 +92,12 @@ public abstract class ChunkModifier implements CatalogType {
 	}
 
 	/**
-	 * Generates a config object from the given node.
+	 * Generates a configuration from the given node.
 	 *
-	 * @param node  The configuration node (mutable)
-	 * @param world The world where this config object will be applicable
+	 * @param node   The configuration node (mutable)
+	 * @param world  The world where this config object will be applicable
 	 * @param preset An optional preset
-	 * @return Your config object
+	 * @return The configuration
 	 */
 	public abstract Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException;
 
@@ -106,18 +106,19 @@ public abstract class ChunkModifier implements CatalogType {
 	 * A different signature from the cached one will cause the cached object to be invalidated.
 	 *
 	 * @param builder The signature builder
-	 * @param config Your config object
+	 * @param config The configuration
 	 */
 	public abstract void appendSignature(Signature.Builder builder, Object config);
 
 	/**
-	 * A fast method to check whether this modifier is ready to modify a chunk.
-	 * Some modifiers might need to check whether neighboring chunks are loaded.
+	 * Checks whether this modifier requires that the neighbor chunks are loaded.
 	 *
-	 * @param view The ChunkView to modify
-	 * @return true if this modifier is ready to modify the chunk
+	 * @param config The configuration
+	 * @return true if this modifier requires that the neighbor chunks are loaded.
 	 */
-	public abstract boolean isReady(ChunkView view, Object config);
+	public boolean requireNeighborsLoaded(Object config) {
+		return true;
+	}
 
 	/**
 	 * Modifies the ChunkView that will be send to players.
@@ -125,6 +126,7 @@ public abstract class ChunkModifier implements CatalogType {
 	 *
 	 * @param view The ChunkView to modify
 	 * @param r The Random object that should be used by the modifier
+	 * @param config The configuration
 	 */
 	public void modify(ChunkView view, Random r, Object config) {
 		modify(view, view.getBlockMin(), view.getBlockMax(), r, config);
@@ -138,6 +140,7 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param min  The lowest block location to modify
 	 * @param max  The highest block location to modify
 	 * @param r    The Random object that should be used by the modifier
+	 * @param config The configuration
 	 */
 	public abstract void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config);
 }
