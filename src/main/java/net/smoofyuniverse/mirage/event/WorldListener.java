@@ -42,7 +42,7 @@ import org.spongepowered.api.world.World;
 import java.util.HashSet;
 import java.util.Set;
 
-public class WorldEventListener {
+public class WorldListener {
 
 	@Listener
 	public void onWorldSave(SaveWorldEvent.Pre e) {

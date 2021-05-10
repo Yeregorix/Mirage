@@ -31,7 +31,7 @@ import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
 import net.smoofyuniverse.mirage.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
-import net.smoofyuniverse.mirage.event.WorldEventListener;
+import net.smoofyuniverse.mirage.event.WorldListener;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
@@ -138,7 +138,7 @@ public class Mirage {
 		loadConfigs();
 
 		if (this.game.getServer() instanceof InternalServer)
-			this.game.getEventManager().registerListeners(this, new WorldEventListener());
+			this.game.getEventManager().registerListeners(this, new WorldListener());
 
 		this.game.getEventManager().registerListeners(this, new UpdateChecker(LOGGER, this.container,
 				IOUtil.createConfigLoader(this.configDir.resolve("update.conf")), "Yeregorix", "Mirage"));
