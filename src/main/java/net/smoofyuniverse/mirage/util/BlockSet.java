@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.util.collection;
+package net.smoofyuniverse.mirage.util;
 
 import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.mirage.Mirage;

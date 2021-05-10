@@ -32,7 +32,7 @@ import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.WorldView;
 import net.smoofyuniverse.mirage.resource.Resources;
-import net.smoofyuniverse.mirage.util.collection.BlockSet;
+import net.smoofyuniverse.mirage.util.BlockSet;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;

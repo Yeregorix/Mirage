@@ -23,8 +23,8 @@
 package net.smoofyuniverse.mirage.config.serializer;
 
 import com.google.common.reflect.TypeToken;
-import net.smoofyuniverse.mirage.util.collection.BlockSet;
-import net.smoofyuniverse.mirage.util.collection.BlockSet.SerializationPredicate;
+import net.smoofyuniverse.mirage.util.BlockSet;
+import net.smoofyuniverse.mirage.util.BlockSet.SerializationPredicate;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;

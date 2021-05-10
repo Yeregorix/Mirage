@@ -24,7 +24,7 @@ package net.smoofyuniverse.mirage.resource;
 
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.resource.Pack.Section;
-import net.smoofyuniverse.mirage.util.collection.BlockSet;
+import net.smoofyuniverse.mirage.util.BlockSet;
 import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
