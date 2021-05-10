@@ -75,6 +75,7 @@ dependencies {
     compile 'org.spongepowered:spongecommon:1.12.2-7.3.0:dev'
     compile 'net.smoofyuniverse:oreupdater:1.0.1'
     compile 'net.smoofyuniverse:bingo:1.0.1'
+    compile 'net.smoofyuniverse:worldmap:1.0.0'
 }
 
 jar {
@@ -101,10 +102,12 @@ shadowJar {
         include dependency('net.smoofyuniverse:oreapi')
         include dependency('net.smoofyuniverse:oreupdater')
         include dependency('net.smoofyuniverse:bingo')
+        include dependency('net.smoofyuniverse:worldmap')
     }
 
     relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
     relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
+    relocate 'net.smoofyuniverse.map', 'net.smoofyuniverse.mirage.map'
 
     exclude "dummyThing"
     afterEvaluate {

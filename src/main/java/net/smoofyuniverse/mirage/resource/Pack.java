@@ -25,6 +25,9 @@ package net.smoofyuniverse.mirage.resource;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ListMultimap;
+import net.smoofyuniverse.mirage.Mirage;
+import org.spongepowered.api.Sponge;
+import org.spongepowered.api.plugin.PluginManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,6 +35,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -183,5 +187,57 @@ public final class Pack implements Comparable<Pack> {
 			if (this.parent != null)
 				this.parent.removeSection(this.name);
 		}
+	}
+
+	public static TreeSet<Pack> loadAll() {
+		TreeSet<Pack> packs = new TreeSet<>();
+
+		URL defaultUrl = Mirage.class.getClassLoader().getResource("default.pack");
+		if (defaultUrl != null) {
+			Pack p = new Pack("default");
+			Mirage.LOGGER.info("Reading default pack ..");
+			try {
+				p.read(defaultUrl);
+				packs.add(p);
+			} catch (Exception e) {
+				Mirage.LOGGER.error("Failed to read default pack", e);
+			}
+		}
+
+		Path packsDir = Mirage.get().getConfigDirectory().resolve("packs");
+		if (!Files.exists(packsDir))
+			return packs;
+
+		PluginManager pm = Sponge.getPluginManager();
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(packsDir)) {
+			for (Path file : st) {
+				String fn = file.getFileName().toString();
+
+				if (fn.endsWith(".pack")) {
+					Pack p = new Pack(fn.substring(0, fn.length() - 5));
+					Mirage.LOGGER.info("Reading pack: " + p.name + " ..");
+					try {
+						p.read(file);
+
+						Set<String> missingMods = new HashSet<>();
+						for (String id : p.required) {
+							if (!pm.isLoaded(id))
+								missingMods.add(id);
+						}
+
+						if (!missingMods.isEmpty())
+							Mirage.LOGGER.info("The following mods are required to load this pack but are missing: [" + String.join(", ", missingMods) + "]");
+						else
+							packs.add(p);
+					} catch (Exception e) {
+						Mirage.LOGGER.error("Failed to read pack: " + p.name, e);
+					}
+				}
+			}
+		} catch (Exception e) {
+			Mirage.LOGGER.error("Failed to list packs", e);
+		}
+
+		return packs;
 	}
 }

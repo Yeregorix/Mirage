@@ -111,6 +111,10 @@ public class Signature {
 			return this;
 		}
 
+		public Builder append(boolean value) {
+			return append(value ? 1 : 0);
+		}
+
 		public Builder append(short value) {
 			this.buffer[0] = (byte) (value >>> 8);
 			this.buffer[1] = (byte) value;

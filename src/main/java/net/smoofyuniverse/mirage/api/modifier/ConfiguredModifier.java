@@ -30,8 +30,10 @@ public final class ConfiguredModifier {
 	public final Object config;
 
 	public ConfiguredModifier(ChunkModifier modifier, Object config) {
-		if (modifier == null || config == null)
-			throw new IllegalArgumentException();
+		if (modifier == null)
+			throw new IllegalArgumentException("modifier");
+		if (config == null)
+			throw new IllegalArgumentException("config");
 		this.modifier = modifier;
 		this.config = config;
 	}

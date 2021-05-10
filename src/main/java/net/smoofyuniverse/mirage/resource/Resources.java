@@ -24,21 +24,16 @@ package net.smoofyuniverse.mirage.resource;
 
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.resource.Pack.Section;
-import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.mirage.util.collection.BlockSet;
 import org.spongepowered.api.GameRegistry;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.plugin.PluginManager;
 import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.storage.WorldProperties;
 
-import java.net.URL;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import static net.smoofyuniverse.mirage.resource.Categories.GROUND;
@@ -104,10 +99,6 @@ public final class Resources {
 		}
 	}
 
-	public static Resources of(WorldProperties world) {
-		return of(world.getDimensionType());
-	}
-
 	private void setGround() {
 		BlockSet set = this.blocks.get(GROUND);
 		this.ground = set == null ? null : set.first().orElse(null);
@@ -120,11 +111,7 @@ public final class Resources {
 		}
 	}
 
-	public static void loadResources() {
-		loadResources(loadPacks());
-	}
-
-	public static void loadResources(TreeSet<Pack> packs) {
+	public static void loadResources(Iterable<Pack> packs) {
 		map.clear();
 
 		GameRegistry reg = Sponge.getRegistry();
@@ -153,54 +140,5 @@ public final class Resources {
 			r.setGround();
 			map.put(type, r);
 		}
-	}
-
-	private static TreeSet<Pack> loadPacks() {
-		TreeSet<Pack> packs = new TreeSet<>();
-
-		URL defaultUrl = IOUtil.getLocalResource("default.pack").orElse(null);
-		if (defaultUrl != null) {
-			Pack p = new Pack("default");
-			Mirage.LOGGER.info("Reading default pack ..");
-			try {
-				p.read(defaultUrl);
-				packs.add(p);
-			} catch (Exception e) {
-				Mirage.LOGGER.error("Failed to read default pack", e);
-			}
-		}
-
-		PluginManager pm = Sponge.getPluginManager();
-
-		try (DirectoryStream<Path> st = Files.newDirectoryStream(Mirage.get().getResourcesDirectory())) {
-			for (Path file : st) {
-				String fn = file.getFileName().toString();
-
-				if (fn.endsWith(".pack")) {
-					Pack p = new Pack(fn.substring(0, fn.length() - 5));
-					Mirage.LOGGER.info("Reading pack: " + p.name + " ..");
-					try {
-						p.read(file);
-
-						Set<String> missingMods = new HashSet<>();
-						for (String id : p.required) {
-							if (!pm.isLoaded(id))
-								missingMods.add(id);
-						}
-
-						if (!missingMods.isEmpty())
-							Mirage.LOGGER.info("The following mods are required to load this pack but are missing: [" + String.join(", ", missingMods) + "]");
-						else
-							packs.add(p);
-					} catch (Exception e) {
-						Mirage.LOGGER.error("Failed to read pack: " + p.name, e);
-					}
-				}
-			}
-		} catch (Exception e) {
-			Mirage.LOGGER.error("Failed to list packs", e);
-		}
-
-		return packs;
 	}
 }

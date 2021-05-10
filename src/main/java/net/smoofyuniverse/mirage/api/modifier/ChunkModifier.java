@@ -34,6 +34,7 @@ import org.spongepowered.api.CatalogType;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.util.annotation.CatalogedBy;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Random;
@@ -77,9 +78,9 @@ public abstract class ChunkModifier implements CatalogType {
 	}
 
 	/**
-	 * @return false if this modifier is very light and caching is useless, true otherwise
+	 * @return false if this modifier is lightweight and cache is useless, true otherwise
 	 */
-	public boolean shouldCache() {
+	public boolean requireCache() {
 		return true;
 	}
 
@@ -94,12 +95,12 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * Generates a configuration from the given node.
 	 *
-	 * @param node   The configuration node (mutable)
-	 * @param world  The world where this config object will be applicable
-	 * @param preset An optional preset
+	 * @param node      The configuration node (mutable)
+	 * @param dimension The dimension defined in the main configuration, might differ from the actual world dimension
+	 * @param preset    An optional preset
 	 * @return The configuration
 	 */
-	public abstract Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException;
+	public abstract Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException;
 
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
@@ -113,10 +114,9 @@ public abstract class ChunkModifier implements CatalogType {
 	/**
 	 * Checks whether this modifier requires that the neighbor chunks are loaded.
 	 *
-	 * @param config The configuration
 	 * @return true if this modifier requires that the neighbor chunks are loaded.
 	 */
-	public boolean requireNeighborsLoaded(Object config) {
+	public boolean requireNeighborsLoaded() {
 		return true;
 	}
 

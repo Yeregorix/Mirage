@@ -27,33 +27,25 @@ import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.world.WorldType;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.MirageTimings;
 import net.smoofyuniverse.mirage.api.cache.Signature;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
 import net.smoofyuniverse.mirage.api.volume.WorldView;
+import net.smoofyuniverse.mirage.config.world.MainConfig;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
-import net.smoofyuniverse.mirage.util.IOUtil;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.util.DiscreteTransform3;
-import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.DimensionTypes;
+import org.spongepowered.api.world.GeneratorTypes;
+import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 import org.spongepowered.api.world.extent.StorageType;
@@ -74,29 +66,22 @@ import org.spongepowered.common.world.schematic.GlobalPalette;
 import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
-import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
  * Represents the world viewed for the network (akka online players)
  */
 public class NetworkWorld implements WorldView {
-	public static final int CURRENT_CONFIG_VERSION = 2, MINIMUM_CONFIG_VERSION = 1;
-
 	private final Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
 	private final Vector3i blockMin, blockMax, blockSize;
 	private final InternalWorld world;
 
-	private List<ConfiguredModifier> modifiers;
 	private NetworkRegionCache regionCache;
-	private WorldConfig.Immutable config;
+	private WorldConfig config;
 	private Signature signature;
 	private boolean enabled, dynamismEnabled;
 
@@ -121,161 +106,76 @@ public class NetworkWorld implements WorldView {
 		}
 
 		if (this.config == null)
-			this.config = new WorldConfig(false).toImmutable();
+			this.config = WorldConfig.DISABLED;
 
-		this.enabled = this.config.enabled;
-		this.dynamismEnabled = this.config.enabled && this.config.dynamism;
+		this.enabled = this.config.main.enabled;
+		this.dynamismEnabled = this.enabled && this.config.main.dynamism;
 	}
 
-	private void _loadConfig() throws IOException, ObjectMappingException {
-		Path file = Mirage.get().getWorldConfigsDirectory().resolve(getName() + ".conf");
-		ConfigurationLoader<CommentedConfigurationNode> loader = Mirage.get().createConfigLoader(file);
+	private void _loadConfig() {
+		WorldConfig cfg = Mirage.get().getConfig((World) this.world);
+		MainConfig.Immutable main = cfg.main;
+		List<ConfiguredModifier> modifiers = cfg.modifiers;
 
-		WorldProperties properties = getProperties();
-		DimensionType dimType = properties.getDimensionType();
-		WorldType wType = ((net.minecraft.world.World) this.world).getWorldType();
-
-		CommentedConfigurationNode root = loader.load();
-		int version = root.getNode("Version").getInt();
-		if (version > CURRENT_CONFIG_VERSION || version < MINIMUM_CONFIG_VERSION) {
-			version = CURRENT_CONFIG_VERSION;
-			if (IOUtil.backupFile(file)) {
-				Mirage.LOGGER.info("Your config version is not supported. A new one will be generated.");
-				root = loader.createEmptyNode();
-			}
+		WorldProperties properties = this.world.getProperties();
+		if (main.enabled && properties.getGeneratorType() == GeneratorTypes.DEBUG) {
+			Mirage.LOGGER.warn("Obfuscation is not available in a debug world. Obfuscation will be disabled.");
+			main = main.disable();
 		}
 
-		ConfigurationNode cfgNode = root.getNode("Config");
-		WorldConfig cfg = cfgNode.getValue(WorldConfig.TOKEN);
-		if (cfg == null)
-			cfg = new WorldConfig(wType != WorldType.FLAT && wType != WorldType.DEBUG_ALL_BLOCK_STATES && dimType != DimensionTypes.THE_END);
+		if (main.enabled) {
+			ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
 
-		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
-		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);
-
-		if (cfg.seed == 0)
-			cfg.seed = ThreadLocalRandom.current().nextLong();
-
-		if (cfg.enabled && wType == WorldType.DEBUG_ALL_BLOCK_STATES) {
-			Mirage.LOGGER.warn("Obfuscation is not available in a debug_all_block_states world. Obfuscation will be disabled.");
-			cfg.enabled = false;
-		}
-
-		ConfigurationNode modsNode = root.getNode("Modifiers");
-
-		if (version == 1) {
-			// Conversion "Id" -> "Type"
-			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				ConfigurationNode typeNode = node.getNode("Type");
-				if (typeNode.isVirtual()) {
-					ConfigurationNode idNode = node.getNode("Id");
-					if (!idNode.isVirtual()) {
-						typeNode.setValue(idNode.getValue());
-						node.removeChild("Id");
-					}
-				}
-			}
-
-			version = 2;
-		}
-
-		if (modsNode.isVirtual()) {
-			if (dimType == DimensionTypes.OVERWORLD) {
-				modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.RANDOM_BEDROCK.getName());
-
-				ConfigurationNode water_dungeons = modsNode.appendListNode();
-				water_dungeons.getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
-				water_dungeons.getNode("Preset").setValue("water_dungeons");
-			}
-
-			modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
-		}
-
-		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
-		if (cfg.enabled) {
-			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				String type = node.getNode("Type").getString();
-				if (type == null)
-					continue;
-
-				ChunkModifier mod = ChunkModifierRegistryModule.get().getById(type).orElse(null);
-				if (mod == null) {
-					Mirage.LOGGER.warn("Modifier '" + type + "' does not exists.");
+			for (ConfiguredModifier mod : modifiers) {
+				if (!mod.modifier.isCompatible(properties)) {
+					Mirage.LOGGER.warn("Modifier " + mod.modifier.getId() + " is not compatible with this world. This modifier will be ignored.");
 					continue;
 				}
 
-				if (!mod.isCompatible(properties)) {
-					Mirage.LOGGER.warn("Modifier " + mod.getId() + " is not compatible with this world. This modifier will be ignored.");
-					continue;
-				}
-
-				Object modCfg;
-				try {
-					String preset = node.getNode("Preset").getString();
-					modCfg = mod.loadConfiguration(node.getNode("Options"), properties, preset == null ? "" : preset.toLowerCase());
-					node.removeChild("Preset");
-				} catch (Exception e) {
-					Mirage.LOGGER.warn("Modifier " + mod.getId() + " failed to loaded his configuration. This modifier will be ignored.", e);
-					continue;
-				}
-
-				mods.add(new ConfiguredModifier(mod, modCfg));
+				mods.add(mod);
 			}
+			modifiers = mods.build();
 		}
-		this.modifiers = mods.build();
 
-		if (cfg.enabled && this.modifiers.isEmpty()) {
+		if (main.enabled && modifiers.isEmpty()) {
 			Mirage.LOGGER.info("No valid modifier was found. Obfuscation will be disabled.");
-			cfg.enabled = false;
+			main = main.disable();
 		}
 
-		if (cfg.enabled && cfg.cache) {
-			boolean useCache = false;
-			for (ConfiguredModifier mod : this.modifiers) {
-				if (mod.modifier.shouldCache())
-					useCache = true;
-			}
+		long seed = 0; // TODO
 
-			if (useCache) {
-				Signature.Builder cacheSignature = Signature.builder();
-				for (ConfiguredModifier mod : this.modifiers)
-					cacheSignature.append(mod.modifier);
+		if (main.enabled && main.cache) {
+			Signature.Builder cacheSignature = Signature.builder();
+			for (ConfiguredModifier mod : modifiers)
+				cacheSignature.append(mod.modifier);
 
-				String cacheName = this.world.getUniqueId() + "/" + cacheSignature.build();
+			String cacheName = this.world.getUniqueId() + "/" + cacheSignature.build();
 
-				this.regionCache = new NetworkRegionCache(Mirage.get().getCacheDirectory().resolve(cacheName));
-				try {
-					this.regionCache.loadVersion();
-					if (this.regionCache.isVersionSupported()) {
-						if (this.regionCache.shouldUpdateVersion()) {
-							Mirage.LOGGER.info("Updating cache version in directory " + cacheName + "/ ..");
-							this.regionCache.updateVersion();
-						}
-						this.regionCache.saveVersion();
-
-						Signature.Builder b = Signature.builder().append(cfg.seed).append((byte) (cfg.dynamism ? 1 : 0));
-						for (ConfiguredModifier mod : this.modifiers)
-							mod.modifier.appendSignature(b, mod.config);
-						this.signature = b.build();
-					} else {
-						Mirage.LOGGER.warn("Cache version in directory " + cacheName + "/ is not supported. Caching will be disabled.");
-						this.regionCache = null;
+			this.regionCache = new NetworkRegionCache(Mirage.get().getCacheDirectory().resolve(cacheName));
+			try {
+				this.regionCache.loadVersion();
+				if (this.regionCache.isVersionSupported()) {
+					if (this.regionCache.shouldUpdateVersion()) {
+						Mirage.LOGGER.info("Updating cache version in directory " + cacheName + "/ ..");
+						this.regionCache.updateVersion();
 					}
-				} catch (Exception e) {
-					Mirage.LOGGER.warn("Failed to load cache in directory " + cacheName + "/. Caching will be disabled.", e);
+					this.regionCache.saveVersion();
+
+					Signature.Builder b = Signature.builder().append(seed).append(main.dynamism);
+					for (ConfiguredModifier mod : modifiers)
+						mod.modifier.appendSignature(b, mod.config);
+					this.signature = b.build();
+				} else {
+					Mirage.LOGGER.warn("Cache version in directory " + cacheName + "/ is not supported. Cache will be disabled.");
 					this.regionCache = null;
 				}
-			} else {
-				Mirage.LOGGER.info("No modifier needing caching was found. Caching will be disabled.");
-				cfg.cache = false;
+			} catch (Exception e) {
+				Mirage.LOGGER.warn("Failed to load cache in directory " + cacheName + "/. Cache will be disabled.", e);
+				this.regionCache = null;
 			}
 		}
 
-		root.getNode("Version").setValue(version);
-		cfgNode.setValue(WorldConfig.TOKEN, cfg);
-		loader.save(root);
-
-		this.config = cfg.toImmutable();
+		this.config = new WorldConfig(main, modifiers, seed);
 	}
 
 	@Override
@@ -398,14 +298,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public List<ConfiguredModifier> getModifiers() {
-		if (this.config == null)
-			throw new IllegalStateException("Config not loaded");
-		return this.modifiers;
-	}
-
-	@Override
-	public WorldConfig.Immutable getConfig() {
+	public WorldConfig getConfig() {
 		if (this.config == null)
 			throw new IllegalStateException("Config not loaded");
 		return this.config;
@@ -535,7 +428,7 @@ public class NetworkWorld implements WorldView {
 
 		MirageTimings.REOBFUSCATION.startTiming();
 
-		for (ConfiguredModifier mod : getModifiers()) {
+		for (ConfiguredModifier mod : this.config.modifiers) {
 			Timing timing = mod.modifier.getTiming();
 			timing.startTiming();
 

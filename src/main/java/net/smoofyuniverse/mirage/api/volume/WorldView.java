@@ -23,14 +23,12 @@
 package net.smoofyuniverse.mirage.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.config.world.DeobfuscationConfig;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import org.spongepowered.api.util.Identifiable;
 import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -55,14 +53,19 @@ public interface WorldView extends BlockView, Identifiable {
 	WorldProperties getProperties();
 
 	/**
-	 * @return The modifiers applied to this world and their configurations
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param x          The X position
+	 * @param y          The Y position
+	 * @param z          The Z position
+	 * @param player     Use player deobf radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
-	List<ConfiguredModifier> getModifiers();
-
-	/**
-	 * @return The configuration of this world
-	 */
-	WorldConfig.Immutable getConfig();
+	default void deobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
+		DeobfuscationConfig.Immutable cfg = getConfig().main.deobf;
+		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
+	}
 
 	/**
 	 * @return Whether obfuscation is enabled in this world
@@ -135,19 +138,9 @@ public interface WorldView extends BlockView, Identifiable {
 	}
 
 	/**
-	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @param player Use player deobf radius
-	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
+	 * @return The configuration of this world
 	 */
-	default void deobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
-		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
-		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
-	}
+	WorldConfig getConfig();
 
 	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
@@ -172,7 +165,7 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
-		DeobfuscationConfig.Immutable cfg = getConfig().deobf;
+		DeobfuscationConfig.Immutable cfg = getConfig().main.deobf;
 		reobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
 	}
 }

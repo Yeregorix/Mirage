@@ -38,12 +38,12 @@ import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.World;
 import org.spongepowered.api.world.biome.BiomeType;
 import org.spongepowered.api.world.gen.Populator;
 import org.spongepowered.api.world.gen.WorldGenerator;
 import org.spongepowered.api.world.gen.populator.Ore;
-import org.spongepowered.api.world.storage.WorldProperties;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -66,13 +66,13 @@ public class RandomVeinModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (cfg.blocks == null)
-			cfg.blocks = Resources.of(world).getBlocks(COMMON);
+			cfg.blocks = Resources.of(dimension).getBlocks(COMMON);
 
 		cfg.density = clamp(cfg.density, 0.1, 10);
 		cfg.dynamism = clamp(cfg.dynamism, 0, 10);

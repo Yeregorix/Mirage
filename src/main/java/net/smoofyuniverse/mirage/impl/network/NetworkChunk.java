@@ -244,8 +244,8 @@ public class NetworkChunk implements ChunkView {
 		MirageTimings.OBFUSCATION.startTiming();
 
 		boolean requireNeighbors = false;
-		for (ConfiguredModifier mod : this.world.getModifiers()) {
-			if (mod.modifier.requireNeighborsLoaded(mod.config)) {
+		for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
+			if (mod.modifier.requireNeighborsLoaded()) {
 				requireNeighbors = true;
 				break;
 			}
@@ -256,7 +256,7 @@ public class NetworkChunk implements ChunkView {
 		} else {
 			this.random.setSeed(this.seed);
 
-			for (ConfiguredModifier mod : this.world.getModifiers()) {
+			for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
 				Timing timing = mod.modifier.getTiming();
 				timing.startTiming();
 
@@ -545,7 +545,7 @@ public class NetworkChunk implements ChunkView {
 
 		MirageTimings.REOBFUSCATION.startTiming();
 
-		for (ConfiguredModifier mod : this.world.getModifiers()) {
+		for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
 			Timing timing = mod.modifier.getTiming();
 			timing.startTiming();
 

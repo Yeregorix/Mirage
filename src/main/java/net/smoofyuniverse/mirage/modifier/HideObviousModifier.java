@@ -37,7 +37,7 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.api.world.DimensionType;
 
 import java.util.Collection;
 import java.util.Random;
@@ -57,7 +57,7 @@ public class HideObviousModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN);
 		if (cfg == null)
 			cfg = new Config();
@@ -75,9 +75,9 @@ public class HideObviousModifier extends ChunkModifier {
 			cfg.maxY = 64;
 		} else {
 			if (cfg.blocks == null)
-				cfg.blocks = Resources.of(world).getBlocks(COMMON, RARE);
+				cfg.blocks = Resources.of(dimension).getBlocks(COMMON, RARE);
 			if (cfg.replacement == null)
-				cfg.replacement = Resources.of(world).getGround();
+				cfg.replacement = Resources.of(dimension).getGround();
 
 			cfg.dynamism = clamp(cfg.dynamism, 0, 10);
 			cfg.minY = clamp(cfg.minY, 0, 255);

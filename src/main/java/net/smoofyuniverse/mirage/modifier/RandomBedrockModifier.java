@@ -35,6 +35,7 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.world.DimensionType;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.storage.WorldProperties;
 
@@ -47,7 +48,7 @@ public class RandomBedrockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public boolean shouldCache() {
+	public boolean requireCache() {
 		return false;
 	}
 
@@ -57,13 +58,13 @@ public class RandomBedrockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (cfg.ground == null)
-			cfg.ground = Resources.of(world).getGround();
+			cfg.ground = Resources.of(dimension).getGround();
 		if (cfg.height < 0)
 			cfg.height = 0;
 

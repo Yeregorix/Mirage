@@ -38,7 +38,7 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.api.world.DimensionType;
 
 import java.util.*;
 
@@ -55,23 +55,23 @@ public class RandomBlockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldProperties world, String preset) throws ObjectMappingException {
+	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
 		Config cfg = node.getValue(Config.TOKEN);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (cfg.blocks == null)
-			cfg.blocks = Resources.of(world).getBlocks(GROUND, COMMON, RARE);
+			cfg.blocks = Resources.of(dimension).getBlocks(GROUND, COMMON, RARE);
 
 		if (cfg.replacements == null) {
 			cfg.replacements = new HashMap<>();
 
-			BlockSet set = Resources.of(world).getBlocks(COMMON);
+			BlockSet set = Resources.of(dimension).getBlocks(COMMON);
 
 			for (BlockState state : set.getAll())
 				cfg.replacements.put(state, 1d);
 
-			cfg.replacements.put(Resources.of(world).getGround(), Math.max(cfg.replacements.size(), 1d));
+			cfg.replacements.put(Resources.of(dimension).getGround(), Math.max(cfg.replacements.size(), 1d));
 		}
 
 		cfg.minY = clamp(cfg.minY, 0, 255);
