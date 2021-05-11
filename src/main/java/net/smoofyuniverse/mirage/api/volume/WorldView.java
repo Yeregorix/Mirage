@@ -37,6 +37,16 @@ import java.util.Optional;
 public interface WorldView extends BlockView, Identifiable {
 
 	/**
+	 * Gets the world associated to this volume.
+	 *
+	 * @return The world
+	 */
+	@Override
+	default WorldView getWorld() {
+		return this;
+	}
+
+	/**
 	 * @return The WorldStorage which is associated with this WorldView
 	 */
 	@Override

@@ -64,13 +64,6 @@ public interface ChunkStorage extends BlockStorage {
 	}
 
 	/**
-	 * Gets the world the chunk is in.
-	 *
-	 * @return The world
-	 */
-	WorldStorage getWorld();
-
-	/**
 	 * Gets the position of the chunk.
 	 *
 	 * @return The position

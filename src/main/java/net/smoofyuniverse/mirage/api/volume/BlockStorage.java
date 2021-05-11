@@ -33,6 +33,13 @@ import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 public interface BlockStorage extends ImmutableBlockVolume {
 
 	/**
+	 * Gets the world associated to this volume.
+	 *
+	 * @return The world
+	 */
+	WorldStorage getWorld();
+
+	/**
 	 * @return The BlockView which is associated with this BlockStorage
 	 */
 	BlockView getView();

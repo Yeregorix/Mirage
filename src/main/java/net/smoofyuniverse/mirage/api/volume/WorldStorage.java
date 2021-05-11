@@ -35,6 +35,16 @@ import java.util.Optional;
 public interface WorldStorage extends BlockStorage, Identifiable {
 
 	/**
+	 * Gets the world associated to this volume.
+	 *
+	 * @return The world
+	 */
+	@Override
+	default WorldStorage getWorld() {
+		return this;
+	}
+
+	/**
 	 * @return The WorldView which is associated with this WorldStorage
 	 */
 	@Override

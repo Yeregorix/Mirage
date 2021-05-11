@@ -35,6 +35,13 @@ import static java.lang.Math.min;
 public interface BlockView extends MutableBlockVolume {
 
 	/**
+	 * Gets the world associated to this volume.
+	 *
+	 * @return The world
+	 */
+	WorldView getWorld();
+
+	/**
 	 * @return The BlockStorage which is associated with this BlockView
 	 */
 	BlockStorage getStorage();

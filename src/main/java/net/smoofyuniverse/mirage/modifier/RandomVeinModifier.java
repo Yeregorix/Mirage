@@ -29,7 +29,6 @@ import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.WorldView;
 import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.mirage.util.BlockSet;
@@ -107,14 +106,7 @@ public class RandomVeinModifier extends ChunkModifier {
 			return;
 
 		// Get world
-		WorldView worldView;
-		if (view instanceof WorldView)
-			worldView = (WorldView) view;
-		else if (view instanceof ChunkView)
-			worldView = ((ChunkView) view).getWorld();
-		else
-			throw new UnsupportedOperationException();
-
+		WorldView worldView = view.getWorld();
 		World world = (World) worldView.getStorage();
 
 		// List ores
