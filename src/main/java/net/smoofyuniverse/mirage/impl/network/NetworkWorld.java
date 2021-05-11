@@ -67,6 +67,7 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -80,7 +81,7 @@ public class NetworkWorld implements WorldView {
 	private final Vector3i blockMin, blockMax, blockSize;
 	private final InternalWorld world;
 
-	private NetworkRegionCache regionCache;
+	private NetworkRegionCache cache;
 	private WorldConfig config;
 	private Signature signature;
 	private boolean enabled, dynamismEnabled;
@@ -142,38 +143,31 @@ public class NetworkWorld implements WorldView {
 			main = main.disable();
 		}
 
-		long seed = 0; // TODO
+		long seed = 0;
 
 		if (main.enabled && main.cache) {
-			Signature.Builder cacheSignature = Signature.builder();
+			Signature.Builder b = Signature.builder();
 			for (ConfiguredModifier mod : modifiers)
-				cacheSignature.append(mod.modifier);
+				b.append(mod.modifier);
+			String cacheName = this.world.getUniqueId() + "/" + b.build();
 
-			String cacheName = this.world.getUniqueId() + "/" + cacheSignature.build();
-
-			this.regionCache = new NetworkRegionCache(Mirage.get().getCacheDirectory().resolve(cacheName));
 			try {
-				this.regionCache.loadVersion();
-				if (this.regionCache.isVersionSupported()) {
-					if (this.regionCache.shouldUpdateVersion()) {
-						Mirage.LOGGER.info("Updating cache version in directory " + cacheName + "/ ..");
-						this.regionCache.updateVersion();
-					}
-					this.regionCache.saveVersion();
+				this.cache = new NetworkRegionCache(cacheName);
+				this.cache.load();
+				seed = this.cache.getSeed();
 
-					Signature.Builder b = Signature.builder().append(seed).append(main.dynamism);
-					for (ConfiguredModifier mod : modifiers)
-						mod.modifier.appendSignature(b, mod.config);
-					this.signature = b.build();
-				} else {
-					Mirage.LOGGER.warn("Cache version in directory " + cacheName + "/ is not supported. Cache will be disabled.");
-					this.regionCache = null;
-				}
+				b = Signature.builder().append(seed).append(main.dynamism);
+				for (ConfiguredModifier mod : modifiers)
+					mod.modifier.appendSignature(b, mod.config);
+				this.signature = b.build();
 			} catch (Exception e) {
-				Mirage.LOGGER.warn("Failed to load cache in directory " + cacheName + "/. Cache will be disabled.", e);
-				this.regionCache = null;
+				Mirage.LOGGER.warn("Failed to load cache " + cacheName + "/. Cache will be disabled.", e);
+				this.cache = null;
 			}
 		}
+
+		if (this.cache == null)
+			seed = ThreadLocalRandom.current().nextLong();
 
 		this.config = new WorldConfig(main, modifiers, seed);
 	}
@@ -184,16 +178,11 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public boolean useCache() {
-		return this.regionCache != null;
-	}
-
-	@Nullable
-	public Signature getSignature() {
-		return this.signature;
+		return this.cache != null;
 	}
 
 	public void addPendingSave(int x, int z, ChunkSnapshot chunk) {
-		if (this.regionCache == null)
+		if (this.cache == null)
 			return;
 
 		synchronized (this.chunksToSave) {
@@ -202,7 +191,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public void removePendingSave(int x, int z) {
-		if (this.regionCache == null)
+		if (this.cache == null)
 			return;
 
 		synchronized (this.chunksToSave) {
@@ -211,7 +200,7 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public void savePendingChunk(int x, int z) {
-		if (this.regionCache == null)
+		if (this.cache == null)
 			return;
 
 		ChunkSnapshot chunk;
@@ -223,12 +212,12 @@ public class NetworkWorld implements WorldView {
 	}
 
 	public void saveToCache(int x, int z, ChunkSnapshot chunk) {
-		if (this.regionCache == null)
+		if (this.cache == null)
 			throw new IllegalStateException();
 
 		MirageTimings.WRITING_CACHE.startTimingIfSync();
 
-		try (DataOutputStream out = this.regionCache.getChunkOutputStream(x, z)) {
+		try (DataOutputStream out = this.cache.getChunkOutputStream(x, z)) {
 			this.signature.write(out);
 			chunk.write(out);
 		} catch (Exception e) {
@@ -242,12 +231,12 @@ public class NetworkWorld implements WorldView {
 
 	@Nullable
 	public ChunkSnapshot readFromCache(int x, int z) {
-		if (this.regionCache == null)
+		if (this.cache == null)
 			throw new IllegalStateException();
 
 		MirageTimings.READING_CACHE.startTimingIfSync();
 
-		try (DataInputStream in = this.regionCache.getChunkInputStream(x, z)) {
+		try (DataInputStream in = this.cache.getChunkInputStream(x, z)) {
 			if (in != null && Signature.read(in).equals(this.signature))
 				return new ChunkSnapshot().read(in);
 		} catch (Exception e) {

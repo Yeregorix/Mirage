@@ -28,6 +28,7 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -57,5 +58,11 @@ public class IOUtil {
 		}
 
 		return Optional.of(backup);
+	}
+
+	public static boolean isEmptyDirectory(Path dir) throws IOException {
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(dir)) {
+			return !st.iterator().hasNext();
+		}
 	}
 }

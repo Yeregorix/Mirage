@@ -26,6 +26,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+import net.smoofyuniverse.mirage.util.IOUtil;
 
 import javax.annotation.Nullable;
 import java.io.DataInputStream;
@@ -35,92 +36,85 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class NetworkRegionCache {
 	public static final int CURRENT_VERSION = 2, MINIMUM_VERSION = 1;
 
 	private final Long2ObjectMap<NetworkRegionFile> loadedRegions = new Long2ObjectOpenHashMap<>();
-	private final Path dir;
-	private int version = -1;
+	public final String name;
+	private final Path directory;
+	private long seed;
 
-	public NetworkRegionCache(Path dir) {
-		this.dir = dir;
+	public NetworkRegionCache(String name) {
+		this(Mirage.get().getCacheDirectory().resolve(name), name);
+	}
+
+	public NetworkRegionCache(Path directory, String name) {
+		this.directory = directory;
+		this.name = name;
+	}
+
+	public long getSeed() {
+		return this.seed;
+	}
+
+	public void load() throws Exception {
+		// Directory
 		try {
-			Files.createDirectories(this.dir);
+			Files.createDirectories(this.directory);
 		} catch (IOException ignored) {
 		}
-	}
 
-	public void loadVersion() throws IOException {
-		if (this.version == -1) {
-			Path file = this.dir.resolve("version");
-			if (Files.exists(file)) {
-				try (DataInputStream in = new DataInputStream(Files.newInputStream(file))) {
-					this.version = in.readInt();
-				}
-			} else {
-				try (DirectoryStream<Path> st = Files.newDirectoryStream(this.dir)) {
-					this.version = st.iterator().hasNext() ? 0 : CURRENT_VERSION;
-				}
+		// Version
+		int version;
+		Path versionFile = this.directory.resolve("version");
+		if (Files.exists(versionFile)) {
+			try (DataInputStream in = new DataInputStream(Files.newInputStream(versionFile))) {
+				version = in.readInt();
+			}
+		} else if (IOUtil.isEmptyDirectory(this.directory)) {
+			version = CURRENT_VERSION;
+		} else {
+			throw new IllegalArgumentException("directory is not empty");
+		}
+
+		if (version < MINIMUM_VERSION || version > CURRENT_VERSION)
+			throw new IllegalArgumentException("version");
+
+		if (version != CURRENT_VERSION) {
+			Mirage.LOGGER.info("Updating cache " + this.name + "/ ...");
+
+			if (areRegionsLoaded())
+				throw new IllegalStateException("Regions are loaded");
+
+			if (version == 1) {
+				deleteRegionFiles();
+				version = 2;
+			}
+		}
+
+		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(versionFile))) {
+			out.writeInt(version);
+		}
+
+		// Seed
+		Path seedFile = this.directory.resolve("seed");
+		if (Files.exists(seedFile)) {
+			try (DataInputStream in = new DataInputStream(Files.newInputStream(seedFile))) {
+				this.seed = in.readLong();
+			}
+		} else {
+			this.seed = ThreadLocalRandom.current().nextLong();
+			try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(seedFile))) {
+				out.writeLong(version);
 			}
 		}
 	}
 
-	public int getVersion() {
-		return this.version;
-	}
-
-	public boolean isVersionSupported() {
-		return this.version >= MINIMUM_VERSION && this.version <= CURRENT_VERSION;
-	}
-
-	public boolean shouldUpdateVersion() {
-		return this.version != CURRENT_VERSION;
-	}
-
-	public void updateVersion() throws IOException {
-		if (this.version < MINIMUM_VERSION || this.version > CURRENT_VERSION)
-			throw new UnsupportedOperationException();
-
-		if (this.version == CURRENT_VERSION)
-			return;
-
+	public boolean areRegionsLoaded() {
 		synchronized (this.loadedRegions) {
-			if (!this.loadedRegions.isEmpty())
-				throw new IllegalStateException();
-		}
-
-		if (this.version == 1) {
-			deleteRegionFiles();
-			this.version = 2;
-		}
-	}
-
-	private void deleteRegionFiles() throws IOException {
-		IOException error = null;
-
-		try (DirectoryStream<Path> st = Files.newDirectoryStream(this.dir)) {
-			for (Path p : st) {
-				if (isRegionFile(p.getFileName().toString())) {
-					try {
-						Files.delete(p);
-					} catch (IOException e) {
-						error = e;
-					}
-				}
-			}
-		} catch (DirectoryIteratorException e) {
-			throw e.getCause();
-		}
-
-		if (error != null)
-			throw error;
-	}
-
-	public void saveVersion() throws IOException {
-		Path file = this.dir.resolve("version");
-		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(file))) {
-			out.writeInt(this.version);
+			return !this.loadedRegions.isEmpty();
 		}
 	}
 
@@ -158,8 +152,25 @@ public class NetworkRegionCache {
 		}
 	}
 
-	private Path getRegionFile(int x, int z) {
-		return this.dir.resolve("r." + x + "." + z + ".dat");
+	private void deleteRegionFiles() throws IOException {
+		IOException error = null;
+
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(this.directory)) {
+			for (Path p : st) {
+				if (isRegionFile(p.getFileName().toString())) {
+					try {
+						Files.delete(p);
+					} catch (IOException e) {
+						error = e;
+					}
+				}
+			}
+		} catch (DirectoryIteratorException e) {
+			throw e.getCause();
+		}
+
+		if (error != null)
+			throw error;
 	}
 
 	private static boolean isRegionFile(String name) {
@@ -176,6 +187,10 @@ public class NetworkRegionCache {
 			}
 		}
 		return false;
+	}
+
+	private Path getRegionFile(int x, int z) {
+		return this.directory.resolve("r." + x + "." + z + ".dat");
 	}
 
 	public void closeLoadedRegions() {
