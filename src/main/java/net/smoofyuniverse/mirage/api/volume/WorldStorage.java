@@ -22,94 +22,21 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.util.Identifiable;
-import org.spongepowered.api.world.storage.WorldProperties;
-
-import java.util.Collection;
-import java.util.Optional;
-
 /**
  * Represents an immutable server-side world.
  */
-public interface WorldStorage extends BlockStorage, Identifiable {
+public interface WorldStorage extends BlockStorage, OpaqueWorld<ChunkStorage> {
 
-	/**
-	 * Gets the world associated to this volume.
-	 *
-	 * @return The world
-	 */
 	@Override
 	default WorldStorage getWorld() {
 		return this;
 	}
 
-	/**
-	 * @return The WorldView which is associated with this WorldStorage
-	 */
 	@Override
 	WorldView getView();
 
-	/**
-	 * @return The name of this world
-	 */
-	String getName();
-
-	/**
-	 * @return The properties of this world
-	 */
-	WorldProperties getProperties();
-
-	/**
-	 * @param pos The position
-	 * @return Whether the ChunkStorage at the given <strong>chunk</strong> position is loaded
-	 */
-	default boolean isChunkLoaded(Vector3i pos) {
-		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	@Override
+	default boolean isViewAvailable() {
+		return true;
 	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the ChunkStorage at the given <strong>chunk</strong> position is loaded
-	 */
-	boolean isChunkLoaded(int x, int y, int z);
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return The ChunkStorage at the given <strong>chunk</strong> position
-	 */
-	Optional<ChunkStorage> getChunkStorage(int x, int y, int z);
-
-	/**
-	 * @param pos The position
-	 * @return The ChunkStorage at the given <strong>chunk</strong> position
-	 */
-	default Optional<ChunkStorage> getChunkStorage(Vector3i pos) {
-		return getChunkStorage(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param pos The position
-	 * @return The ChunkStorage at the given <strong>block</strong> position
-	 */
-	default Optional<ChunkStorage> getChunkStorageAt(Vector3i pos) {
-		return getChunkStorageAt(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return The ChunkStorage at the given <strong>block</strong> position
-	 */
-	Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z);
-
-	/**
-	 * @return A collection of all loaded ChunkStorages in this world
-	 */
-	Collection<? extends ChunkStorage> getLoadedChunkStorages();
 }

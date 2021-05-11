@@ -46,7 +46,7 @@ public class WorldListener {
 
 	@Listener
 	public void onWorldSave(SaveWorldEvent.Pre e) {
-		((InternalWorld) e.getTargetWorld()).getView().getLoadedChunkViews().forEach(NetworkChunk::saveToCacheLater);
+		((InternalWorld) e.getTargetWorld()).getView().getLoadedOChunks().forEach(NetworkChunk::saveToCacheLater);
 	}
 
 	@Exclude(ChangeBlockEvent.Post.class)

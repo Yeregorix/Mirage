@@ -61,6 +61,12 @@ public abstract class WorldMixin implements InternalWorld {
 	}
 
 	@Override
+	public boolean isOpaque(int x, int y, int z) {
+		InternalChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk != null && chunk.isOpaque(x, y, z);
+	}
+
+	@Override
 	public Vector2i getLightLevels(int x, int y, int z) {
 		InternalChunk chunk = getChunk(x >> 4, z >> 4);
 		return chunk == null ? Vector2i.ZERO : chunk.getLightLevels(x, y, z);
@@ -73,12 +79,12 @@ public abstract class WorldMixin implements InternalWorld {
 	}
 
 	@Override
-	public boolean isChunkLoaded(int x, int y, int z) {
+	public boolean isOChunkLoaded(int x, int y, int z) {
 		return isChunkLoaded(x, z);
 	}
 
 	@Override
-	public Optional<ChunkStorage> getChunkStorage(int x, int y, int z) {
+	public Optional<ChunkStorage> getOChunk(int x, int y, int z) {
 		return Optional.ofNullable(getChunk(x, z));
 	}
 
@@ -102,14 +108,13 @@ public abstract class WorldMixin implements InternalWorld {
 		return getChunkPassively(x, z) != null;
 	}
 
-
 	@Override
-	public Optional<ChunkStorage> getChunkStorageAt(int x, int y, int z) {
-		return getChunkStorage(x >> 4, 0, z >> 4);
+	public Optional<ChunkStorage> getOChunkAt(int x, int y, int z) {
+		return getOChunk(x >> 4, 0, z >> 4);
 	}
 
 	@Override
-	public Collection<InternalChunk> getLoadedChunkStorages() {
+	public Collection<InternalChunk> getLoadedOChunks() {
 		if (this.isRemote)
 			return ImmutableList.of();
 		return ImmutableList.copyOf((Collection) ((ChunkProviderServer) this.chunkProvider).getLoadedChunks());

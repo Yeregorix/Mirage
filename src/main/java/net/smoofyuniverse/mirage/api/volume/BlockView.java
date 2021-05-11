@@ -23,7 +23,6 @@
 package net.smoofyuniverse.mirage.api.volume;
 
 import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.util.PositionOutOfBoundsException;
 import org.spongepowered.api.world.extent.MutableBlockVolume;
 
 import static java.lang.Math.max;
@@ -32,7 +31,7 @@ import static java.lang.Math.min;
 /**
  * A BlockView is a MutableBlockVolume associated with immutable BlockStorage. This object is used to represent a client-side BlockVolume.
  */
-public interface BlockView extends MutableBlockVolume {
+public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 
 	/**
 	 * Gets the world associated to this volume.
@@ -45,35 +44,6 @@ public interface BlockView extends MutableBlockVolume {
 	 * @return The BlockStorage which is associated with this BlockView
 	 */
 	BlockStorage getStorage();
-
-	/**
-	 * @param minX The X minimum position
-	 * @param minY The Y minimum position
-	 * @param minZ The Z minimum position
-	 * @param maxX The X maximum position
-	 * @param maxY The Y maximum position
-	 * @param maxZ The Z maximum position
-	 * @throws PositionOutOfBoundsException if one of the two positions is not contained in the volume
-	 * @throws IllegalArgumentException     if the two positions does not defines a valid area
-	 */
-	default void checkBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		checkBlockPosition(minX, minY, minZ);
-		checkBlockPosition(maxX, maxY, maxZ);
-
-		if (minX > maxX || minY > maxY || minZ > maxZ)
-			throw new IllegalArgumentException("Invalid area");
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @throws PositionOutOfBoundsException if the position is not contained in the volume
-	 */
-	default void checkBlockPosition(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
-	}
 
 	/**
 	 * @return Whether dynamic obfuscation is enabled in this volume
@@ -115,26 +85,6 @@ public interface BlockView extends MutableBlockVolume {
 	 * @return The distance of dynamism, between 0 and 15
 	 */
 	int getDynamism(int x, int y, int z);
-
-	/**
-	 * Checks if the block at the given position is exposed to the view of normal users.
-	 *
-	 * @param pos The position
-	 * @return Whether the block is exposed
-	 */
-	default boolean isExposed(Vector3i pos) {
-		return isExposed(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * Checks if the block at the given position is exposed to the view of normal users.
-	 *
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the block is exposed
-	 */
-	boolean isExposed(int x, int y, int z);
 
 	/**
 	 * Deobfuscates a single block at the given position.

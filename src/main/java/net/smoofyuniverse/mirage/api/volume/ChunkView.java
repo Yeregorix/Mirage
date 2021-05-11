@@ -22,53 +22,13 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.util.Direction;
-
-import java.util.Optional;
-
 /**
  * Represents a mutable client-side chunk.
  */
-public interface ChunkView extends BlockView {
+public interface ChunkView extends BlockView, OpaqueChunk {
 
-	/**
-	 * @return The ChunkStorage which is associated with this ChunkView
-	 */
 	@Override
 	ChunkStorage getStorage();
-
-	/**
-	 * @param dir The direction
-	 * @return Whether neighbor chunk according to the given direction is loaded
-	 */
-	default boolean isNeighborLoaded(Direction dir) {
-		return getNeighborView(dir).isPresent();
-	}
-
-	/**
-	 * @param dir The direction
-	 * @return The neighbor chunk according to the given direction
-	 */
-	default Optional<ChunkView> getNeighborView(Direction dir) {
-		if (dir.isSecondaryOrdinal())
-			throw new IllegalArgumentException("Direction");
-		return getWorld().getChunkView(getPosition().add(dir.asBlockOffset()));
-	}
-
-	/**
-	 * Gets the position of the chunk.
-	 *
-	 * @return The position
-	 */
-	Vector3i getPosition();
-
-	/**
-	 * Checks if neighbor chunks are loaded to be sure that we can call {@link BlockView#isExposed(int, int, int)}.
-	 *
-	 * @return Whether neighbor chunks are loaded
-	 */
-	boolean areNeighborsLoaded();
 
 	/**
 	 * @return The state of this chunk.

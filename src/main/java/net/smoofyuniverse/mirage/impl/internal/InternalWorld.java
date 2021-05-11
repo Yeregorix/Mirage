@@ -42,5 +42,5 @@ public interface InternalWorld extends WorldStorage {
 	boolean isChunkLoaded(int x, int z);
 
 	@Override
-	Collection<InternalChunk> getLoadedChunkStorages();
+	Collection<InternalChunk> getLoadedOChunks();
 }

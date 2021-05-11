@@ -24,13 +24,11 @@ package net.smoofyuniverse.mirage.api.volume;
 
 import com.flowpowered.math.vector.Vector2i;
 import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.util.PositionOutOfBoundsException;
-import org.spongepowered.api.world.extent.ImmutableBlockVolume;
 
 /**
  * A BlockStorage is an ImmutableBlockVolume associated with mutable BlockView. This object is used to represent a server-side BlockVolume.
  */
-public interface BlockStorage extends ImmutableBlockVolume {
+public interface BlockStorage extends OpaqueBlockVolume {
 
 	/**
 	 * Gets the world associated to this volume.
@@ -41,57 +39,15 @@ public interface BlockStorage extends ImmutableBlockVolume {
 
 	/**
 	 * @return The BlockView which is associated with this BlockStorage
+	 * @throws IllegalStateException if the BlockView is not available
+	 * @see BlockStorage#isViewAvailable
 	 */
 	BlockView getView();
 
 	/**
-	 * @param minX The X minimum position
-	 * @param minY The Y minimum position
-	 * @param minZ The Z minimum position
-	 * @param maxX The X maximum position
-	 * @param maxY The Y maximum position
-	 * @param maxZ The Z maximum position
-	 * @throws PositionOutOfBoundsException if one of the two positions is not contained in the volume
-	 * @throws IllegalArgumentException     if the two positions does not defines a valid area
+	 * @return Whether the BlockView associated with this BlockStorage is available
 	 */
-	default void checkBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		checkBlockPosition(minX, minY, minZ);
-		checkBlockPosition(maxX, maxY, maxZ);
-
-		if (minX > maxX || minY > maxY || minZ > maxZ)
-			throw new IllegalArgumentException("Invalid area");
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @throws PositionOutOfBoundsException if the position is not contained in the volume
-	 */
-	default void checkBlockPosition(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
-	}
-
-	/**
-	 * Checks if the block at the given position is exposed to the view of normal users.
-	 *
-	 * @param pos The position
-	 * @return Whether the block is exposed
-	 */
-	default boolean isExposed(Vector3i pos) {
-		return isExposed(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * Checks if the block at the given position is exposed to the view of normal users.
-	 *
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the block is exposed
-	 */
-	boolean isExposed(int x, int y, int z);
+	boolean isViewAvailable();
 
 	/**
 	 * @param pos The position

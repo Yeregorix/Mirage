@@ -434,9 +434,10 @@ public class NetworkChunk implements ChunkView {
 		return false;
 	}
 
-	private boolean isOpaque(int x, int y, int z) {
+	@Override
+	public boolean isOpaque(int x, int y, int z) {
 		NetworkBlockContainer c = this.containers[y >> 4];
-		return c != null && ((InternalBlockState) c.get(x, y & 15, z)).isOpaque();
+		return c != null && ((InternalBlockState) c.get(x & 15, y & 15, z & 15)).isOpaque();
 	}
 
 	@Override

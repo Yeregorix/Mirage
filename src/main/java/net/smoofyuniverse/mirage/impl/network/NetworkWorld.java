@@ -294,26 +294,18 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public Optional<ChunkView> getChunkView(int x, int y, int z) {
+	public boolean isOChunkLoaded(int x, int y, int z) {
+		return isChunkLoaded(x, z);
+	}
+
+	@Override
+	public Optional<ChunkView> getOChunk(int x, int y, int z) {
 		return Optional.ofNullable(getChunk(x, z));
 	}
 
 	@Override
-	public Optional<ChunkView> getChunkViewAt(int x, int y, int z) {
-		return getChunkView(x >> 4, 0, z >> 4);
-	}
-
-	@Override
-	public Collection<NetworkChunk> getLoadedChunkViews() {
-		if (!this.enabled)
-			return ImmutableList.of();
-
-		ImmutableList.Builder<NetworkChunk> b = ImmutableList.builder();
-		for (InternalChunk c : this.world.getLoadedChunkStorages()) {
-			if (c.isViewAvailable())
-				b.add(c.getView());
-		}
-		return b.build();
+	public Optional<ChunkView> getOChunkAt(int x, int y, int z) {
+		return getOChunk(x >> 4, 0, z >> 4);
 	}
 
 	@Override
@@ -448,8 +440,16 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public boolean isChunkLoaded(int x, int y, int z) {
-		return isChunkLoaded(x, z);
+	public Collection<NetworkChunk> getLoadedOChunks() {
+		if (!this.enabled)
+			return ImmutableList.of();
+
+		ImmutableList.Builder<NetworkChunk> b = ImmutableList.builder();
+		for (InternalChunk c : this.world.getLoadedOChunks()) {
+			if (c.isViewAvailable())
+				b.add(c.getView());
+		}
+		return b.build();
 	}
 
 	public boolean isChunkLoaded(int x, int z) {
@@ -460,6 +460,12 @@ public class NetworkWorld implements WorldView {
 	public boolean isExposed(int x, int y, int z) {
 		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
 		return chunk != null && chunk.isExposed(x, y, z);
+	}
+
+	@Override
+	public boolean isOpaque(int x, int y, int z) {
+		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		return chunk != null && chunk.isOpaque(x, y, z);
 	}
 
 	@Override

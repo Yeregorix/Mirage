@@ -263,7 +263,7 @@ public abstract class ChunkMixin implements InternalChunk {
 	@Override
 	public boolean isOpaque(int x, int y, int z) {
 		ExtendedBlockStorage storage = this.storageArrays[y >> 4];
-		return storage != null && ((InternalBlockState) storage.get(x, y & 15, z)).isOpaque();
+		return storage != null && ((InternalBlockState) storage.get(x & 15, y & 15, z & 15)).isOpaque();
 	}
 
 	@Override

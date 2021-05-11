@@ -25,42 +25,19 @@ package net.smoofyuniverse.mirage.api.volume;
 import com.flowpowered.math.vector.Vector3i;
 import net.smoofyuniverse.mirage.config.world.DeobfuscationConfig;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
-import org.spongepowered.api.util.Identifiable;
-import org.spongepowered.api.world.storage.WorldProperties;
-
-import java.util.Collection;
-import java.util.Optional;
 
 /**
  * Represents a mutable client-side world.
  */
-public interface WorldView extends BlockView, Identifiable {
+public interface WorldView extends BlockView, OpaqueWorld<ChunkView> {
 
-	/**
-	 * Gets the world associated to this volume.
-	 *
-	 * @return The world
-	 */
 	@Override
 	default WorldView getWorld() {
 		return this;
 	}
 
-	/**
-	 * @return The WorldStorage which is associated with this WorldView
-	 */
 	@Override
 	WorldStorage getStorage();
-
-	/**
-	 * @return The name of this world
-	 */
-	String getName();
-
-	/**
-	 * @return The properties of this world
-	 */
-	WorldProperties getProperties();
 
 	/**
 	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
@@ -81,59 +58,6 @@ public interface WorldView extends BlockView, Identifiable {
 	 * @return Whether obfuscation is enabled in this world
 	 */
 	boolean isEnabled();
-
-	/**
-	 * @param pos The position
-	 * @return Whether the ChunkView at the given <strong>chunk</strong> position is loaded
-	 */
-	default boolean isChunkLoaded(Vector3i pos) {
-		return isChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return Whether the ChunkView at the given <strong>chunk</strong> position is loaded
-	 */
-	boolean isChunkLoaded(int x, int y, int z);
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return The ChunkView at the given <strong>chunk</strong> position
-	 */
-	Optional<ChunkView> getChunkView(int x, int y, int z);
-
-	/**
-	 * @param pos The position
-	 * @return The ChunkView at the given <strong>chunk</strong> position
-	 */
-	default Optional<ChunkView> getChunkView(Vector3i pos) {
-		return getChunkView(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param pos The position
-	 * @return The ChunkView at the given <strong>block</strong> position
-	 */
-	default Optional<ChunkView> getChunkViewAt(Vector3i pos) {
-		return getChunkViewAt(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return The ChunkView at the given <strong>block</strong> position
-	 */
-	Optional<ChunkView> getChunkViewAt(int x, int y, int z);
-
-	/**
-	 * @return A collection of all loaded ChunkViews in this world
-	 */
-	Collection<? extends ChunkView> getLoadedChunkViews();
 
 	/**
 	 * Deobfuscates blocks around the given position according to the radius set in the configuration.

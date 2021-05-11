@@ -22,11 +22,21 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-/**
- * Represents an immutable server-side chunk.
- */
-public interface ChunkStorage extends BlockStorage, OpaqueChunk {
+import com.flowpowered.math.vector.Vector3i;
 
-	@Override
-	ChunkView getView();
+public interface OpaqueChunk extends OpaqueBlockVolume {
+
+	/**
+	 * Gets the position of the chunk.
+	 *
+	 * @return The position
+	 */
+	Vector3i getPosition();
+
+	/**
+	 * Checks if neighbor chunks are loaded to be sure that we can call {@link OpaqueBlockVolume#isExposed(int, int, int)}.
+	 *
+	 * @return Whether neighbor chunks are loaded
+	 */
+	boolean areNeighborsLoaded();
 }

@@ -42,6 +42,4 @@ public interface InternalChunk extends ChunkStorage {
 	boolean captureContainers();
 
 	void requireContainer(int index);
-
-	boolean isOpaque(int x, int y, int z);
 }

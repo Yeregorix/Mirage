@@ -164,7 +164,7 @@ public class Mirage {
 		if (this.game.getServer() instanceof InternalServer) {
 			this.obfuscationTask = Task.builder().execute(() -> {
 				for (World w : this.game.getServer().getWorlds()) {
-					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedChunkViews()) {
+					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedOChunks()) {
 						if (chunk.getState() == State.OBFUSCATION_REQUESTED)
 							chunk.obfuscate();
 					}
