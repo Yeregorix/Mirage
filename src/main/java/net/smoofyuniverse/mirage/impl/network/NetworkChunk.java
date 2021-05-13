@@ -347,7 +347,7 @@ public class NetworkChunk implements ChunkView {
 				if (d2 > maxDynamismDistance2 || d2 > squared(c.getMaxDynamism()) << 8)
 					continue;
 
-				c.collectDynamicPositions(chunk, cX, relY, cZ);
+				c.collectDynamicPositions(chunk);
 			}
 		}
 

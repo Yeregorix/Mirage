@@ -38,9 +38,6 @@ import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 
-import static net.smoofyuniverse.mirage.util.MathUtil.lengthSquared;
-import static net.smoofyuniverse.mirage.util.MathUtil.squared;
-
 public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 
 	@SuppressWarnings("deprecation")
@@ -208,17 +205,14 @@ public class NetworkBlockContainer implements IBlockStatePaletteResizer {
 		return this.dynamism.getFromIndex(index);
 	}
 
-	public void collectDynamicPositions(DynamicChunk chunk, int cX, int cY, int cZ) {
+	public void collectDynamicPositions(DynamicChunk chunk) {
 		if (this.dynCount[0] == 4096)
 			return;
 
 		for (int i = 0; i < 4096; i++) {
 			int d = this.dynamism.getFromIndex(i);
-			if (d != 0) {
-				int x = i & 15, y = i >> 8 & 15, z = i >> 4 & 15;
-				if (lengthSquared(cX - x, cY - y, cZ - z) <= squared(d) << 8)
-					chunk.add(x, this.minY + y, z);
-			}
+			if (d != 0)
+				chunk.add(i & 15, this.minY + (i >> 8 & 15), i >> 4 & 15, d);
 		}
 	}
 

@@ -61,8 +61,17 @@ public final class DynamicChunk {
 		this.relativeCenter = center.sub(this.view.getBlockMin());
 	}
 
+	public void add(int x, int y, int z, int distance) {
+		if (test(x, y, z, distance))
+			add(x, y, z);
+	}
+
+	public boolean test(int x, int y, int z, int distance) {
+		return this.relativeCenter.distanceSquared(x, y, z) <= squared(distance) << 8;
+	}
+
 	public void update(int x, int y, int z, int distance) {
-		if (this.relativeCenter.distanceSquared(x, y, z) <= squared(distance) << 8)
+		if (test(x, y, z, distance))
 			add(x, y, z);
 		else
 			remove(x, y, z);
