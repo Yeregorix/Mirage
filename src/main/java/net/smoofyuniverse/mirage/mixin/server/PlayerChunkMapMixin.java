@@ -27,7 +27,8 @@ import net.minecraft.server.management.PlayerChunkMap;
 import net.minecraft.world.WorldServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunkMap;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
-import net.smoofyuniverse.mirage.impl.network.dynamism.DynamismManager;
+import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,46 +49,52 @@ public class PlayerChunkMapMixin implements InternalChunkMap {
 	@Final
 	private WorldServer world;
 
-	private final Map<UUID, DynamismManager> dynamismManagers = new HashMap<>();
-
-	@Override
-	public boolean isDynamismEnabled() {
-		return ((InternalWorld) this.world).getView().isDynamismEnabled();
-	}
-
-	@Override
-	public DynamismManager getOrCreateDynamismManager(Player player) {
-		DynamismManager manager = this.dynamismManagers.get(player.getUniqueId());
-		if (manager == null) {
-			if (!isDynamismEnabled())
-				throw new UnsupportedOperationException();
-
-			manager = new DynamismManager();
-			manager.setCenter(player.getPosition().add(0, 1.62, 0).toInt());
-			this.dynamismManagers.put(player.getUniqueId(), manager);
-		}
-		return manager;
-	}
-
-	@Override
-	public Optional<DynamismManager> getDynamismManager(UUID id) {
-		return Optional.ofNullable(this.dynamismManagers.get(id));
-	}
-
-	@Override
-	public Optional<DynamismManager> removeDynamismManager(UUID id) {
-		return Optional.ofNullable(this.dynamismManagers.remove(id));
-	}
+	private final Map<UUID, DynamicWorld> dynamicWorlds = new HashMap<>();
 
 	@Inject(method = "removePlayer", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(Ljava/lang/Object;)Z"))
 	public void onRemovePlayer(EntityPlayerMP player, CallbackInfo ci) {
 		if (isDynamismEnabled())
-			removeDynamismManager(player.getUniqueID());
+			removeDynamicWorld(player.getUniqueID());
+	}
+
+	private NetworkWorld getView() {
+		return ((InternalWorld) this.world).getView();
 	}
 
 	@Inject(method = "updateMovingPlayer", at = @At("RETURN"))
 	public void onUpdateMovingPlayer(EntityPlayerMP player, CallbackInfo ci) {
 		if (isDynamismEnabled())
-			getDynamismManager(player.getUniqueID()).ifPresent(m -> m.setCenter(((Player) player).getPosition().add(0, 1.62, 0).toInt()));
+			getDynamicWorld(player.getUniqueID()).ifPresent(DynamicWorld::updateCenter);
 	}
+
+	@Override
+	public boolean isDynamismEnabled() {
+		return getView().isDynamismEnabled();
+	}
+
+	@Override
+	public DynamicWorld getOrCreateDynamicWorld(Player player) {
+		DynamicWorld dynWorld = this.dynamicWorlds.get(player.getUniqueId());
+		if (dynWorld == null) {
+			if (!isDynamismEnabled())
+				throw new UnsupportedOperationException();
+
+			dynWorld = new DynamicWorld(getView(), player);
+			dynWorld.updateCenter();
+			this.dynamicWorlds.put(player.getUniqueId(), dynWorld);
+		}
+		return dynWorld;
+	}
+
+	@Override
+	public Optional<DynamicWorld> getDynamicWorld(UUID id) {
+		return Optional.ofNullable(this.dynamicWorlds.get(id));
+	}
+
+	@Override
+	public void removeDynamicWorld(UUID id) {
+		this.dynamicWorlds.remove(id);
+	}
+
+
 }

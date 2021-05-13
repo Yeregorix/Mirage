@@ -20,68 +20,62 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.network.dynamism;
+package net.smoofyuniverse.mirage.impl.network.dynamic;
 
 import com.flowpowered.math.vector.Vector3i;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.smoofyuniverse.mirage.MirageTimings;
-import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import org.spongepowered.api.util.Tuple;
+import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import org.spongepowered.api.entity.living.player.Player;
 
-import java.util.Optional;
+import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
 
-public final class DynamismManager {
-	private final Long2ObjectMap<Tuple<DynamicChunk, ChunkChangeListener>> chunks = new Long2ObjectOpenHashMap<>();
+public final class DynamicWorld {
+	private final NetworkWorld view;
+	private final Player player;
+
+	private final Long2ObjectMap<DynamicChunk> chunks = new Long2ObjectOpenHashMap<>();
 	private Vector3i center;
 
-	private void setCenter(DynamicChunk dynChunk, ChunkChangeListener listener) {
-		dynChunk.setCenter(this.center);
-		dynChunk.clear();
-
-		InternalChunk chunk = listener.getChunk();
-		if (chunk != null) {
-			chunk.getView().collectDynamicPositions(dynChunk);
-			listener.markDirty();
-		}
+	public DynamicWorld(NetworkWorld view, Player player) {
+		this.view = view;
+		this.player = player;
 	}
 
-	public Optional<Vector3i> getCenter() {
-		return Optional.ofNullable(this.center);
+	public void updateCenter() {
+		setCenter(this.player.getPosition().add(0, 1.62, 0).toInt());
 	}
 
-	public void setCenter(Vector3i center) {
-		if (this.center != null && this.center.equals(center))
+	public Vector3i getCenter() {
+		return this.center;
+	}
+
+	private void setCenter(Vector3i center) {
+		if (center.equals(this.center))
 			return;
 
 		MirageTimings.DYNAMISM.startTiming();
 
 		this.center = center;
-		for (Tuple<DynamicChunk, ChunkChangeListener> t : this.chunks.values())
-			setCenter(t.getFirst(), t.getSecond());
+		for (DynamicChunk chunk : this.chunks.values())
+			chunk.updateCenter();
 
 		MirageTimings.DYNAMISM.stopTiming();
 	}
 
-	public void addChunk(DynamicChunk dynChunk, ChunkChangeListener listener) {
-		if (dynChunk == null || listener == null)
-			throw new IllegalArgumentException();
+	public DynamicChunk createChunk(int x, int z) {
+		DynamicChunk chunk = new DynamicChunk(this, this.view.getChunk(x, z));
+		this.chunks.put(asLong(x, z), chunk);
 
-		this.chunks.put(index(dynChunk.x, dynChunk.z), new Tuple<>(dynChunk, listener));
+		MirageTimings.DYNAMISM.startTiming();
+		chunk.updateCenter();
+		MirageTimings.DYNAMISM.stopTiming();
 
-		if (this.center != null) {
-			MirageTimings.DYNAMISM.startTiming();
-			setCenter(dynChunk, listener);
-			MirageTimings.DYNAMISM.stopTiming();
-		}
-	}
-
-	private static long index(int x, int z) {
-		return (long) x + 2147483647L | (long) z + 2147483647L << 32;
+		return chunk;
 	}
 
 	public void removeChunk(int x, int z) {
-		this.chunks.remove(index(x, z));
+		this.chunks.remove(asLong(x, z));
 	}
 }

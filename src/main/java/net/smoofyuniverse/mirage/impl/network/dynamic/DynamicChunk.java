@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.network.dynamism;
+package net.smoofyuniverse.mirage.impl.network.dynamic;
 
 import com.flowpowered.math.vector.Vector3i;
 import it.unimi.dsi.fastutil.shorts.ShortIterator;
@@ -30,45 +30,39 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.change.BlockChange;
 
-import javax.annotation.Nullable;
-
-import static net.smoofyuniverse.mirage.util.MathUtil.lengthSquared;
 import static net.smoofyuniverse.mirage.util.MathUtil.squared;
 
 public final class DynamicChunk {
-	public final int x, z;
+	public final DynamicWorld world;
+	public final NetworkChunk view;
 
 	private final ShortSet nextPositions = new ShortOpenHashSet();
 	private final ShortSet currentPositions = new ShortOpenHashSet();
 	private boolean modified;
 
-	private Vector3i center;
-	private int relCenterX, relCenterY, relCenterZ;
+	private Vector3i relativeCenter;
 
-	public DynamicChunk(int x, int z) {
-		this.x = x;
-		this.z = z;
+	DynamicChunk(DynamicWorld world, NetworkChunk view) {
+		this.world = world;
+		this.view = view;
 	}
 
-	@Nullable
-	public Vector3i getCenter() {
-		return this.center;
+	public Vector3i getRelativeCenter() {
+		return this.relativeCenter;
 	}
 
-	public void setCenter(Vector3i center) {
-		this.center = center;
-		if (center != null) {
-			this.relCenterX = center.getX() - (this.x << 4);
-			this.relCenterY = center.getY();
-			this.relCenterZ = center.getZ() - (this.z << 4);
-		}
+	public void updateCenter() {
+		setCenter(this.world.getCenter());
+		clear();
+		this.view.collectDynamicPositions(this);
+	}
+
+	private void setCenter(Vector3i center) {
+		this.relativeCenter = center.sub(this.view.getBlockMin());
 	}
 
 	public void update(int x, int y, int z, int distance) {
-		if (this.center == null)
-			return;
-
-		if (lengthSquared(this.relCenterX - x, this.relCenterY - y, this.relCenterZ - z) <= squared(distance) << 8)
+		if (this.relativeCenter.distanceSquared(x, y, z) <= squared(distance) << 8)
 			add(x, y, z);
 		else
 			remove(x, y, z);
@@ -111,20 +105,18 @@ public final class DynamicChunk {
 		return this.currentPositions.contains(pos);
 	}
 
-	public BlockChange getChanges(InternalChunk chunk, boolean tileEntities) {
-		BlockChange.Builder b = BlockChange.builder(chunk);
-		getChanges(chunk, b);
+	public BlockChange getChanges(boolean tileEntities) {
+		BlockChange.Builder b = BlockChange.builder(this.view.getStorage());
+		getChanges(b);
 		return b.build(tileEntities);
 	}
 
-	public void getChanges(InternalChunk chunk, BlockChange.Builder b) {
+	public void getChanges(BlockChange.Builder b) {
 		if (this.modified) {
-			NetworkChunk netChunk = chunk.getView();
-			if (netChunk.x != this.x || netChunk.z != this.z)
-				throw new IllegalArgumentException("Chunk pos");
+			int minX = this.view.x << 4, minZ = this.view.z << 4;
+			InternalChunk chunk = this.view.getStorage();
 
-			int minX = this.x << 4, minZ = this.z << 4;
-
+			// Reveal
 			ShortIterator it = this.nextPositions.iterator();
 			while (it.hasNext()) {
 				short pos = it.nextShort();
@@ -132,35 +124,34 @@ public final class DynamicChunk {
 					b.add(pos, chunk.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 			}
 
+			// Hide
 			it = this.currentPositions.iterator();
 			while (it.hasNext()) {
 				short pos = it.nextShort();
 				if (!this.nextPositions.contains(pos))
-					b.add(pos, netChunk.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
+					b.add(pos, this.view.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 			}
 		}
 	}
 
-	public BlockChange getCurrent(InternalChunk chunk, boolean tileEntities) {
-		return getCurrent(chunk, 65535, tileEntities);
+	public BlockChange getCurrent(boolean tileEntities) {
+		return getCurrent(65535, tileEntities);
 	}
 
-	public BlockChange getCurrent(InternalChunk chunk, int sections, boolean tileEntities) {
-		BlockChange.Builder b = BlockChange.builder(chunk);
-		getCurrent(chunk, sections, b);
+	public BlockChange getCurrent(int sections, boolean tileEntities) {
+		BlockChange.Builder b = BlockChange.builder(this.view.getStorage());
+		getCurrent(sections, b);
 		return b.build(tileEntities);
 	}
 
-	public void getCurrent(InternalChunk chunk, int sections, BlockChange.Builder b) {
+	public void getCurrent(int sections, BlockChange.Builder b) {
 		if (sections == 0)
 			return;
 
-		NetworkChunk netChunk = chunk.getView();
-		if (netChunk.x != this.x || netChunk.z != this.z)
-			throw new IllegalArgumentException("Chunk pos");
+		int minX = this.view.x << 4, minZ = this.view.z << 4;
+		InternalChunk chunk = this.view.getStorage();
 
-		int minX = this.x << 4, minZ = this.z << 4;
-
+		// Reveal
 		ShortIterator it = this.currentPositions.iterator();
 		if (sections == 65535) {
 			while (it.hasNext()) {
@@ -177,8 +168,8 @@ public final class DynamicChunk {
 		}
 	}
 
-	public void getCurrent(InternalChunk chunk, BlockChange.Builder b) {
-		getCurrent(chunk, 65535, b);
+	public void getCurrent(BlockChange.Builder b) {
+		getCurrent(65535, b);
 	}
 
 	public boolean hasChanges() {

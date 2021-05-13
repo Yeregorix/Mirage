@@ -22,14 +22,7 @@
 
 package net.smoofyuniverse.mirage.impl.network.change;
 
-import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-
-import javax.annotation.Nullable;
-
 public interface ChunkChangeListener {
-
-	@Nullable
-	InternalChunk getChunk();
 
 	void addChange(int x, int y, int z);
 

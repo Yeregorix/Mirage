@@ -37,7 +37,7 @@ import net.smoofyuniverse.mirage.impl.internal.compat.CompatUtil;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.change.BlockChange;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import net.smoofyuniverse.mirage.impl.network.dynamism.DynamicChunk;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.extent.BlockVolume;
 import org.spongepowered.asm.mixin.Final;
@@ -49,7 +49,6 @@ import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,10 +91,9 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 			addDynamicChunk(player);
 	}
 
-	private void addDynamicChunk(EntityPlayerMP player) {
-		DynamicChunk chunk = new DynamicChunk(this.pos.x, this.pos.z);
-		this.dynamicChunks.put(player, chunk);
-		((InternalChunkMap) this.playerChunkMap).getOrCreateDynamismManager((Player) player).addChunk(chunk, this);
+	private void removeDynamicChunk(EntityPlayerMP player) {
+		((InternalChunkMap) this.playerChunkMap).getDynamicWorld(player.getUniqueID()).ifPresent(m -> m.removeChunk(this.pos.x, this.pos.z));
+		this.dynamicChunks.remove(player);
 	}
 
 	@Inject(method = "removePlayer", at = @At(value = "INVOKE", target = "Ljava/util/List;remove(Ljava/lang/Object;)Z", shift = Shift.AFTER))
@@ -104,14 +102,9 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 			removeDynamicChunk(player);
 	}
 
-	private void removeDynamicChunk(EntityPlayerMP player) {
-		this.dynamicChunks.remove(player);
-		((InternalChunkMap) this.playerChunkMap).getDynamismManager(player.getUniqueID()).ifPresent(m -> m.removeChunk(this.pos.x, this.pos.z));
-	}
-
 	/**
 	 * @author Yeregorix
-	 * @reason Implements dynamism
+	 * @reason Mirage implementation
 	 */
 	@Overwrite
 	public boolean sendToPlayers() {
@@ -153,7 +146,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 				MirageTimings.DYNAMISM.startTiming();
 
 				dynChunk.applyChanges();
-				dynChunk.getCurrent(chunk, true).sendTo((Player) p);
+				dynChunk.getCurrent(true).sendTo((Player) p);
 
 				MirageTimings.DYNAMISM.stopTiming();
 
@@ -174,9 +167,14 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 		return true;
 	}
 
+	private void addDynamicChunk(EntityPlayerMP player) {
+		DynamicChunk chunk = ((InternalChunkMap) this.playerChunkMap).getOrCreateDynamicWorld((Player) player).createChunk(this.pos.x, this.pos.z);
+		this.dynamicChunks.put(player, chunk);
+	}
+
 	/**
 	 * @author Yeregorix
-	 * @reason Implements dynamism
+	 * @reason Mirage implementation
 	 */
 	@Overwrite
 	public void sendToPlayer(EntityPlayerMP p) {
@@ -189,7 +187,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 				DynamicChunk dynChunk = this.dynamicChunks.get(p);
 				if (dynChunk != null) {
 					dynChunk.applyChanges();
-					dynChunk.getCurrent((InternalChunk) this.chunk, true).sendTo((Player) p);
+					dynChunk.getCurrent(true).sendTo((Player) p);
 				}
 
 				MirageTimings.DYNAMISM.stopTiming();
@@ -201,7 +199,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 
 	/**
 	 * @author Yeregorix
-	 * @reason Implements dynamism
+	 * @reason Mirage implementation
 	 */
 	@Overwrite
 	public void blockChanged(int x, int y, int z) {
@@ -225,7 +223,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 
 	/**
 	 * @author Yeregorix
-	 * @reason Implements dynamism
+	 * @reason Mirage implementation
 	 */
 	@Overwrite
 	public void update() {
@@ -242,7 +240,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 
 						if (dynChunk.hasChanges()) {
 							BlockChange.Builder b = BlockChange.builder(chunk);
-							dynChunk.getChanges(chunk, b);
+							dynChunk.getChanges(b);
 							dynChunk.applyChanges();
 							b.build(true).sendTo((Player) e.getKey());
 						}
@@ -271,7 +269,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 								b.add(pos, (dynChunk.currentlyContains(pos) ? chunk : netChunk).getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
 							}
 
-							dynChunk.getChanges(chunk, b);
+							dynChunk.getChanges(b);
 							dynChunk.applyChanges();
 
 							b.build(true).sendTo((Player) p);
@@ -298,7 +296,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 
 	/**
 	 * @author Yeregorix
-	 * @reason Implements dynamism
+	 * @reason Mirage implementation
 	 */
 	@Overwrite
 	public void sendPacket(Packet<?> packet) {
@@ -308,7 +306,6 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 				if (data.chunkX != this.pos.x || data.chunkZ != this.pos.z)
 					throw new IllegalArgumentException("Chunk pos");
 
-				InternalChunk chunk = (InternalChunk) this.chunk;
 				int sections = data.isFullChunk() ? 65535 : data.availableSections;
 
 				for (Map.Entry<EntityPlayerMP, DynamicChunk> e : this.dynamicChunks.entrySet()) {
@@ -320,7 +317,7 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 					MirageTimings.DYNAMISM.startTiming();
 
 					dynChunk.applyChanges();
-					dynChunk.getCurrent(chunk, sections, true).sendTo((Player) p);
+					dynChunk.getCurrent(sections, true).sendTo((Player) p);
 
 					MirageTimings.DYNAMISM.stopTiming();
 				}
@@ -329,12 +326,6 @@ public abstract class PlayerChunkMapEntryMixin implements ChunkChangeListener {
 					p.connection.sendPacket(packet);
 			}
 		}
-	}
-
-	@Nullable
-	@Override
-	public InternalChunk getChunk() {
-		return (InternalChunk) this.chunk;
 	}
 
 	@Override

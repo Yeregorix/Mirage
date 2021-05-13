@@ -37,7 +37,7 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.network.cache.BlockContainerSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import net.smoofyuniverse.mirage.impl.network.dynamism.DynamicChunk;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
@@ -69,7 +69,7 @@ import static net.smoofyuniverse.mirage.util.MathUtil.*;
  * Represents a chunk viewed for the network (akka online players)
  */
 public class NetworkChunk implements ChunkView {
-	public static final int maxDynamismDistance = 160, maxDynamismDistance2 = squared(160);
+	public static final int maxDynamismDistance2 = squared(160);
 
 	private final InternalChunk chunk;
 
@@ -332,27 +332,27 @@ public class NetworkChunk implements ChunkView {
 		if (!this.dynamismEnabled)
 			return;
 
-		Vector3i center = chunk.getCenter();
-		if (center == null)
-			return;
+		Vector3i relCenter = chunk.getRelativeCenter();
+		int cX = relCenter.getX(), cY = relCenter.getY(), cZ = relCenter.getZ();
 
-		int relX = center.getX() - (this.x << 4), relZ = center.getZ() - (this.z << 4);
-
-		int minXZDistance2 = lengthSquared(clamp(relX, 0, 15) - relX, clamp(relZ, 0, 15) - relZ);
-		if (minXZDistance2 + squared(clamp(center.getY(), 0, 255) - center.getY()) > maxDynamismDistance2)
+		int minXZDistance2 = lengthSquared(clamp(cX, 0, 15) - cX, clamp(cZ, 0, 15) - cZ);
+		if (minXZDistance2 + squared(clamp(cY, 0, 255) - cY) > maxDynamismDistance2)
 			return;
 
 		for (NetworkBlockContainer c : this.containers) {
 			if (c != null) {
-				int relY = center.getY() - c.getY();
+				int relY = cY - c.getY();
 
 				int d2 = minXZDistance2 + squared(clamp(relY, 0, 15) - relY);
 				if (d2 > maxDynamismDistance2 || d2 > squared(c.getMaxDynamism()) << 8)
 					continue;
 
-				c.collectDynamicPositions(chunk, relX, relY, relZ);
+				c.collectDynamicPositions(chunk, cX, relY, cZ);
 			}
 		}
+
+		if (this.listener != null)
+			this.listener.markDirty();
 	}
 
 	@Override

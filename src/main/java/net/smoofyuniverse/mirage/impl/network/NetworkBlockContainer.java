@@ -33,7 +33,7 @@ import net.minecraft.world.chunk.*;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.mirage.impl.network.cache.BlockContainerSnapshot;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import net.smoofyuniverse.mirage.impl.network.dynamism.DynamicChunk;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
