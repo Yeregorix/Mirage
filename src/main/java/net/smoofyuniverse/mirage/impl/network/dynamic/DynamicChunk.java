@@ -22,48 +22,74 @@
 
 package net.smoofyuniverse.mirage.impl.network.dynamic;
 
-import com.flowpowered.math.vector.Vector3i;
-import it.unimi.dsi.fastutil.shorts.ShortIterator;
-import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
-import it.unimi.dsi.fastutil.shorts.ShortSet;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
-import net.smoofyuniverse.mirage.impl.network.change.BlockChange;
+import net.smoofyuniverse.mirage.impl.internal.InternalSection;
+import net.smoofyuniverse.mirage.impl.network.NetworkSection;
+import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
+import org.spongepowered.math.vector.Vector3i;
 
-import static net.smoofyuniverse.mirage.util.MathUtil.squared;
+import static net.smoofyuniverse.mirage.util.MathUtil.*;
 
 public final class DynamicChunk {
+	public static final int maxDistance2 = squared(160);
+
 	public final DynamicWorld world;
-	public final NetworkChunk view;
+	public final InternalChunk storage;
 
-	private final ShortSet nextPositions = new ShortOpenHashSet();
-	private final ShortSet currentPositions = new ShortOpenHashSet();
-	private boolean modified;
-
+	public final DynamicSection[] sections = new DynamicSection[16];
 	private Vector3i relativeCenter;
 
-	DynamicChunk(DynamicWorld world, NetworkChunk view) {
+	DynamicChunk(DynamicWorld world, InternalChunk storage) {
 		this.world = world;
-		this.view = view;
+		this.storage = storage;
 	}
 
 	public Vector3i getRelativeCenter() {
 		return this.relativeCenter;
 	}
 
-	public void updateCenter() {
-		setCenter(this.world.getCenter());
-		clear();
-		this.view.collectDynamicPositions(this);
+	void updateCenter() {
+		this.relativeCenter = this.world.getCenter().sub(this.storage.min());
+		int x = this.relativeCenter.x(), z = this.relativeCenter.z();
+		int xzDistance2 = lengthSquared(clamp(x, 0, 15) - x, clamp(z, 0, 15) - z);
+
+		LevelChunkSection[] storages = this.storage.getSections();
+		for (int i = 0; i < 16; i++) {
+			DynamicSection section = this.sections[i];
+			LevelChunkSection storage = storages[i];
+
+			if (section == null) {
+				if (storage == null)
+					continue;
+
+				section = new DynamicSection(this, i);
+				this.sections[i] = section;
+			}
+
+			section.setCenter();
+			section.clear();
+
+			int y = section.getRelativeCenter().y();
+			int d2 = xzDistance2 + squared(clamp(y, 0, 15) - y);
+			if (d2 <= maxDistance2) {
+				NetworkSection view = ((InternalSection) storage).view();
+				if (d2 <= squared(view.getMaxDynamism()) << 8) {
+					view.collectDynamicPositions(section);
+				}
+			}
+		}
+
+		ChunkChangeListener listener = this.storage.view().getListener();
+		if (listener != null)
+			listener.markChanged();
 	}
 
-	private void setCenter(Vector3i center) {
-		this.relativeCenter = center.sub(this.view.getBlockMin());
-	}
-
-	public void add(int x, int y, int z, int distance) {
-		if (test(x, y, z, distance))
-			add(x, y, z);
+	public void clear() {
+		for (DynamicSection section : this.sections) {
+			if (section != null)
+				section.clear();
+		}
 	}
 
 	public boolean test(int x, int y, int z, int distance) {
@@ -78,118 +104,19 @@ public final class DynamicChunk {
 	}
 
 	public void add(int x, int y, int z) {
-		add(index(x, y, z));
+		int i = y >> 4;
+		DynamicSection section = this.sections[i];
+		if (section == null) {
+			section = new DynamicSection(this, i);
+			this.sections[i] = section;
+			section.setCenter();
+		}
+		section.add(x, y & 15, z);
 	}
 
 	public void remove(int x, int y, int z) {
-		remove(index(x, y, z));
-	}
-
-	public void add(short pos) {
-		if (this.nextPositions.add(pos))
-			this.modified = true;
-	}
-
-	private static short index(int x, int y, int z) {
-		return (short) ((x & 15) << 12 | (z & 15) << 8 | (y & 255));
-	}
-
-	public void remove(short pos) {
-		if (this.nextPositions.rem(pos))
-			this.modified = true;
-	}
-
-	public void clear() {
-		if (!this.nextPositions.isEmpty()) {
-			this.nextPositions.clear();
-			this.modified = true;
-		}
-	}
-
-	public boolean currentlyContains(int x, int y, int z) {
-		return currentlyContains(index(x, y, z));
-	}
-
-	public boolean currentlyContains(short pos) {
-		return this.currentPositions.contains(pos);
-	}
-
-	public BlockChange getChanges(boolean tileEntities) {
-		BlockChange.Builder b = BlockChange.builder(this.view.getStorage());
-		getChanges(b);
-		return b.build(tileEntities);
-	}
-
-	public void getChanges(BlockChange.Builder b) {
-		if (this.modified) {
-			int minX = this.view.x << 4, minZ = this.view.z << 4;
-			InternalChunk chunk = this.view.getStorage();
-
-			// Reveal
-			ShortIterator it = this.nextPositions.iterator();
-			while (it.hasNext()) {
-				short pos = it.nextShort();
-				if (!this.currentPositions.contains(pos))
-					b.add(pos, chunk.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
-			}
-
-			// Hide
-			it = this.currentPositions.iterator();
-			while (it.hasNext()) {
-				short pos = it.nextShort();
-				if (!this.nextPositions.contains(pos))
-					b.add(pos, this.view.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
-			}
-		}
-	}
-
-	public BlockChange getCurrent(boolean tileEntities) {
-		return getCurrent(65535, tileEntities);
-	}
-
-	public BlockChange getCurrent(int sections, boolean tileEntities) {
-		BlockChange.Builder b = BlockChange.builder(this.view.getStorage());
-		getCurrent(sections, b);
-		return b.build(tileEntities);
-	}
-
-	public void getCurrent(int sections, BlockChange.Builder b) {
-		if (sections == 0)
-			return;
-
-		int minX = this.view.x << 4, minZ = this.view.z << 4;
-		InternalChunk chunk = this.view.getStorage();
-
-		// Reveal
-		ShortIterator it = this.currentPositions.iterator();
-		if (sections == 65535) {
-			while (it.hasNext()) {
-				short pos = it.nextShort();
-				b.add(pos, chunk.getBlock(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
-			}
-		} else {
-			while (it.hasNext()) {
-				short pos = it.nextShort();
-				int y = pos & 255;
-				if ((sections & 1 << (y >> 4)) != 0)
-					b.add(pos, chunk.getBlock(minX + (pos >> 12 & 15), y, minZ + (pos >> 8 & 15)));
-			}
-		}
-	}
-
-	public void getCurrent(BlockChange.Builder b) {
-		getCurrent(65535, b);
-	}
-
-	public boolean hasChanges() {
-		return this.modified;
-	}
-
-	public void applyChanges() {
-		if (this.modified) {
-			this.currentPositions.clear();
-			this.currentPositions.addAll(this.nextPositions);
-			this.modified = false;
-		}
+		DynamicSection section = this.sections[y >> 4];
+		if (section != null)
+			section.remove(x, y & 15, z);
 	}
 }

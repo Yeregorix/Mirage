@@ -22,123 +22,88 @@
 
 package net.smoofyuniverse.mirage.resource;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.resource.Pack.Section;
-import net.smoofyuniverse.mirage.util.BlockSet;
-import org.spongepowered.api.GameRegistry;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.registry.Registry;
+import org.spongepowered.api.registry.RegistryTypes;
+import org.spongepowered.api.world.WorldType;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import static net.smoofyuniverse.mirage.resource.Categories.GROUND;
 
 public final class Resources {
-	private static final Map<DimensionType, Resources> map = new HashMap<>();
+	public static final Resources DEFAULT = new Resources(ArrayListMultimap.create());
+	private static final Map<WorldType, Resources> map = new HashMap<>();
 
-	private final Map<String, BlockSet> blocks = new HashMap<>();
-	private BlockState ground;
+	private final Multimap<String, String> blocks;
+	private final String ground;
 
-	private Resources() {}
+	private Resources(Multimap<String, String> blocks) {
+		this.blocks = blocks;
 
-	public BlockState getGround() {
+		Collection<String> groundCol = this.blocks.get(GROUND);
+		if (groundCol.isEmpty()) {
+			this.ground = "minecraft:stone";
+			groundCol.add(this.ground);
+		} else {
+			this.ground = groundCol.iterator().next();
+		}
+	}
+
+	public Set<String> getBlocks(String... categories) {
+		Set<String> set = new HashSet<>();
+		getBlocks(set, categories);
+		return set;
+	}
+
+	public void getBlocks(Collection<String> col, String... categories) {
+		for (String category : categories)
+			col.addAll(this.blocks.get(category));
+	}
+
+	public String getGround() {
 		return this.ground;
 	}
 
-	public static Resources of(DimensionType type) {
+	public static Resources of(WorldType type) {
 		if (type == null)
 			throw new IllegalArgumentException("type");
 
 		Resources r = map.get(type);
 		if (r == null) {
-			Mirage.LOGGER.warn("Unregistered resources for dimension type: " + type.getId());
-			r = new Resources();
-			r.setGround();
+			Mirage.LOGGER.warn("Unregistered resources for world type: " + type.key(RegistryTypes.WORLD_TYPE));
+			r = DEFAULT;
 			map.put(type, r);
 		}
 		return r;
 	}
 
-	public BlockSet getBlocks(String category) {
-		BlockSet set = this.blocks.get(category);
-		return set == null ? new BlockSet() : set.copy();
-	}
-
-	public BlockSet getBlocks(String... categories) {
-		BlockSet col = null;
-
-		for (String c : categories) {
-			BlockSet set = this.blocks.get(c);
-			if (set != null) {
-				if (col == null)
-					col = set.copy();
-				else
-					col.add(set);
-			}
-		}
-
-		return col == null ? new BlockSet() : col;
-	}
-
-	public void getBlocks(BlockSet col, String category) {
-		BlockSet set = this.blocks.get(category);
-		if (set != null)
-			col.add(set);
-	}
-
-	public void getBlocks(BlockSet col, String... categories) {
-		for (String c : categories) {
-			BlockSet set = this.blocks.get(c);
-			if (set != null)
-				col.add(set);
-		}
-	}
-
-	private void setGround() {
-		BlockSet set = this.blocks.get(GROUND);
-		this.ground = set == null ? null : set.first().orElse(null);
-
-		if (this.ground == null) {
-			this.ground = BlockTypes.STONE.getDefaultState();
-			set = new BlockSet();
-			set.add(this.ground);
-			this.blocks.put(GROUND, set);
-		}
-	}
-
 	public static void loadResources(Iterable<Pack> packs) {
 		map.clear();
 
-		GameRegistry reg = Sponge.getRegistry();
-		for (DimensionType type : reg.getAllOf(DimensionType.class)) {
-			Mirage.LOGGER.info("Loading resources for dimension type: " + type.getId() + " ..");
-			Resources r = new Resources();
+		Registry<WorldType> worldTypeRegistry = RegistryTypes.WORLD_TYPE.get();
+		worldTypeRegistry.streamEntries().forEach(entry -> {
+			Mirage.LOGGER.info("Loading resources for dimension type: " + entry.key() + " ...");
+			Multimap<String, String> blocks = LinkedHashMultimap.create();
 
 			for (Pack p : packs) {
-				Section s = p.getSection(type.getId()).orElse(null);
+				Section s = p.getSection(entry.key().formatted()).orElse(null);
 				if (s == null)
 					continue;
 
-				Mirage.LOGGER.debug("Loading resources from pack: " + p.name + " ..");
+				Mirage.LOGGER.debug("Loading resources from pack: " + p.name + " ...");
 
 				for (Entry<String, Collection<String>> e : s.groups.asMap().entrySet()) {
-					BlockSet set = r.blocks.get(e.getKey());
-					if (set == null) {
-						set = new BlockSet();
-						r.blocks.put(e.getKey(), set);
-					}
-
-					set.deserialize(e.getValue(), true);
+					blocks.putAll(e.getKey(), e.getValue());
 				}
 			}
 
-			r.setGround();
-			map.put(type, r);
-		}
+			map.put(entry.value(), new Resources(blocks));
+		});
 	}
 }

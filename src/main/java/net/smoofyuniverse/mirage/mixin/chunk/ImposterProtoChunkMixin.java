@@ -20,23 +20,7 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.api.volume;
+package net.smoofyuniverse.mirage.mixin.chunk;
 
-/**
- * Represents an immutable server-side world.
- */
-public interface WorldStorage extends BlockStorage, OpaqueWorld<ChunkStorage> {
-
-	@Override
-	default WorldStorage world() {
-		return this;
-	}
-
-	@Override
-	WorldView view();
-
-	@Override
-	default boolean isViewAvailable() {
-		return true;
-	}
+public class ImposterProtoChunkMixin {
 }

@@ -22,56 +22,35 @@
 
 package net.smoofyuniverse.mirage.mixin.block;
 
-import com.google.common.collect.ImmutableMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.properties.IProperty;
-import net.minecraft.block.state.BlockStateContainer.StateImplementation;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(StateImplementation.class)
-public class StateImplementationMixin implements InternalBlockState {
-	@Shadow
-	@Final
-	private ImmutableMap<IProperty<?>, Comparable<?>> properties;
+@Mixin(BlockStateBase.class)
+public abstract class BlockStateBaseMixin implements InternalBlockState {
+	private boolean opaque;
 
-	@Shadow
-	@Final
-	private Block block;
-
-	private boolean isOpaqueCube;
-
-	private boolean cacheHashCode = true;
-	private int hashCode;
-
-	/**
-	 * This method is called after all blocks have been registered to avoid errors with some mods
-	 */
-	@Override
-	public void optimizeExpositionCheck() {
-		this.isOpaqueCube = this.block.isOpaqueCube((IBlockState) this);
+	@Inject(method = "initCache", at = @At("RETURN"))
+	public void onInitCache(CallbackInfo ci) {
+		this.opaque = !getBlock().hasDynamicShape() && isSolidRender(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
 	}
+
+	@Shadow
+	public abstract Block getBlock();
+
+	@Shadow
+	public abstract boolean isSolidRender(BlockGetter param0, BlockPos param1);
 
 	@Override
 	public boolean isOpaque() {
-		return this.isOpaqueCube;
-	}
-
-	/**
-	 * @author Yeregorix
-	 * @reason Improve HashSet and HashMap performance
-	 */
-	@Override
-	@Overwrite
-	public int hashCode() {
-		if (this.cacheHashCode) {
-			this.hashCode = this.properties.hashCode();
-			this.cacheHashCode = false;
-		}
-		return this.hashCode;
+		return this.opaque;
 	}
 }

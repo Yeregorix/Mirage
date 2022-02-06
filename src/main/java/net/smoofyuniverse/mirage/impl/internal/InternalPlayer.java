@@ -20,20 +20,24 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage;
+package net.smoofyuniverse.mirage.impl.internal;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
+import org.spongepowered.api.entity.living.player.Player;
 
-public class MirageTimings {
-	public static final Timing OBFUSCATION = of("Obfuscation"),
-			DEOBFUSCATION = of("Deobfuscation"),
-			REOBFUSCATION = of("Reobfuscation"),
-			WRITING_CACHE = of("Writing Cache"),
-			READING_CACHE = of("Reading Cache"),
-			DYNAMISM = of("Dynamism");
+import javax.annotation.Nullable;
 
-	public static Timing of(String name) {
-		return Timings.of(Mirage.get(), name);
+public interface InternalPlayer extends Player {
+
+	@Nullable
+	default DynamicChunk getDynamicChunk(int x, int z) {
+		DynamicWorld world = getDynamicWorld();
+		return world == null ? null : world.getChunk(x, z);
+	}
+
+	@Nullable
+	default DynamicWorld getDynamicWorld() {
+		return ((InternalWorld) world()).getDynamicWorld(uniqueId());
 	}
 }

@@ -22,52 +22,48 @@
 
 package net.smoofyuniverse.mirage;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import net.smoofyuniverse.map.WorldMap;
 import net.smoofyuniverse.map.WorldMapConfig;
 import net.smoofyuniverse.map.WorldMapLoader;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
+import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
-import net.smoofyuniverse.mirage.config.serializer.BlockSetSerializer;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
-import net.smoofyuniverse.mirage.event.WorldListener;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
+import net.smoofyuniverse.mirage.event.BlockListener;
+import net.smoofyuniverse.mirage.event.ChunkListener;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.resource.Pack;
 import net.smoofyuniverse.mirage.resource.Resources;
-import net.smoofyuniverse.mirage.util.BlockSet;
-import net.smoofyuniverse.mirage.util.BlockSet.SerializationPredicate;
-import net.smoofyuniverse.mirage.util.IOUtil;
 import net.smoofyuniverse.ore.update.UpdateChecker;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.api.Game;
-import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.Server;
 import org.spongepowered.api.config.ConfigDir;
+import org.spongepowered.api.event.EventManager;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.GameReloadEvent;
-import org.spongepowered.api.event.game.state.GameInitializationEvent;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
-import org.spongepowered.api.event.game.state.GameStartedServerEvent;
-import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
-import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.event.lifecycle.*;
+import org.spongepowered.api.scheduler.ScheduledTask;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.DimensionTypes;
-import org.spongepowered.api.world.World;
+import org.spongepowered.api.util.Ticks;
+import org.spongepowered.api.world.server.ServerWorld;
+import org.spongepowered.configurate.CommentedConfigurationNode;
+import org.spongepowered.configurate.ConfigurationOptions;
+import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
+import org.spongepowered.configurate.loader.ConfigurationLoader;
+import org.spongepowered.plugin.PluginContainer;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Plugin(id = "mirage", name = "Mirage", version = "1.4.0", authors = "Yeregorix", description = "The best solution against xray users")
 public class Mirage {
-	public static final Logger LOGGER = LoggerFactory.getLogger("Mirage");
+	public static final Logger LOGGER = LogManager.getLogger("Mirage");
 	private static Mirage instance;
 
 	@Inject
@@ -79,10 +75,12 @@ public class Mirage {
 	private PluginContainer container;
 
 	private Path cacheDir;
+
+	private ConfigurationOptions configOptions;
 	private WorldMapLoader<WorldConfig> configMapLoader;
 	private WorldMap<WorldConfig> configMap;
 
-	private Task obfuscationTask;
+	private ScheduledTask obfuscationTask;
 
 	public Mirage() {
 		if (instance != null)
@@ -91,11 +89,9 @@ public class Mirage {
 	}
 
 	@Listener
-	public void onGamePreInit(GamePreInitializationEvent e) {
-		this.game.getRegistry().registerModule(ChunkModifier.class, ChunkModifierRegistryModule.get());
-		TypeSerializerCollection.defaults().register(BlockSet.TOKEN, new BlockSetSerializer(SerializationPredicate.limit(0.6f)));
-
-		this.cacheDir = this.game.getGameDirectory().resolve("mirage-cache");
+	public void onConstructPlugin(ConstructPluginEvent e) {
+		this.cacheDir = this.game.gameDirectory().resolve("mirage-cache");
+		this.configOptions = ConfigurationOptions.defaults().implicitInitialization(false).serializers(this.game.configManager().serializers());
 
 		try {
 			Files.createDirectories(this.configDir);
@@ -103,12 +99,12 @@ public class Mirage {
 		}
 
 		this.configMapLoader = new WorldMapLoader<WorldConfig>(LOGGER,
-				IOUtil.createConfigLoader(this.configDir.resolve("map.conf")),
+				createConfigLoader(this.configDir.resolve("map.conf")),
 				this.configDir.resolve("configs"), WorldConfig.DISABLED) {
 			@Override
 			protected void initMap(WorldMapConfig map) {
-				for (DimensionType dim : new DimensionType[]{DimensionTypes.NETHER, DimensionTypes.THE_END})
-					map.dimensions.putIfAbsent(dim, getShortId(dim));
+				for (String name : new String[]{"the_nether", "the_end"})
+					map.types.put(ResourceKey.minecraft(name), name);
 			}
 
 			@Override
@@ -118,17 +114,26 @@ public class Mirage {
 		};
 	}
 
-	@Listener
-	public void onGameInit(GameInitializationEvent e) {
-		LOGGER.info("Optimizing exposition check performances ..");
-		for (BlockState b : this.game.getRegistry().getAllOf(BlockState.class)) {
-			try {
-				((InternalBlockState) b).optimizeExpositionCheck();
-			} catch (Exception ex) {
-				LOGGER.warn("Failed to optimize block: " + b.getId(), ex);
-			}
-		}
+	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {
+		return HoconConfigurationLoader.builder().defaultOptions(this.configOptions).path(file).build();
+	}
 
+	@Listener
+	public void onRegisterRegistry(RegisterRegistryEvent.GameScoped e) {
+		e.register(ChunkModifier.REGISTRY_TYPE_KEY, true, () -> ImmutableMap.of(
+				key("hide_all"), ChunkModifiers.HIDE_ALL,
+				key("hide_obvious"), ChunkModifiers.HIDE_OBVIOUS,
+				key("random_bedrock"), ChunkModifiers.RANDOM_BEDROCK,
+				key("random_block"), ChunkModifiers.RANDOM_BLOCK
+		));
+	}
+
+	public static ResourceKey key(String value) {
+		return ResourceKey.of("mirage", value);
+	}
+
+	@Listener
+	public void onServerStarting(StartingEngineEvent<Server> e) {
 		try {
 			Resources.loadResources(Pack.loadAll());
 		} catch (Exception ex) {
@@ -137,51 +142,40 @@ public class Mirage {
 
 		loadConfigs();
 
-		if (this.game.getServer() instanceof InternalServer)
-			this.game.getEventManager().registerListeners(this, new WorldListener());
+		EventManager em = this.game.eventManager();
+		if (e.engine() instanceof InternalServer) {
+			em.registerListeners(this.container, new BlockListener());
+			em.registerListeners(this.container, new ChunkListener());
+		}
 
-		this.game.getEventManager().registerListeners(this, new UpdateChecker(LOGGER, this.container,
-				IOUtil.createConfigLoader(this.configDir.resolve("update.conf")), "Yeregorix", "Mirage"));
+		em.registerListeners(this.container, new UpdateChecker(LOGGER, this.container,
+				createConfigLoader(this.configDir.resolve("update.conf")), "Yeregorix", "Mirage"));
 	}
 
 	private void loadConfigs() {
-		if (Files.exists(this.configDir.resolve("worlds")) && Files.notExists(this.configDir.resolve("map.conf"))) {
-			LOGGER.info("Updating config directory structure ...");
-			Path worlds = IOUtil.backup(this.configDir).orElse(this.configDir).resolve("worlds");
-			this.configMap = this.configMapLoader.importWorlds(worlds);
-		} else {
-			this.configMap = this.configMapLoader.load();
-		}
+		this.configMap = this.configMapLoader.load();
 	}
 
 	@Listener
-	public void onGameReload(GameReloadEvent e) {
+	public void onRefreshGame(RefreshGameEvent e) {
 		loadConfigs();
 	}
 
 	@Listener
-	public void onServerStarted(GameStartedServerEvent e) {
-		if (this.game.getServer() instanceof InternalServer) {
-			this.obfuscationTask = Task.builder().execute(() -> {
-				for (World w : this.game.getServer().getWorlds()) {
-					for (NetworkChunk chunk : ((InternalWorld) w).getView().getLoadedOChunks()) {
-						if (chunk.getState() == State.OBFUSCATION_REQUESTED)
-							chunk.obfuscate();
-					}
+	public void onServerStarted(StartedEngineEvent<Server> e) {
+		Server server = e.engine();
+		if (server instanceof InternalServer) {
+			this.obfuscationTask = server.scheduler().submit(Task.builder().execute(() -> {
+				for (ServerWorld w : server.worldManager().worlds()) {
+					((InternalWorld) w).view().loadedOpaqueChunks()
+							.filter(chunk -> chunk.state() == State.OBFUSCATION_REQUESTED)
+							.forEach(NetworkChunk::obfuscate);
 				}
-			}).intervalTicks(1).submit(this);
+			}).interval(Ticks.of(1)).plugin(this.container).build());
 
-			LOGGER.info("Mirage " + this.container.getVersion().orElse("?") + " was loaded successfully.");
+			LOGGER.info("Mirage " + this.container.metadata().version() + " was loaded successfully.");
 		} else {
 			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
-		}
-	}
-
-	@Listener
-	public void onServerStopping(GameStoppingServerEvent e) {
-		if (this.obfuscationTask != null) {
-			this.obfuscationTask.cancel();
-			this.obfuscationTask = null;
 		}
 	}
 
@@ -193,8 +187,12 @@ public class Mirage {
 		return this.cacheDir;
 	}
 
-	public WorldConfig getConfig(World world) {
-		return this.configMap.get(world.getProperties());
+	@Listener
+	public void onServerStopping(StoppingEngineEvent<Server> e) {
+		if (this.obfuscationTask != null) {
+			this.obfuscationTask.cancel();
+			this.obfuscationTask = null;
+		}
 	}
 
 	public PluginContainer getContainer() {
@@ -205,5 +203,9 @@ public class Mirage {
 		if (instance == null)
 			throw new IllegalStateException("Instance not available");
 		return instance;
+	}
+
+	public WorldConfig getConfig(ServerWorld world) {
+		return this.configMap.get(world.properties());
 	}
 }

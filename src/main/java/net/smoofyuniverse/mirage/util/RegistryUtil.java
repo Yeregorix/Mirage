@@ -20,31 +20,50 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.internal.compat;
+package net.smoofyuniverse.mirage.util;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.world.chunk.Chunk;
+import org.spongepowered.api.block.BlockState;
 
-public class CompatUtil {
-	public static final boolean useForge = detectForge();
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
-	@SuppressWarnings("deprecation")
-	public static boolean hasTileEntity(IBlockState state) {
-		return useForge ? state.getBlock().hasTileEntity(state) : state.getBlock().hasTileEntity();
-	}
+public class RegistryUtil {
 
-	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
-		if (useForge)
-			ForgeUtil.postChunkWatchEvent(chunk, player);
-	}
+	public static <V> Map<BlockState, V> resolveBlockStates(Map<String, V> map) {
+		Map<BlockState, V> result = new HashMap<>();
+		BlockResolver resolver = new BlockResolver();
 
-	private static boolean detectForge() {
-		try {
-			Class.forName("net.minecraftforge.common.ForgeVersion");
-			return true;
-		} catch (ClassNotFoundException e) {
-			return false;
+		for (Entry<String, V> e : map.entrySet()) {
+			V value = e.getValue();
+			resolver.resolve(e.getKey(), ((state, negate) -> {
+				if (negate)
+					result.remove(state);
+				else
+					result.put(state, value);
+			}));
 		}
+
+		resolver.flushErrors();
+		return result;
+	}
+
+	public static Set<BlockState> resolveBlockStates(Iterable<String> it) {
+		Set<BlockState> result = new LinkedHashSet<>();
+		BlockResolver resolver = new BlockResolver();
+
+		for (String input : it) {
+			resolver.resolve(input, ((state, negate) -> {
+				if (negate)
+					result.remove(state);
+				else
+					result.add(state);
+			}));
+		}
+
+		resolver.flushErrors();
+		return result;
 	}
 }

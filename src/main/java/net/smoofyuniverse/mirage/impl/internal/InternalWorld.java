@@ -24,23 +24,32 @@ package net.smoofyuniverse.mirage.impl.internal;
 
 import net.smoofyuniverse.mirage.api.volume.WorldStorage;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
+import org.spongepowered.api.entity.living.player.Player;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 public interface InternalWorld extends WorldStorage {
 
 	@Override
-	NetworkWorld getView();
+	NetworkWorld view();
 
 	@Nullable
-	InternalChunk getChunk(int x, int z);
-
-	@Nullable
-	InternalChunk getChunkPassively(int x, int z);
+	InternalChunk opaqueChunk(int x, int z);
 
 	boolean isChunkLoaded(int x, int z);
 
 	@Override
-	Collection<InternalChunk> getLoadedOChunks();
+	Stream<InternalChunk> loadedOpaqueChunks();
+
+	boolean isDynamismEnabled();
+
+	DynamicWorld getOrCreateDynamicWorld(Player player);
+
+	@Nullable
+	DynamicWorld getDynamicWorld(UUID id);
+
+	void removeDynamicWorld(UUID id);
 }

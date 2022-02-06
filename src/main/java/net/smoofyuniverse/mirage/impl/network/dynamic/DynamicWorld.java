@@ -22,57 +22,55 @@
 
 package net.smoofyuniverse.mirage.impl.network.dynamic;
 
-import com.flowpowered.math.vector.Vector3i;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.smoofyuniverse.mirage.MirageTimings;
-import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.math.vector.Vector3i;
+
+import javax.annotation.Nullable;
 
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
 
 public final class DynamicWorld {
-	private final NetworkWorld view;
+	private final InternalWorld storage;
 	private final Player player;
 
 	private final Long2ObjectMap<DynamicChunk> chunks = new Long2ObjectOpenHashMap<>();
 	private Vector3i center;
 
-	public DynamicWorld(NetworkWorld view, Player player) {
-		this.view = view;
+	public DynamicWorld(InternalWorld storage, Player player) {
+		this.storage = storage;
 		this.player = player;
 	}
 
 	public void updateCenter() {
-		setCenter(this.player.getPosition().add(0, 1.62, 0).toInt());
+		Vector3i newCenter = this.player.position().add(0, 1.62, 0).toInt();
+		if (!newCenter.equals(this.center)) {
+			this.center = newCenter;
+			for (DynamicChunk chunk : this.chunks.values())
+				chunk.updateCenter();
+		}
 	}
 
 	public Vector3i getCenter() {
 		return this.center;
 	}
 
-	private void setCenter(Vector3i center) {
-		if (center.equals(this.center))
-			return;
-
-		MirageTimings.DYNAMISM.startTiming();
-
-		this.center = center;
-		for (DynamicChunk chunk : this.chunks.values())
+	public DynamicChunk getOrCreateChunk(int x, int z) {
+		long pos = asLong(x, z);
+		DynamicChunk chunk = this.chunks.get(pos);
+		if (chunk == null) {
+			chunk = new DynamicChunk(this, this.storage.opaqueChunk(x, z));
+			this.chunks.put(asLong(x, z), chunk);
 			chunk.updateCenter();
-
-		MirageTimings.DYNAMISM.stopTiming();
+		}
+		return chunk;
 	}
 
-	public DynamicChunk createChunk(int x, int z) {
-		DynamicChunk chunk = new DynamicChunk(this, this.view.getChunk(x, z));
-		this.chunks.put(asLong(x, z), chunk);
-
-		MirageTimings.DYNAMISM.startTiming();
-		chunk.updateCenter();
-		MirageTimings.DYNAMISM.stopTiming();
-
-		return chunk;
+	@Nullable
+	public DynamicChunk getChunk(int x, int z) {
+		return this.chunks.get(asLong(x, z));
 	}
 
 	public void removeChunk(int x, int z) {

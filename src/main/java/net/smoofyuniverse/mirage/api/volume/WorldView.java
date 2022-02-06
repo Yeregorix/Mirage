@@ -22,9 +22,9 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
-import net.smoofyuniverse.mirage.config.world.DeobfuscationConfig;
+import net.smoofyuniverse.mirage.config.world.DeobfuscationConfig.Resolved;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
+import org.spongepowered.math.vector.Vector3i;
 
 /**
  * Represents a mutable client-side world.
@@ -32,12 +32,29 @@ import net.smoofyuniverse.mirage.config.world.WorldConfig;
 public interface WorldView extends BlockView, OpaqueWorld<ChunkView> {
 
 	@Override
-	default WorldView getWorld() {
+	default WorldView world() {
 		return this;
 	}
 
 	@Override
-	WorldStorage getStorage();
+	WorldStorage storage();
+
+	/**
+	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
+	 *
+	 * @param pos        The position
+	 * @param player     Use player deobf radius
+	 * @param silentFail Enable or disable silent fail
+	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
+	 */
+	default void deobfuscateSurrounding(Vector3i pos, boolean player, boolean silentFail) {
+		deobfuscateSurrounding(pos.x(), pos.y(), pos.z(), player, silentFail);
+	}
+
+	/**
+	 * @return Whether obfuscation is enabled in this world
+	 */
+	boolean isEnabled();
 
 	/**
 	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
@@ -50,31 +67,14 @@ public interface WorldView extends BlockView, OpaqueWorld<ChunkView> {
 	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
 	default void deobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
-		DeobfuscationConfig.Immutable cfg = getConfig().main.deobf;
+		Resolved cfg = config().main.deobf;
 		deobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
-	}
-
-	/**
-	 * @return Whether obfuscation is enabled in this world
-	 */
-	boolean isEnabled();
-
-	/**
-	 * Deobfuscates blocks around the given position according to the radius set in the configuration.
-	 *
-	 * @param pos The position
-	 * @param player Use player deobf radius
-	 * @param silentFail Enable or disable silent fail
-	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
-	 */
-	default void deobfuscateSurrounding(Vector3i pos, boolean player, boolean silentFail) {
-		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player, silentFail);
 	}
 
 	/**
 	 * @return The configuration of this world
 	 */
-	WorldConfig getConfig();
+	WorldConfig config();
 
 	/**
 	 * Reobfuscates blocks around the given position according to the radius set in the configuration.
@@ -85,7 +85,7 @@ public interface WorldView extends BlockView, OpaqueWorld<ChunkView> {
 	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(Vector3i pos, boolean player, boolean silentFail) {
-		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), player, silentFail);
+		reobfuscateSurrounding(pos.x(), pos.y(), pos.z(), player, silentFail);
 	}
 
 	/**
@@ -99,7 +99,7 @@ public interface WorldView extends BlockView, OpaqueWorld<ChunkView> {
 	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(int x, int y, int z, boolean player, boolean silentFail) {
-		DeobfuscationConfig.Immutable cfg = getConfig().main.deobf;
+		Resolved cfg = config().main.deobf;
 		reobfuscateSurrounding(x, y, z, player ? cfg.playerRadius : cfg.naturalRadius, silentFail);
 	}
 }

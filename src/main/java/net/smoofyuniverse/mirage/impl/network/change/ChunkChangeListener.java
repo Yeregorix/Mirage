@@ -26,13 +26,11 @@ public interface ChunkChangeListener {
 
 	void addChange(int x, int y, int z);
 
-	void sendChanges();
-
-	void clearChanges();
+	void setDynamismEnabled(boolean value);
 
 	void updateDynamism(int x, int y, int z, int distance);
 
 	void clearDynamism();
 
-	void markDirty();
+	void markChanged();
 }

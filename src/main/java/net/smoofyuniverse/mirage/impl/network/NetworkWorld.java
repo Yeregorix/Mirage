@@ -22,62 +22,53 @@
 
 package net.smoofyuniverse.mirage.impl.network;
 
-import co.aikar.timings.Timing;
-import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
 import net.smoofyuniverse.mirage.Mirage;
-import net.smoofyuniverse.mirage.MirageTimings;
 import net.smoofyuniverse.mirage.api.cache.Signature;
+import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
+import net.smoofyuniverse.mirage.api.volume.BlockStorage;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
 import net.smoofyuniverse.mirage.api.volume.WorldView;
-import net.smoofyuniverse.mirage.config.world.MainConfig;
+import net.smoofyuniverse.mirage.config.world.MainConfig.Resolved;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
-import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
 import net.smoofyuniverse.mirage.impl.network.cache.NetworkRegionCache;
+import net.smoofyuniverse.mirage.util.BlockUtil;
+import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.util.DiscreteTransform3;
-import org.spongepowered.api.world.GeneratorTypes;
-import org.spongepowered.api.world.World;
-import org.spongepowered.api.world.extent.ImmutableBlockVolume;
-import org.spongepowered.api.world.extent.MutableBlockVolume;
-import org.spongepowered.api.world.extent.StorageType;
-import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
-import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
-import org.spongepowered.api.world.storage.WorldProperties;
-import org.spongepowered.common.SpongeImpl;
+import org.spongepowered.api.fluid.FluidState;
+import org.spongepowered.api.registry.Registry;
+import org.spongepowered.api.world.server.ServerWorld;
+import org.spongepowered.api.world.server.storage.ServerWorldProperties;
+import org.spongepowered.api.world.volume.stream.StreamOptions;
+import org.spongepowered.api.world.volume.stream.VolumeStream;
 import org.spongepowered.common.util.VecHelper;
-import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
-import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
-import org.spongepowered.common.world.extent.ExtentBufferUtil;
-import org.spongepowered.common.world.extent.MutableBlockViewDownsize;
-import org.spongepowered.common.world.extent.MutableBlockViewTransform;
-import org.spongepowered.common.world.extent.UnmodifiableBlockVolumeWrapper;
-import org.spongepowered.common.world.extent.worker.SpongeMutableBlockVolumeWorker;
-import org.spongepowered.common.world.schematic.GlobalPalette;
+import org.spongepowered.math.vector.Vector3i;
 
 import javax.annotation.Nullable;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
+import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
+import static net.smoofyuniverse.mirage.util.BlockUtil.NO_FLUID;
 
 /**
- * Represents the world viewed for the network (akka online players)
+ * Represents the world viewed for the network (aka online players)
  */
 public class NetworkWorld implements WorldView {
-	private final Long2ObjectMap<ChunkSnapshot> chunksToSave = new Long2ObjectOpenHashMap<>();
+	private final Long2ObjectMap<CompoundTag> chunksToSave = new Long2ObjectOpenHashMap<>();
 	private final Vector3i blockMin, blockMax, blockSize;
 	private final InternalWorld world;
 
@@ -90,20 +81,20 @@ public class NetworkWorld implements WorldView {
 
 	public NetworkWorld(InternalWorld world) {
 		this.world = world;
-		this.blockMin = world.getBlockMin();
-		this.blockMax = world.getBlockMax();
-		this.blockSize = world.getBlockSize();
+		this.blockMin = world.min();
+		this.blockMax = world.max();
+		this.blockSize = world.size();
 	}
 
 	public void loadConfig() {
 		if (this.config != null)
 			throw new IllegalStateException("Config already loaded");
 
-		Mirage.LOGGER.info("Loading configuration for world " + getName() + " ..");
+		Mirage.LOGGER.info("Loading configuration for world " + key() + " ...");
 		try {
 			_loadConfig();
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to load configuration for world " + getName(), e);
+			Mirage.LOGGER.warn("Failed to load configuration for world " + key(), e);
 		}
 
 		if (this.config == null)
@@ -113,23 +104,39 @@ public class NetworkWorld implements WorldView {
 		this.dynamismEnabled = this.enabled && this.config.main.dynamism;
 	}
 
+	@Override
+	public ResourceKey key() {
+		return this.world.key();
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public boolean useCache() {
+		return this.cache != null;
+	}
+
 	private void _loadConfig() {
-		WorldConfig cfg = Mirage.get().getConfig((World) this.world);
-		MainConfig.Immutable main = cfg.main;
+		WorldConfig cfg = Mirage.get().getConfig((ServerWorld) this.world);
+		Resolved main = cfg.main;
 		List<ConfiguredModifier> modifiers = cfg.modifiers;
 
-		WorldProperties properties = this.world.getProperties();
-		if (main.enabled && properties.getGeneratorType() == GeneratorTypes.DEBUG) {
+		if (main.enabled && ((Level) this.world).isDebug()) {
 			Mirage.LOGGER.warn("Obfuscation is not available in a debug world. Obfuscation will be disabled.");
 			main = main.disable();
 		}
+
+		ServerWorldProperties properties = this.world.properties();
+		Registry<ChunkModifier> modifierRegistry = ChunkModifier.REGISTRY_TYPE.get();
 
 		if (main.enabled) {
 			ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
 
 			for (ConfiguredModifier mod : modifiers) {
 				if (!mod.modifier.isCompatible(properties)) {
-					Mirage.LOGGER.warn("Modifier " + mod.modifier.getId() + " is not compatible with this world. This modifier will be ignored.");
+					Mirage.LOGGER.warn("Modifier " + modifierRegistry.valueKey(mod.modifier) + " is not compatible with this world. This modifier will be ignored.");
 					continue;
 				}
 
@@ -148,8 +155,8 @@ public class NetworkWorld implements WorldView {
 		if (main.enabled && main.cache) {
 			Signature.Builder b = Signature.builder();
 			for (ConfiguredModifier mod : modifiers)
-				b.append(mod.modifier);
-			String cacheName = this.world.getUniqueId() + "/" + b.build();
+				b.append(modifierRegistry.valueKey(mod.modifier));
+			String cacheName = this.world.uniqueId() + "/" + b.build();
 
 			try {
 				this.cache = new NetworkRegionCache(cacheName);
@@ -172,24 +179,6 @@ public class NetworkWorld implements WorldView {
 		this.config = new WorldConfig(main, modifiers, seed);
 	}
 
-	@Override
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public boolean useCache() {
-		return this.cache != null;
-	}
-
-	public void addPendingSave(int x, int z, ChunkSnapshot chunk) {
-		if (this.cache == null)
-			return;
-
-		synchronized (this.chunksToSave) {
-			this.chunksToSave.put(asLong(x, z), chunk);
-		}
-	}
-
 	public void removePendingSave(int x, int z) {
 		if (this.cache == null)
 			return;
@@ -199,58 +188,24 @@ public class NetworkWorld implements WorldView {
 		}
 	}
 
-	public void savePendingChunk(int x, int z) {
-		if (this.cache == null)
-			return;
-
-		ChunkSnapshot chunk;
-		synchronized (this.chunksToSave) {
-			chunk = this.chunksToSave.remove(asLong(x, z));
-		}
-		if (chunk != null)
-			saveToCache(x, z, chunk);
-	}
-
-	public void saveToCache(int x, int z, ChunkSnapshot chunk) {
-		if (this.cache == null)
-			throw new IllegalStateException();
-
-		MirageTimings.WRITING_CACHE.startTimingIfSync();
-
-		try (DataOutputStream out = this.cache.getChunkOutputStream(x, z)) {
-			this.signature.write(out);
-			chunk.write(out);
-		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to save chunk data " + x + " " + z + " to cache in world " + this.world.getName() + ".", e);
-		}
-
-		// Fix a sponge issue with Timings
-		if (SpongeImpl.getServer().isCallingFromMinecraftThread())
-			MirageTimings.WRITING_CACHE.stopTimingIfSync();
-	}
-
-	@Nullable
-	public ChunkSnapshot readFromCache(int x, int z) {
-		if (this.cache == null)
-			throw new IllegalStateException();
-
-		MirageTimings.READING_CACHE.startTimingIfSync();
-
-		try (DataInputStream in = this.cache.getChunkInputStream(x, z)) {
-			if (in != null && Signature.read(in).equals(this.signature))
-				return new ChunkSnapshot().read(in);
-		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to read chunk data " + x + " " + z + " from cache in world " + this.world.getName() + ".", e);
-		} finally {
-			MirageTimings.READING_CACHE.stopTimingIfSync();
-		}
-
-		return null;
+	@Override
+	public ServerWorldProperties properties() {
+		return this.world.properties();
 	}
 
 	@Override
-	public InternalWorld getStorage() {
-		return this.world;
+	public boolean isOpaqueChunkLoaded(int x, int y, int z) {
+		return isChunkLoaded(x, z);
+	}
+
+	@Override
+	public Optional<ChunkView> opaqueChunk(int x, int y, int z) {
+		return Optional.ofNullable(chunk(x, z));
+	}
+
+	@Override
+	public Optional<ChunkView> opaqueChunkAt(int x, int y, int z) {
+		return opaqueChunk(x >> 4, 0, z >> 4);
 	}
 
 	@Override
@@ -259,58 +214,102 @@ public class NetworkWorld implements WorldView {
 	}
 
 	@Override
-	public void setDynamism(int x, int y, int z, int distance) {
-		if (this.dynamismEnabled) {
-			NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-			if (chunk != null)
-				chunk.setDynamism(x, y, z, distance);
+	public Stream<NetworkChunk> loadedOpaqueChunks() {
+		if (!this.enabled)
+			return Stream.empty();
+
+		return this.world.loadedOpaqueChunks().filter(BlockStorage::isViewAvailable).map(InternalChunk::view);
+	}
+
+	public boolean isChunkLoaded(int x, int z) {
+		return chunk(x, z) != null;
+	}
+
+	public void addPendingSave(int x, int z, CompoundTag chunk) {
+		if (this.cache == null)
+			return;
+
+		synchronized (this.chunksToSave) {
+			this.chunksToSave.put(asLong(x, z), chunk);
 		}
 	}
 
-	@Override
-	public int getDynamism(int x, int y, int z) {
-		if (!this.dynamismEnabled)
-			return 0;
+	public void savePendingChunk(int x, int z) {
+		if (this.cache == null)
+			return;
 
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk == null ? 0 : chunk.getDynamism(x, y, z);
+		CompoundTag data;
+		synchronized (this.chunksToSave) {
+			data = this.chunksToSave.remove(asLong(x, z));
+		}
+		if (data != null)
+			saveToCache(x, z, data);
+	}
+
+	public void saveToCache(int x, int z, CompoundTag chunkTag) {
+		if (this.cache == null)
+			throw new IllegalStateException();
+
+		CompoundTag tag = new CompoundTag();
+		tag.putByteArray("Signature", this.signature.bytes());
+		tag.put("Level", chunkTag);
+
+		try {
+			this.cache.write(x, z, tag);
+		} catch (Exception e) {
+			Mirage.LOGGER.warn("Failed to save chunk " + x + " " + z + " to cache in world " + this.world.uniqueId() + ".", e);
+		}
+	}
+
+	@Nullable
+	public CompoundTag readFromCache(int x, int z) {
+		if (this.cache == null)
+			throw new IllegalStateException();
+
+		try {
+			CompoundTag tag = this.cache.read(x, z);
+			if (tag != null && new Signature(tag.getByteArray("Signature")).equals(this.signature))
+				return tag.getCompound("Level");
+		} catch (Exception e) {
+			Mirage.LOGGER.warn("Failed to read chunk " + x + " " + z + " from cache in world " + this.world.uniqueId() + ".", e);
+		}
+
+		return null;
 	}
 
 	@Override
-	public String getName() {
-		return this.world.getName();
+	public InternalWorld storage() {
+		return this.world;
 	}
 
 	@Override
-	public WorldProperties getProperties() {
-		return this.world.getProperties();
-	}
-
-	@Override
-	public WorldConfig getConfig() {
+	public WorldConfig config() {
 		if (this.config == null)
 			throw new IllegalStateException("Config not loaded");
 		return this.config;
 	}
 
 	@Override
-	public boolean isOChunkLoaded(int x, int y, int z) {
-		return isChunkLoaded(x, z);
+	public void setDynamism(int x, int y, int z, int distance) {
+		if (this.dynamismEnabled) {
+			NetworkChunk chunk = chunk(x >> 4, z >> 4);
+			if (chunk != null)
+				chunk.setDynamism(x, y, z, distance);
+		}
 	}
 
 	@Override
-	public Optional<ChunkView> getOChunk(int x, int y, int z) {
-		return Optional.ofNullable(getChunk(x, z));
-	}
+	public int dynamism(int x, int y, int z) {
+		if (!this.dynamismEnabled)
+			return 0;
 
-	@Override
-	public Optional<ChunkView> getOChunkAt(int x, int y, int z) {
-		return getOChunk(x >> 4, 0, z >> 4);
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
+		return chunk == null ? 0 : chunk.dynamism(x, y, z);
 	}
 
 	@Override
 	public boolean deobfuscate(int x, int y, int z) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
 		return chunk != null && chunk.deobfuscate(x, y, z);
 	}
 
@@ -323,21 +322,21 @@ public class NetworkWorld implements WorldView {
 
 		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
 		if (minChunkX == maxChunkX && minChunkZ == maxChunkZ) {
-			NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+			NetworkChunk chunk = chunk(minChunkX, minChunkZ);
 			if (chunk == null) {
 				if (silentFail)
 					return;
 				throw new IllegalStateException("Chunk must be loaded");
 			}
 
-			if (chunk.getState() != State.DEOBFUSCATED)
+			if (chunk.state() != State.DEOBFUSCATED)
 				chunk.deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
 			return;
 		}
 
 		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-				if (getChunk(chunkX, chunkZ) == null) {
+				if (chunk(chunkX, chunkZ) == null) {
 					if (silentFail)
 						return;
 					throw new IllegalStateException("Chunks must be loaded");
@@ -353,11 +352,12 @@ public class NetworkWorld implements WorldView {
 
 		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-				NetworkChunk chunk = getChunk(chunkX, chunkZ);
+				NetworkChunk chunk = chunk(chunkX, chunkZ);
 
-				if (chunk.getState() != State.DEOBFUSCATED) {
+				if (chunk.state() != State.DEOBFUSCATED) {
 					int chunkMinX = chunkX << 4, chunkMinZ = chunkZ << 4;
-					chunk.deobfuscate(max(minX, chunkMinX), minY, max(minZ, chunkMinZ), min(maxX, chunkMinX + 15), maxY, min(maxZ, chunkMinZ + 15));
+					chunk.deobfuscate(Math.max(minX, chunkMinX), minY, Math.max(minZ, chunkMinZ),
+							Math.min(maxX, chunkMinX + 15), maxY, Math.min(maxZ, chunkMinZ + 15));
 				}
 			}
 		}
@@ -372,13 +372,13 @@ public class NetworkWorld implements WorldView {
 
 		int minChunkX = minX >> 4, minChunkZ = minZ >> 4, maxChunkX = maxX >> 4, maxChunkZ = maxZ >> 4;
 		if (minChunkX == maxChunkX && minChunkZ == maxChunkZ) {
-			NetworkChunk chunk = getChunk(minChunkX, minChunkZ);
+			NetworkChunk chunk = chunk(minChunkX, minChunkZ);
 			if (chunk == null) {
 				if (silentFail)
 					return;
 				throw new IllegalStateException("Chunk must be loaded");
 			}
-			if (chunk.getState() != State.OBFUSCATED) {
+			if (chunk.state() != State.OBFUSCATED) {
 				if (silentFail)
 					return;
 				throw new IllegalStateException("Chunk must be obfuscated");
@@ -390,13 +390,13 @@ public class NetworkWorld implements WorldView {
 
 		for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-				NetworkChunk chunk = getChunk(chunkX, chunkZ);
+				NetworkChunk chunk = chunk(chunkX, chunkZ);
 				if (chunk == null) {
 					if (silentFail)
 						return;
 					throw new IllegalStateException("Chunks must be loaded");
 				}
-				if (chunk.getState() != State.OBFUSCATED) {
+				if (chunk.state() != State.OBFUSCATED) {
 					if (silentFail)
 						return;
 					throw new IllegalStateException("Chunks must be obfuscated");
@@ -407,142 +407,95 @@ public class NetworkWorld implements WorldView {
 		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
 		Vector3i min = new Vector3i(minX, minY, minZ), max = new Vector3i(maxX, maxY, maxZ);
 
-		MirageTimings.REOBFUSCATION.startTiming();
-
 		for (ConfiguredModifier mod : this.config.modifiers) {
-			Timing timing = mod.modifier.getTiming();
-			timing.startTiming();
-
 			try {
 				mod.modifier.modify(this, min, max, this.random, mod.config);
 			} catch (Exception ex) {
-				Mirage.LOGGER.error("Modifier " + mod.modifier.getId() + " has thrown an exception while (re)modifying a part of a network world", ex);
+				Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while (re)modifying a part of a network world", ex);
 			}
-
-			timing.stopTiming();
 		}
-
-		MirageTimings.REOBFUSCATION.stopTiming();
 	}
 
 	@Nullable
-	public NetworkChunk getChunk(int x, int z) {
-		NetworkChunk chunk = getChunkPassively(x, z);
-		if (chunk != null)
-			chunk.getStorage().markActive();
-		return chunk;
-	}
-
-	@Nullable
-	public NetworkChunk getChunkPassively(int x, int z) {
-		InternalChunk chunk = this.world.getChunkPassively(x, z);
-		return chunk != null && chunk.isViewAvailable() ? chunk.getView() : null;
-	}
-
-	@Override
-	public Collection<NetworkChunk> getLoadedOChunks() {
-		if (!this.enabled)
-			return ImmutableList.of();
-
-		ImmutableList.Builder<NetworkChunk> b = ImmutableList.builder();
-		for (InternalChunk c : this.world.getLoadedOChunks()) {
-			if (c.isViewAvailable())
-				b.add(c.getView());
-		}
-		return b.build();
-	}
-
-	public boolean isChunkLoaded(int x, int z) {
-		return getChunkPassively(x, z) != null;
+	public NetworkChunk chunk(int x, int z) {
+		InternalChunk chunk = this.world.opaqueChunk(x, z);
+		return chunk != null && chunk.isViewAvailable() ? chunk.view() : null;
 	}
 
 	@Override
 	public boolean isExposed(int x, int y, int z) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
 		return chunk != null && chunk.isExposed(x, y, z);
 	}
 
 	@Override
 	public boolean isOpaque(int x, int y, int z) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
 		return chunk != null && chunk.isOpaque(x, y, z);
 	}
 
 	@Override
 	public boolean setBlock(int x, int y, int z, BlockState block) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
 		return chunk != null && chunk.setBlock(x, y, z, block);
 	}
 
 	@Override
-	public MutableBlockVolume getBlockView(Vector3i newMin, Vector3i newMax) {
-		return new MutableBlockViewDownsize(this, newMin, newMax);
+	public boolean removeBlock(int x, int y, int z) {
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
+		return chunk != null && chunk.removeBlock(x, y, z);
 	}
 
 	@Override
-	public MutableBlockVolume getBlockView(DiscreteTransform3 transform) {
-		return new MutableBlockViewTransform(this, transform);
-	}
-
-	@Override
-	public MutableBlockVolumeWorker<? extends MutableBlockVolume> getBlockWorker() {
-		return new SpongeMutableBlockVolumeWorker<>(this);
-	}
-
-	@Override
-	public Vector3i getBlockMin() {
+	public Vector3i min() {
 		return this.blockMin;
 	}
 
 	@Override
-	public Vector3i getBlockMax() {
+	public Vector3i max() {
 		return this.blockMax;
 	}
 
 	@Override
-	public Vector3i getBlockSize() {
+	public Vector3i size() {
 		return this.blockSize;
 	}
 
 	@Override
-	public boolean containsBlock(int x, int y, int z) {
+	public boolean contains(int x, int y, int z) {
 		return VecHelper.inBounds(x, y, z, this.blockMin, this.blockMax);
 	}
 
 	@Override
-	public BlockState getBlock(int x, int y, int z) {
-		NetworkChunk chunk = getChunk(x >> 4, z >> 4);
-		return chunk == null ? BlockTypes.AIR.getDefaultState() : chunk.getBlock(x, y, z);
+	public boolean isAreaAvailable(int x, int y, int z) {
+		return contains(x, y, z) && isChunkLoaded(x >> 4, z >> 4);
 	}
 
 	@Override
-	public BlockType getBlockType(int x, int y, int z) {
-		return getBlock(x, y, z).getType();
+	public BlockState block(int x, int y, int z) {
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
+		return chunk == null ? AIR : chunk.block(x, y, z);
 	}
 
 	@Override
-	public UnmodifiableBlockVolume getUnmodifiableBlockView() {
-		return new UnmodifiableBlockVolumeWrapper(this);
+	public FluidState fluid(int x, int y, int z) {
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
+		return chunk == null ? NO_FLUID : chunk.fluid(x, y, z);
 	}
 
 	@Override
-	public MutableBlockVolume getBlockCopy(StorageType type) {
-		switch (type) {
-			case STANDARD:
-				return new ArrayMutableBlockBuffer(GlobalPalette.getBlockPalette(), this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
-			case THREAD_SAFE:
-			default:
-				throw new UnsupportedOperationException(type.name());
-		}
+	public int highestYAt(int x, int z) {
+		NetworkChunk chunk = chunk(x >> 4, z >> 4);
+		return chunk == null ? 0 : chunk.highestYAt(x, z);
 	}
 
 	@Override
-	public ImmutableBlockVolume getImmutableBlockCopy() {
-		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.getBlockPalette(), this.blockMin, this.blockMax, ExtentBufferUtil.copyToArray(this, this.blockMin, this.blockMax, this.blockSize));
+	public UUID uniqueId() {
+		return this.world.uniqueId();
 	}
 
 	@Override
-	public UUID getUniqueId() {
-		return this.world.getUniqueId();
+	public VolumeStream<Mutable, BlockState> blockStateStream(Vector3i min, Vector3i max, StreamOptions options) {
+		return BlockUtil.blockStateStream(this, min, max, options);
 	}
 }

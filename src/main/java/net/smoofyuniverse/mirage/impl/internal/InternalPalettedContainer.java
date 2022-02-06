@@ -22,9 +22,11 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
-import net.smoofyuniverse.mirage.impl.network.NetworkBlockContainer;
+import net.minecraft.nbt.ListTag;
 
-public interface InternalBlockContainer {
+import java.util.function.BiConsumer;
 
-	NetworkBlockContainer getNetworkBlockContainer();
+public interface InternalPalettedContainer {
+
+	void setOnRead(BiConsumer<ListTag, long[]> listener);
 }

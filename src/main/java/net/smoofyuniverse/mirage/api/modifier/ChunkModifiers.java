@@ -22,7 +22,10 @@
 
 package net.smoofyuniverse.mirage.api.modifier;
 
-import net.smoofyuniverse.mirage.modifier.*;
+import net.smoofyuniverse.mirage.modifier.HideAllModifier;
+import net.smoofyuniverse.mirage.modifier.HideObviousModifier;
+import net.smoofyuniverse.mirage.modifier.RandomBedrockModifier;
+import net.smoofyuniverse.mirage.modifier.RandomBlockModifier;
 
 /**
  * An enumeration of all modifiers included by default
@@ -32,5 +35,4 @@ public class ChunkModifiers {
 	public static final ChunkModifier HIDE_OBVIOUS = new HideObviousModifier();
 	public static final ChunkModifier RANDOM_BEDROCK = new RandomBedrockModifier();
 	public static final ChunkModifier RANDOM_BLOCK = new RandomBlockModifier();
-	public static final ChunkModifier RANDOM_VEIN = new RandomVeinModifier();
 }

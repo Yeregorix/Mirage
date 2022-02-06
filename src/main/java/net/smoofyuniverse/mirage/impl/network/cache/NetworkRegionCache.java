@@ -22,13 +22,13 @@
 
 package net.smoofyuniverse.mirage.impl.network.cache;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ExceptionCollector;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.storage.RegionFileStorage;
 import net.smoofyuniverse.mirage.Mirage;
-import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.util.IOUtil;
 
-import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -39,11 +39,12 @@ import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class NetworkRegionCache {
-	public static final int CURRENT_VERSION = 2, MINIMUM_VERSION = 1;
+	public static final int CURRENT_VERSION = 3;
 
-	private final Long2ObjectMap<NetworkRegionFile> loadedRegions = new Long2ObjectOpenHashMap<>();
+	public final Path directory;
 	public final String name;
-	private final Path directory;
+
+	private final RegionFileStorage storage;
 	private long seed;
 
 	public NetworkRegionCache(String name) {
@@ -53,6 +54,7 @@ public class NetworkRegionCache {
 	public NetworkRegionCache(Path directory, String name) {
 		this.directory = directory;
 		this.name = name;
+		this.storage = new RegionFileStorage(directory.toFile(), false);
 	}
 
 	public long getSeed() {
@@ -79,19 +81,12 @@ public class NetworkRegionCache {
 			throw new IllegalArgumentException("directory is not empty");
 		}
 
-		if (version < MINIMUM_VERSION || version > CURRENT_VERSION)
-			throw new IllegalArgumentException("version");
-
 		if (version != CURRENT_VERSION) {
-			Mirage.LOGGER.info("Updating cache " + this.name + "/ ...");
+			Mirage.LOGGER.info("Deleting outdated cache " + this.name + "/ ...");
 
-			if (areRegionsLoaded())
-				throw new IllegalStateException("Regions are loaded");
-
-			if (version == 1) {
-				deleteRegionFiles();
-				version = 2;
-			}
+			close();
+			deleteRegionFiles();
+			version = CURRENT_VERSION;
 		}
 
 		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(versionFile))) {
@@ -112,65 +107,9 @@ public class NetworkRegionCache {
 		}
 	}
 
-	public boolean areRegionsLoaded() {
-		synchronized (this.loadedRegions) {
-			return !this.loadedRegions.isEmpty();
-		}
-	}
-
-	@Nullable
-	public NetworkRegionFile getIfLoaded(int x, int z) {
-		synchronized (this.loadedRegions) {
-			return this.loadedRegions.get(NetworkChunk.asLong(x, z));
-		}
-	}
-
-	@Nullable
-	public DataInputStream getChunkInputStream(int cx, int cz) {
-		NetworkRegionFile file = getOrLoad(cx >> 5, cz >> 5);
-		return file == null ? null : file.getDataInputStream(cx & 31, cz & 31);
-	}
-
-	@Nullable
-	public NetworkRegionFile getOrLoad(int x, int z) {
-		synchronized (this.loadedRegions) {
-			long pos = NetworkChunk.asLong(x, z);
-			NetworkRegionFile file = this.loadedRegions.get(pos);
-			if (file != null)
-				return file;
-
-			Path p = getRegionFile(x, z);
-			if (!Files.exists(p))
-				return null;
-
-			if (this.loadedRegions.size() >= 32)
-				closeLoadedRegions();
-
-			file = new NetworkRegionFile(p);
-			this.loadedRegions.put(pos, file);
-			return file;
-		}
-	}
-
-	private void deleteRegionFiles() throws IOException {
-		IOException error = null;
-
-		try (DirectoryStream<Path> st = Files.newDirectoryStream(this.directory)) {
-			for (Path p : st) {
-				if (isRegionFile(p.getFileName().toString())) {
-					try {
-						Files.delete(p);
-					} catch (IOException e) {
-						error = e;
-					}
-				}
-			}
-		} catch (DirectoryIteratorException e) {
-			throw e.getCause();
-		}
-
-		if (error != null)
-			throw error;
+	public void close() throws IOException {
+		this.storage.close();
+		this.storage.regionCache.clear();
 	}
 
 	private static boolean isRegionFile(String name) {
@@ -189,40 +128,35 @@ public class NetworkRegionCache {
 		return false;
 	}
 
-	private Path getRegionFile(int x, int z) {
-		return this.directory.resolve("r." + x + "." + z + ".dat");
-	}
+	private void deleteRegionFiles() throws IOException {
+		ExceptionCollector<IOException> errors = new ExceptionCollector<>();
 
-	public void closeLoadedRegions() {
-		synchronized (this.loadedRegions) {
-			for (NetworkRegionFile file : this.loadedRegions.values()) {
-				try {
-					file.close();
-				} catch (IOException e) {
-					Mirage.LOGGER.warn("Failed to close region file " + file.getFile().getFileName(), e);
+		try (DirectoryStream<Path> st = Files.newDirectoryStream(this.directory)) {
+			for (Path p : st) {
+				if (isRegionFile(p.getFileName().toString())) {
+					try {
+						Files.delete(p);
+					} catch (IOException e) {
+						errors.add(e);
+					}
 				}
 			}
-			this.loadedRegions.clear();
+		} catch (DirectoryIteratorException e) {
+			throw e.getCause();
 		}
+
+		errors.throwIfPresent();
 	}
 
-	public DataOutputStream getChunkOutputStream(int cx, int cz) {
-		return getOrCreate(cx >> 5, cz >> 5).getDataOutputStream(cx & 31, cz & 31);
+	public void flush() throws IOException {
+		this.storage.flush();
 	}
 
-	public NetworkRegionFile getOrCreate(int x, int z) {
-		synchronized (this.loadedRegions) {
-			long pos = NetworkChunk.asLong(x, z);
-			NetworkRegionFile file = this.loadedRegions.get(pos);
-			if (file != null)
-				return file;
+	public CompoundTag read(int x, int z) throws IOException {
+		return this.storage.read(new ChunkPos(x, z));
+	}
 
-			if (this.loadedRegions.size() >= 32)
-				closeLoadedRegions();
-
-			file = new NetworkRegionFile(getRegionFile(x, z));
-			this.loadedRegions.put(pos, file);
-			return file;
-		}
+	public void write(int x, int z, CompoundTag data) throws IOException {
+		this.storage.write(new ChunkPos(x, z), data);
 	}
 }

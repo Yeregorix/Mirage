@@ -22,61 +22,57 @@
 
 package net.smoofyuniverse.mirage.modifier;
 
-import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
-import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.modifier.HideAllModifier.Config.Resolved;
 import net.smoofyuniverse.mirage.resource.Resources;
-import net.smoofyuniverse.mirage.util.BlockSet;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.math.vector.Vector3i;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
 import static net.smoofyuniverse.mirage.resource.Categories.RARE;
+import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
+import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 
 /**
  * This modifier hides all ores.
  */
-public class HideAllModifier extends ChunkModifier {
-
-	public HideAllModifier() {
-		super(Mirage.get(), "hide_all");
-	}
+public class HideAllModifier implements ChunkModifier {
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN);
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (preset.equals("water_dungeons")) {
-			cfg.blocks = new BlockSet();
-			cfg.blocks.add(BlockTypes.SEA_LANTERN);
-			cfg.blocks.add(BlockTypes.PRISMARINE);
-			cfg.blocks.add(BlockTypes.GOLD_BLOCK);
+			cfg.blocks = new HashSet<>();
+			cfg.blocks.add("minecraft:sea_lantern");
+			cfg.blocks.add("minecraft:prismarine_bricks");
+			cfg.blocks.add("minecraft:gold_block");
 
-			cfg.replacement = BlockTypes.WATER.getDefaultState();
+			cfg.replacement = "minecraft:water";
 
 			cfg.minY = 30;
 			cfg.maxY = 64;
 		} else {
 			if (cfg.blocks == null)
-				cfg.blocks = Resources.of(dimension).getBlocks(COMMON, RARE);
+				cfg.blocks = Resources.of(worldType).getBlocks(COMMON, RARE);
 			if (cfg.replacement == null)
-				cfg.replacement = Resources.of(dimension).getGround();
+				cfg.replacement = Resources.of(worldType).getGround();
 
 			cfg.minY = clamp(cfg.minY, 0, 255);
 			cfg.maxY = clamp(cfg.maxY, 0, 255);
@@ -88,13 +84,13 @@ public class HideAllModifier extends ChunkModifier {
 			}
 		}
 
-		node.setValue(Config.TOKEN, cfg);
-		return cfg.toImmutable();
+		node.set(cfg);
+		return cfg.resolve();
 	}
 
 	@Override
 	public void appendSignature(Builder builder, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
+		Resolved cfg = (Resolved) config;
 		builder.append(cfg.blocks).append(cfg.replacement).append(cfg.minY).append(cfg.maxY);
 	}
 
@@ -105,14 +101,14 @@ public class HideAllModifier extends ChunkModifier {
 
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
-		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
+		Resolved cfg = (Resolved) config;
+		final int maxX = max.x(), maxY = Math.min(max.y(), cfg.maxY), maxZ = max.z();
 
-		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
-			for (int z = min.getZ(); z <= maxZ; z++) {
-				for (int x = min.getX(); x <= maxX; x++) {
-					BlockState b = view.getBlock(x, y, z);
-					if (b.getType() == BlockTypes.AIR || b == cfg.replacement)
+		for (int y = Math.max(min.y(), cfg.minY); y <= maxY; y++) {
+			for (int z = min.z(); z <= maxZ; z++) {
+				for (int x = min.x(); x <= maxX; x++) {
+					BlockState b = view.block(x, y, z);
+					if (b == AIR || b == cfg.replacement)
 						continue;
 
 					if (cfg.blocks.contains(b))
@@ -122,29 +118,35 @@ public class HideAllModifier extends ChunkModifier {
 		}
 	}
 
-	@ConfigSerializable
+	@org.spongepowered.configurate.objectmapping.ConfigSerializable
 	public static final class Config {
-		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
+		@Comment("Blocks that will be hidden by the modifier")
+		@Setting("Blocks")
+		public Set<String> blocks;
 
-		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-		public BlockSet blocks;
-		@Setting(value = "Replacement", comment = "The block used to replace hidden blocks")
-		public BlockState replacement;
-		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
+		@Comment("The block used to replace hidden blocks")
+		@Setting("Replacement")
+		public String replacement;
+
+		@Comment("The minimum Y of the section to obfuscate")
+		@Setting("MinY")
 		public int minY = 0;
-		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
+
+		@Comment("The maximum Y of the section to obfuscate")
+		@Setting("MaxY")
 		public int maxY = 255;
 
-		public Immutable toImmutable() {
-			return new Immutable(this.blocks.getAll(), this.replacement, this.minY, this.maxY);
+		public Resolved resolve() {
+			return new Resolved(resolveBlockStates(this.blocks),
+					BlockState.fromString(this.replacement), this.minY, this.maxY);
 		}
 
-		public static final class Immutable {
+		public static final class Resolved {
 			public final Set<BlockState> blocks;
 			public final BlockState replacement;
 			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, BlockState replacement, int minY, int maxY) {
+			public Resolved(Collection<BlockState> blocks, BlockState replacement, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacement = replacement;
 				this.minY = minY;

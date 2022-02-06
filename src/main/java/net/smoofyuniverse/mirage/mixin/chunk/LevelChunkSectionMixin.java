@@ -20,41 +20,34 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin.world;
+package net.smoofyuniverse.mirage.mixin.chunk;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.world.chunk.BlockStateContainer;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
-import net.smoofyuniverse.mirage.impl.network.NetworkBlockContainer;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.smoofyuniverse.mirage.impl.internal.InternalSection;
+import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(BlockStateContainer.class)
-public class BlockStateContainerMixin implements InternalBlockContainer {
-	private final NetworkBlockContainer networkContainer = new NetworkBlockContainer((BlockStateContainer) (Object) this);
-	private boolean resizing = false;
+@Mixin(LevelChunkSection.class)
+public abstract class LevelChunkSectionMixin implements InternalSection {
+	private NetworkSection networkContainer;
+
+	@Inject(method = "<init>(ISSS)V", at = @At("RETURN"))
+	public void onInit(int bottomBlockY, short nonEmptyBlockCount, short tickingBlockCount, short tickingFluidCount, CallbackInfo ci) {
+		this.networkContainer = new NetworkSection((LevelChunkSection) (Object) this);
+	}
 
 	@Override
-	public NetworkBlockContainer getNetworkBlockContainer() {
+	public NetworkSection view() {
 		return this.networkContainer;
 	}
 
-	@Inject(method = "set(ILnet/minecraft/block/state/IBlockState;)V", at = @At("RETURN"))
-	public void onSet(int index, IBlockState state, CallbackInfo ci) {
-		if (!this.resizing)
-			this.networkContainer.set(index, state);
-	}
-
-	@Inject(method = "onResize", at = @At("HEAD"))
-	public void onResizeStart(int bits, IBlockState state, CallbackInfoReturnable<Integer> cir) {
-		this.resizing = true;
-	}
-
-	@Inject(method = "onResize", at = @At("RETURN"))
-	public void onResizeEnd(int bits, IBlockState state, CallbackInfoReturnable<Integer> cir) {
-		this.resizing = false;
+	@Inject(method = "setBlockState(IIILnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;", at = @At("RETURN"))
+	public void onSet(int x, int y, int z, BlockState state, boolean lock, CallbackInfoReturnable<BlockState> cir) {
+		this.networkContainer.setBlockState(x, y, z, state);
 	}
 }

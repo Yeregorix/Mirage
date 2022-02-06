@@ -20,26 +20,40 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin.world;
+package net.smoofyuniverse.mirage.mixin.player;
 
-import net.minecraft.world.chunk.BlockStateContainer;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
-import org.spongepowered.asm.mixin.Final;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
+import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
+import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
+import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ExtendedBlockStorage.class)
-public class ExtendedBlockStorageMixin {
-	@Shadow
-	@Final
-	private BlockStateContainer data;
+@Mixin(ServerPlayer.class)
+public abstract class ServerPlayerMixin implements InternalPlayer {
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	public void onInit(int y, boolean storeSkylight, CallbackInfo ci) {
-		((InternalBlockContainer) this.data).getNetworkBlockContainer().setY(y);
+	@Inject(method = "trackChunk", at = @At("RETURN"))
+	public void onTrackChunk(ChunkPos pos, Packet<?> levelChunkPacket, Packet<?> lightUpdatePacket, CallbackInfo ci) {
+		InternalWorld world = ((InternalWorld) world());
+		if (world.isDynamismEnabled()) {
+			DynamicChunk chunk = world.getOrCreateDynamicWorld(this).getOrCreateChunk(pos.x, pos.z);
+			for (DynamicSection section : chunk.sections) {
+				section.applyChanges();
+				section.getCurrent().build().sendTo(this);
+			}
+		}
+	}
+
+	@Inject(method = "untrackChunk", at = @At("RETURN"))
+	public void onUntrackChunk(ChunkPos pos, CallbackInfo ci) {
+		DynamicWorld dynWorld = getDynamicWorld();
+		if (dynWorld != null)
+			dynWorld.removeChunk(pos.x, pos.z);
 	}
 }

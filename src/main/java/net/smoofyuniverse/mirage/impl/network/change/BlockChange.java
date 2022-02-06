@@ -22,29 +22,25 @@
 
 package net.smoofyuniverse.mirage.impl.network.change;
 
-import com.flowpowered.math.vector.Vector3i;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.Packet;
-import net.minecraft.network.play.server.SPacketBlockChange;
-import net.minecraft.network.play.server.SPacketMultiBlockChange;
-import net.minecraft.network.play.server.SPacketMultiBlockChange.BlockUpdateData;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-import net.smoofyuniverse.mirage.impl.internal.compat.CompatUtil;
-import org.spongepowered.api.block.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.math.vector.Vector3i;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class BlockChange {
 	private final Packet<?>[] packets;
@@ -58,107 +54,124 @@ public class BlockChange {
 	}
 
 	public void sendTo(Player player) {
-		if (this.packets != null) {
-			for (Packet<?> packet : this.packets)
-				((EntityPlayerMP) player).connection.sendPacket(packet);
-		}
+		if (this.packets != null)
+			send(player);
+	}
+
+	private void send(Player player) {
+		for (Packet<?> packet : this.packets)
+			((ServerPlayer) player).connection.send(packet);
 	}
 
 	public void sendTo(Iterable<Player> players) {
 		if (this.packets != null) {
-			for (Player p : players) {
-				for (Packet<?> packet : this.packets)
-					((EntityPlayerMP) p).connection.sendPacket(packet);
-			}
+			for (Player p : players)
+				send(p);
 		}
 	}
 
-	public static Builder builder(InternalChunk chunk) {
-		return new Builder((Chunk) chunk);
+	public void sendTo(Stream<Player> players) {
+		if (this.packets != null)
+			players.forEach(this::send);
+	}
+
+	public static Builder builder(LevelChunk chunk, int y) {
+		return new Builder(chunk, y);
 	}
 
 	public static class Builder {
-		private final Short2ObjectMap<IBlockState> blocks = new Short2ObjectOpenHashMap<>();
-		private final World nmsWorld;
-		private final int x, z;
+		private final Short2ObjectMap<BlockState> blocks = new Short2ObjectOpenHashMap<>();
+		private final LevelChunk chunk;
+		private final SectionPos pos;
 
-		private Builder(Chunk nmsChunk) {
-			this.nmsWorld = nmsChunk.getWorld();
-			this.x = nmsChunk.x;
-			this.z = nmsChunk.z;
+		private Builder(LevelChunk chunk, int y) {
+			this.chunk = chunk;
+			this.pos = SectionPos.of(chunk.getPos(), y);
 		}
 
-		public void add(Vector3i pos, BlockState state) {
-			add(pos.getX(), pos.getY(), pos.getZ(), state);
+		public void add(Vector3i pos, org.spongepowered.api.block.BlockState state) {
+			add(pos.x(), pos.y(), pos.z(), state);
 		}
 
-		public void add(int x, int y, int z, BlockState state) {
-			add((short) ((x & 15) << 12 | (z & 15) << 8 | (y & 255)), state);
+		public void add(int x, int y, int z, org.spongepowered.api.block.BlockState state) {
+			add((short) ((x & 15) << 8 | (z & 15) << 4 | (y & 15)), state);
 		}
 
-		public void add(short index, BlockState state) {
-			this.blocks.put(index, (IBlockState) state);
+		public void add(short index, org.spongepowered.api.block.BlockState state) {
+			this.blocks.put(index, (BlockState) state);
 		}
 
-		public BlockChange build(boolean tileEntities) {
+		public BlockChange build() {
+			return build(true);
+		}
+
+		private BlockChange build(boolean includeBlockEntities) {
 			int changes = this.blocks.size();
 
 			if (changes == 0)
 				return new BlockChange();
 
-			int minX = this.x << 4, minZ = this.z << 4;
+			int minX = this.pos.minBlockX() << 4, minZ = this.pos.minBlockZ();
 
 			if (changes == 1) {
-				SPacketBlockChange packet = new SPacketBlockChange();
+				Entry<BlockState> e = this.blocks.short2ObjectEntrySet().iterator().next();
+				short key = e.getShortKey();
+				BlockPos pos = new BlockPos(minX + (key >> 8 & 15), key & 15, minZ + (key >> 4 & 15));
+				BlockState state = e.getValue();
 
-				Entry<IBlockState> e = this.blocks.short2ObjectEntrySet().iterator().next();
-				short pos = e.getShortKey();
+				ClientboundBlockUpdatePacket p = new ClientboundBlockUpdatePacket(pos, state);
 
-				packet.blockPosition = new BlockPos(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15));
-				packet.blockState = e.getValue();
-
-				if (tileEntities && CompatUtil.hasTileEntity(packet.blockState)) {
-					TileEntity te = this.nmsWorld.getTileEntity(packet.blockPosition);
-					if (te != null) {
-						SPacketUpdateTileEntity packet2 = te.getUpdatePacket();
-						if (packet2 != null)
-							return new BlockChange(packet, packet2);
-					}
+				if (includeBlockEntities) {
+					ClientboundBlockEntityDataPacket p2 = getEntityPacket(pos, state);
+					if (p2 != null)
+						return new BlockChange(p, p2);
 				}
 
-				return new BlockChange(packet);
+				return new BlockChange(p);
 			} else {
-				SPacketMultiBlockChange packet = new SPacketMultiBlockChange();
-
-				packet.chunkPos = new ChunkPos(this.x, this.z);
-				packet.changedBlocks = new BlockUpdateData[changes];
+				ClientboundSectionBlocksUpdatePacket p = new ClientboundSectionBlocksUpdatePacket();
+				p.sectionPos = this.pos;
+				p.positions = new short[changes];
+				p.states = new BlockState[changes];
+				p.suppressLightUpdates = true;
 
 				int i = 0;
-				for (Entry<IBlockState> e : this.blocks.short2ObjectEntrySet())
-					packet.changedBlocks[i++] = packet.new BlockUpdateData(e.getShortKey(), e.getValue());
+				for (Entry<BlockState> e : this.blocks.short2ObjectEntrySet()) {
+					p.positions[i] = e.getShortKey();
+					p.states[i++] = e.getValue();
+				}
 
-				if (tileEntities) {
+				if (includeBlockEntities) {
 					List<Packet<?>> packets = new ArrayList<>();
-					packets.add(packet);
+					packets.add(p);
 
-					for (BlockUpdateData b : packet.changedBlocks) {
-						if (CompatUtil.hasTileEntity(b.blockState)) {
-							short pos = b.offset;
+					BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+					for (i = 0; i < changes; i++) {
+						short key = p.positions[i];
+						pos.set(minX + (key >> 8 & 15), key & 15, minZ + (key >> 4 & 15));
 
-							TileEntity te = this.nmsWorld.getTileEntity(new BlockPos(minX + (pos >> 12 & 15), pos & 255, minZ + (pos >> 8 & 15)));
-							if (te != null) {
-								SPacketUpdateTileEntity packet2 = te.getUpdatePacket();
-								if (packet2 != null)
-									packets.add(packet2);
-							}
-						}
+						ClientboundBlockEntityDataPacket p2 = getEntityPacket(pos, p.states[i]);
+						if (p2 != null)
+							packets.add(p2);
 					}
 
 					return new BlockChange(packets.toArray(new Packet<?>[0]));
 				}
 
-				return new BlockChange(packet);
+				return new BlockChange(p);
 			}
+		}
+
+		private ClientboundBlockEntityDataPacket getEntityPacket(BlockPos pos, BlockState state) {
+			if (state.getBlock().isEntityBlock()) {
+				BlockEntity entity = this.chunk.getBlockEntity(pos);
+				if (entity != null) {
+					ClientboundBlockEntityDataPacket packet = entity.getUpdatePacket();
+					if (packet != null)
+						return packet;
+				}
+			}
+			return null;
 		}
 	}
 }

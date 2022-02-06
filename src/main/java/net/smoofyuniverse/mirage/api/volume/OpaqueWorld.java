@@ -22,31 +22,33 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.util.Identifiable;
-import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.api.world.server.storage.ServerWorldProperties;
+import org.spongepowered.math.vector.Vector3i;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface OpaqueWorld<O extends OpaqueChunk> extends OpaqueBlockVolume, Identifiable {
 
 	/**
-	 * @return The name of this world
+	 * @return The key
+	 * @see ServerWorldProperties#key()
 	 */
-	String getName();
+	ResourceKey key();
 
 	/**
 	 * @return The properties of this world
 	 */
-	WorldProperties getProperties();
+	ServerWorldProperties properties();
 
 	/**
 	 * @param pos The position
 	 * @return Whether the chunk at the given <strong>chunk</strong> position is loaded
 	 */
-	default boolean isOChunkLoaded(Vector3i pos) {
-		return isOChunkLoaded(pos.getX(), pos.getY(), pos.getZ());
+	default boolean isOpaqueChunkLoaded(Vector3i pos) {
+		return isOpaqueChunkLoaded(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -55,14 +57,14 @@ public interface OpaqueWorld<O extends OpaqueChunk> extends OpaqueBlockVolume, I
 	 * @param z The Z position
 	 * @return Whether the chunk at the given <strong>chunk</strong> position is loaded
 	 */
-	boolean isOChunkLoaded(int x, int y, int z);
+	boolean isOpaqueChunkLoaded(int x, int y, int z);
 
 	/**
 	 * @param pos The position
 	 * @return The chunk at the given <strong>chunk</strong> position
 	 */
-	default Optional<O> getOChunk(Vector3i pos) {
-		return getOChunk(pos.getX(), pos.getY(), pos.getZ());
+	default Optional<O> opaqueChunk(Vector3i pos) {
+		return opaqueChunk(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -71,14 +73,14 @@ public interface OpaqueWorld<O extends OpaqueChunk> extends OpaqueBlockVolume, I
 	 * @param z The Z position
 	 * @return The chunk at the given <strong>chunk</strong> position
 	 */
-	Optional<O> getOChunk(int x, int y, int z);
+	Optional<O> opaqueChunk(int x, int y, int z);
 
 	/**
 	 * @param pos The position
 	 * @return The chunk at the given <strong>block</strong> position
 	 */
-	default Optional<O> getOChunkAt(Vector3i pos) {
-		return getOChunkAt(pos.getX(), pos.getY(), pos.getZ());
+	default Optional<O> opaqueChunkAt(Vector3i pos) {
+		return opaqueChunkAt(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -87,10 +89,10 @@ public interface OpaqueWorld<O extends OpaqueChunk> extends OpaqueBlockVolume, I
 	 * @param z The Z position
 	 * @return The chunk at the given <strong>block</strong> position
 	 */
-	Optional<O> getOChunkAt(int x, int y, int z);
+	Optional<O> opaqueChunkAt(int x, int y, int z);
 
 	/**
 	 * @return A collection of all loaded chunks in this world
 	 */
-	Collection<? extends O> getLoadedOChunks();
+	Stream<? extends O> loadedOpaqueChunks();
 }

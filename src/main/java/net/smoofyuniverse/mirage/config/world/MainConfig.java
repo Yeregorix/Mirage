@@ -22,45 +22,53 @@
 
 package net.smoofyuniverse.mirage.config.world;
 
-import com.google.common.reflect.TypeToken;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
 
 @ConfigSerializable
 public class MainConfig {
-	public static final TypeToken<MainConfig> TOKEN = TypeToken.of(MainConfig.class);
 
-	@Setting(value = "Enabled", comment = "Enable or disable Mirage in this world")
+	@Comment("Enable or disable Mirage in this world")
+	@Setting("Enabled")
 	public boolean enabled = true;
-	@Setting(value = "Cache", comment = "Enable or disable caching fake chunks on disk")
+
+	@Comment("Enable or disable caching fake chunks on disk")
+	@Setting("Cache")
 	public boolean cache = true;
-	@Setting(value = "Dynamism", comment = "Enable or disable dynamic obfuscation")
+
+	@Comment("Enable or disable dynamic obfuscation")
+	@Setting("Dynamism")
 	public boolean dynamism = true;
-	@Setting(value = "Dimension", comment = "The dimension used for automatic config generation")
-	public DimensionType dimension;
-	@Setting(value = "Deobfuscation")
+
+	@Comment("The world type used for automatic config generation")
+	@Setting("WorldType")
+	public ResourceKey worldType;
+
+	@Setting("Deobfuscation")
 	public DeobfuscationConfig deobf = new DeobfuscationConfig();
 
-	public Immutable toImmutable() {
-		return new Immutable(this.enabled, this.cache, this.dynamism, this.dimension, this.deobf.toImmutable());
+	public Resolved resolve(WorldType worldType) {
+		return new Resolved(this.enabled, this.cache, this.dynamism, worldType, this.deobf.resolve());
 	}
 
-	public static class Immutable {
+	public static class Resolved {
 		public final boolean enabled, cache, dynamism;
-		public final DimensionType dimension;
-		public final DeobfuscationConfig.Immutable deobf;
+		public final WorldType worldType;
+		public final DeobfuscationConfig.Resolved deobf;
 
-		public Immutable(boolean enabled, boolean cache, boolean dynamism, DimensionType dimension, DeobfuscationConfig.Immutable deobf) {
+		public Resolved(boolean enabled, boolean cache, boolean dynamism, WorldType worldType, DeobfuscationConfig.Resolved deobf) {
 			this.enabled = enabled;
 			this.cache = cache;
 			this.dynamism = dynamism;
-			this.dimension = dimension;
+			this.worldType = worldType;
 			this.deobf = deobf;
 		}
 
-		public Immutable disable() {
-			return this.enabled ? new Immutable(false, this.cache, this.dynamism, this.dimension, this.deobf) : this;
+		public Resolved disable() {
+			return this.enabled ? new Resolved(false, this.cache, this.dynamism, this.worldType, this.deobf) : this;
 		}
 	}
 }

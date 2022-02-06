@@ -22,30 +22,26 @@
 
 package net.smoofyuniverse.mirage.modifier;
 
-import com.flowpowered.math.vector.Vector3i;
-import com.google.common.reflect.TypeToken;
-import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.modifier.RandomBedrockModifier.Config.Resolved;
 import net.smoofyuniverse.mirage.resource.Resources;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.DimensionTypes;
-import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.api.world.WorldTypes;
+import org.spongepowered.api.world.server.storage.ServerWorldProperties;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.math.vector.Vector3i;
 
 import java.util.Random;
 
-public class RandomBedrockModifier extends ChunkModifier {
+import static net.smoofyuniverse.mirage.util.BlockUtil.BEDROCK;
 
-	public RandomBedrockModifier() {
-		super(Mirage.get(), "random_bedrock");
-	}
+public class RandomBedrockModifier implements ChunkModifier {
 
 	@Override
 	public boolean requireCache() {
@@ -53,48 +49,48 @@ public class RandomBedrockModifier extends ChunkModifier {
 	}
 
 	@Override
-	public boolean isCompatible(WorldProperties world) {
-		return world.getDimensionType() != DimensionTypes.THE_END;
+	public boolean isCompatible(ServerWorldProperties properties) {
+		return properties.worldType() != WorldTypes.THE_END.get();
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN);
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (cfg.ground == null)
-			cfg.ground = Resources.of(dimension).getGround();
+			cfg.ground = Resources.of(worldType).getGround();
 		if (cfg.height < 0)
 			cfg.height = 0;
 
-		node.setValue(Config.TOKEN, cfg);
-		return cfg.toImmutable();
+		node.set(cfg);
+		return cfg.resolve();
 	}
 
 	@Override
 	public void appendSignature(Builder builder, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
+		Resolved cfg = (Resolved) config;
 		builder.append(cfg.ground).append(cfg.height);
 	}
 
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
+		Resolved cfg = (Resolved) config;
 
-		int height = Math.min(max.getY(), cfg.height);
+		int height = Math.min(max.y(), cfg.height);
 		if (height == 0)
 			return;
 
-		for (int x = min.getX(); x <= max.getX(); x++) {
-			for (int z = min.getZ(); z <= max.getZ(); z++) {
+		for (int x = min.x(); x <= max.x(); x++) {
+			for (int z = min.z(); z <= max.z(); z++) {
 				for (int y = height; y >= 0; --y) {
 					if (view.isExposed(x, y, z))
 						continue;
 
 					if (y <= r.nextInt(height)) {
-						view.setBlockType(x, y, z, BlockTypes.BEDROCK);
-					} else if (view.getBlockType(x, y, z) == BlockTypes.BEDROCK) {
+						view.setBlock(x, y, z, BEDROCK);
+					} else if (view.block(x, y, z) == BEDROCK) {
 						view.setBlock(x, y, z, cfg.ground);
 					}
 				}
@@ -102,24 +98,25 @@ public class RandomBedrockModifier extends ChunkModifier {
 		}
 	}
 
-	@ConfigSerializable
+	@org.spongepowered.configurate.objectmapping.ConfigSerializable
 	public static final class Config {
-		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
+		@Comment("The ground type used to hide real bedrock")
+		@Setting("Ground")
+		public String ground;
 
-		@Setting(value = "Ground", comment = "The ground type used to hide real bedrock")
-		public BlockState ground;
-		@Setting(value = "Height", comment = "The maximum layer where bedrock can be generated")
+		@Comment("The maximum layer where bedrock can be generated")
+		@Setting("Height")
 		public int height = 5;
 
-		public Config.Immutable toImmutable() {
-			return new Config.Immutable(this.ground, this.height);
+		public Resolved resolve() {
+			return new Resolved(BlockState.fromString(this.ground), this.height);
 		}
 
-		public static final class Immutable {
+		public static final class Resolved {
 			public final BlockState ground;
 			public final int height;
 
-			public Immutable(BlockState ground, int height) {
+			public Resolved(BlockState ground, int height) {
 				this.ground = ground;
 				this.height = height;
 			}

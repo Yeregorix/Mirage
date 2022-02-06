@@ -28,12 +28,12 @@ package net.smoofyuniverse.mirage.api.volume;
 public interface ChunkView extends BlockView, OpaqueChunk {
 
 	@Override
-	ChunkStorage getStorage();
+	ChunkStorage storage();
 
 	/**
 	 * @return The state of this chunk.
 	 */
-	State getState();
+	State state();
 
 	/**
 	 * If not already done and if all modifiers are ready, this method obfuscates all blocks inside this chunk.

@@ -1,22 +1,24 @@
 {
   "required": true,
-  "minVersion": "0.7.10",
+  "minVersion": "0.8",
   "package": "net.smoofyuniverse.mirage.mixin",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "refmap": "mixins.mirage.refmap.json",
   "server": [
-    "block.StateImplementationMixin",
-    "network.SPacketChunkDataMixin",
-    "server.MinecraftServerMixin",
-    "server.PlayerChunkMapEntryMixin",
-    "server.PlayerChunkMapMixin",
-    "world.AnvilChunkLoaderMixin",
-    "world.BlockStateContainerMixin",
-    "world.ChunkMixin",
-    "world.ExtendedBlockStorageMixin",
-    "world.WorldMixin",
-    "world.WorldServerMixin"
+    "block.BlockStateBaseMixin",
+    "chunk.ChunkSerializerMixin",
+    "chunk.ChunkStorageMixin",
+    "chunk.LevelChunkMixin",
+    "chunk.LevelChunkSectionMixin",
+    "chunk.PalettedContainerMixin",
+    "chunk.ProtoChunkMixin",
+    "level.ChunkHolderMixin",
+    "level.ChunkMapMixin",
+    "level.LevelMixin",
+    "level.ServerLevelMixin",
+    "network.ClientboundLevelChunkPacketMixin",
+    "player.ServerPlayerMixin",
+    "server.MinecraftServerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

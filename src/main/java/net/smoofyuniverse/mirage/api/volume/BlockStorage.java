@@ -22,9 +22,6 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector2i;
-import com.flowpowered.math.vector.Vector3i;
-
 /**
  * A BlockStorage is an ImmutableBlockVolume associated with mutable BlockView. This object is used to represent a server-side BlockVolume.
  */
@@ -35,48 +32,17 @@ public interface BlockStorage extends OpaqueBlockVolume {
 	 *
 	 * @return The world
 	 */
-	WorldStorage getWorld();
+	WorldStorage world();
 
 	/**
 	 * @return The BlockView which is associated with this BlockStorage
 	 * @throws IllegalStateException if the BlockView is not available
 	 * @see BlockStorage#isViewAvailable
 	 */
-	BlockView getView();
+	BlockView view();
 
 	/**
 	 * @return Whether the BlockView associated with this BlockStorage is available
 	 */
 	boolean isViewAvailable();
-
-	/**
-	 * @param pos The position
-	 * @return A vector containing the block light level as X and the sky light level as Y.
-	 */
-	default Vector2i getLightLevels(Vector3i pos) {
-		return getLightLevels(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	/**
-	 * @param x The X position
-	 * @param y The Y position
-	 * @param z The Z position
-	 * @return A vector containing the block light level as X and the sky light level as Y.
-	 */
-	Vector2i getLightLevels(int x, int y, int z);
-
-	/**
-	 * @param column The position
-	 * @return The y value of the highest opaque block
-	 */
-	default int getHighestY(Vector2i column) {
-		return getHighestY(column.getX(), column.getY());
-	}
-
-	/**
-	 * @param x The X position
-	 * @param z The Z position
-	 * @return The y value of the highest opaque block
-	 */
-	int getHighestY(int x, int z);
 }

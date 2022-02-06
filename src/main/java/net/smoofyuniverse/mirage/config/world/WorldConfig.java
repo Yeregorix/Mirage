@@ -25,127 +25,103 @@ package net.smoofyuniverse.mirage.config.world;
 import com.google.common.collect.ImmutableList;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifierRegistryModule;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
+import net.smoofyuniverse.mirage.config.world.MainConfig.Resolved;
 import net.smoofyuniverse.mirage.util.IOUtil;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.DimensionTypes;
+import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.registry.Registry;
+import org.spongepowered.api.registry.RegistryTypes;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.api.world.WorldTypes;
+import org.spongepowered.configurate.CommentedConfigurationNode;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.loader.ConfigurationLoader;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 public class WorldConfig {
-	public static final int CURRENT_VERSION = 3, MINIMUM_VERSION = 1;
+	public static final int CURRENT_VERSION = 3, MINIMUM_VERSION = 3;
 	public static final WorldConfig DISABLED;
 
-	public final MainConfig.Immutable main;
+	public final Resolved main;
 	public final List<ConfiguredModifier> modifiers;
 	public final long seed;
 
-	public WorldConfig(MainConfig.Immutable main, List<ConfiguredModifier> modifiers, long seed) {
+	public WorldConfig(Resolved main, List<ConfiguredModifier> modifiers, long seed) {
 		this.main = main;
 		this.modifiers = ImmutableList.copyOf(modifiers);
 		this.seed = seed;
 	}
 
-	public static WorldConfig load(Path file) throws IOException, ObjectMappingException {
-		ConfigurationLoader<CommentedConfigurationNode> loader = IOUtil.createConfigLoader(file);
+	public static WorldConfig load(Path file) throws IOException {
+		ConfigurationLoader<CommentedConfigurationNode> loader = Mirage.get().createConfigLoader(file);
 
 		CommentedConfigurationNode root = loader.load();
-		int version = root.getNode("Version").getInt();
+		int version = root.node("Version").getInt();
 		if (version > CURRENT_VERSION || version < MINIMUM_VERSION) {
 			version = CURRENT_VERSION;
 			if (IOUtil.backup(file).isPresent()) {
 				Mirage.LOGGER.info("Your config version is not supported. A new one will be generated.");
-				root = loader.createEmptyNode();
+				root = loader.createNode();
 			}
 		}
 
-		ConfigurationNode cfgNode = root.getNode("Config");
-		MainConfig cfg = cfgNode.getValue(MainConfig.TOKEN);
+		ConfigurationNode cfgNode = root.node("Config");
+		MainConfig cfg = cfgNode.get(MainConfig.class);
 		if (cfg == null)
 			cfg = new MainConfig();
 
-		if (cfg.dimension == null) {
-			// Guess
+		Registry<ChunkModifier> modifierRegistry = ChunkModifier.REGISTRY_TYPE.get();
+		Registry<WorldType> worldTypeRegistry = RegistryTypes.WORLD_TYPE.get();
+		WorldType worldType = null;
+
+		if (cfg.worldType == null) {
+			// Guess using filename
 			String fn = file.getFileName().toString();
 			int i = fn.lastIndexOf('.');
-			cfg.dimension = Sponge.getRegistry().getType(DimensionType.class, i == -1 ? fn : fn.substring(0, i)).orElse(DimensionTypes.OVERWORLD);
+			if (i != -1)
+				fn = fn.substring(0, i);
+
+			try {
+				ResourceKey key = ResourceKey.resolve(fn);
+				worldType = worldTypeRegistry.findValue(key).orElse(null);
+				if (worldType != null)
+					cfg.worldType = key;
+			} catch (Exception ignored) {
+			}
+		} else {
+			worldType = worldTypeRegistry.findValue(cfg.worldType).orElse(null);
 		}
 
 		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
 		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);
 
-		ConfigurationNode modsNode = root.getNode("Modifiers");
-
-		if (version == 1) {
-			// Conversion "Id" -> "Type"
-			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				ConfigurationNode typeNode = node.getNode("Type");
-				if (typeNode.isVirtual()) {
-					ConfigurationNode idNode = node.getNode("Id");
-					if (!idNode.isVirtual()) {
-						typeNode.setValue(idNode.getValue());
-						node.removeChild("Id");
-					}
-				}
-			}
-
-			version = 2;
-		}
-
-		if (version == 2) {
-			// No longer used
-			cfgNode.removeChild("Preobfuscation");
-			cfgNode.removeChild("Seed");
-
-			// Update modifier types
-			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				ConfigurationNode typeNode = node.getNode("Type");
-				String type = typeNode.getString();
-				if (type == null)
-					continue;
-				type = modifier2to3(type);
-				if (type == null)
-					node.removeChild("Type");
-				else
-					typeNode.setValue(type);
-			}
-			version = 3;
-		}
-
-		DimensionType dimType = cfg.dimension;
-
-		if (modsNode.isVirtual()) {
-			if (dimType == DimensionTypes.OVERWORLD) {
-				modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.RANDOM_BEDROCK.getName());
+		ConfigurationNode modsNode = root.node("Modifiers");
+		if (modsNode.virtual()) {
+			if (worldType == WorldTypes.OVERWORLD.get()) {
+				modsNode.appendListNode().node("Type").set(modifierRegistry.valueKey(ChunkModifiers.RANDOM_BEDROCK));
 
 				ConfigurationNode water_dungeons = modsNode.appendListNode();
-				water_dungeons.getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
-				water_dungeons.getNode("Preset").setValue("water_dungeons");
+				water_dungeons.node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
+				water_dungeons.node("Preset").set("water_dungeons");
 			}
 
-			modsNode.appendListNode().getNode("Type").setValue(ChunkModifiers.HIDE_OBVIOUS.getName());
+			modsNode.appendListNode().node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
 		}
 
 		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
 		if (cfg.enabled) {
-			for (ConfigurationNode node : modsNode.getChildrenList()) {
-				String type = node.getNode("Type").getString();
+			for (ConfigurationNode node : modsNode.childrenList()) {
+				String type = node.node("Type").getString();
 				if (type == null)
 					continue;
 
-				ChunkModifier mod = ChunkModifierRegistryModule.get().getById(type).orElse(null);
+				ChunkModifier mod = modifierRegistry.findValue(ResourceKey.resolve(type)).orElse(null);
 				if (mod == null) {
 					Mirage.LOGGER.warn("Modifier '" + type + "' does not exists.");
 					continue;
@@ -153,11 +129,11 @@ public class WorldConfig {
 
 				Object modCfg;
 				try {
-					String preset = node.getNode("Preset").getString();
-					modCfg = mod.loadConfiguration(node.getNode("Options"), dimType, preset == null ? "" : preset.toLowerCase());
+					String preset = node.node("Preset").getString();
+					modCfg = mod.loadConfiguration(node.node("Options"), worldType, preset == null ? "" : preset.toLowerCase());
 					node.removeChild("Preset");
 				} catch (Exception e) {
-					Mirage.LOGGER.warn("Modifier " + mod.getId() + " failed to loaded his configuration. This modifier will be ignored.", e);
+					Mirage.LOGGER.warn("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod) + " failed to loaded his configuration. This modifier will be ignored.", e);
 					continue;
 				}
 
@@ -186,33 +162,16 @@ public class WorldConfig {
 			}
 		}
 
-		root.getNode("Version").setValue(version);
-		cfgNode.setValue(MainConfig.TOKEN, cfg);
+		root.node("Version").set(version);
+		cfgNode.set(cfg);
 		loader.save(root);
 
-		return new WorldConfig(cfg.toImmutable(), modifiers, 0);
-	}
-
-	private static String modifier2to3(String value) {
-		switch (value.toLowerCase(Locale.ROOT)) {
-			case "empty":
-				return null;
-			case "obvious":
-				return "hide_obvious";
-			case "bedrock":
-				return "random_bedrock";
-			case "random":
-				return "random_block";
-			case "fakegen":
-				return "random_vein";
-			default:
-				return value;
-		}
+		return new WorldConfig(cfg.resolve(worldType), modifiers, 0);
 	}
 
 	static {
 		MainConfig main = new MainConfig();
 		main.enabled = false;
-		DISABLED = new WorldConfig(main.toImmutable(), ImmutableList.of(), 0);
+		DISABLED = new WorldConfig(main.resolve(null), ImmutableList.of(), 0);
 	}
 }

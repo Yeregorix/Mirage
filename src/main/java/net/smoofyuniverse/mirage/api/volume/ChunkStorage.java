@@ -28,5 +28,5 @@ package net.smoofyuniverse.mirage.api.volume;
 public interface ChunkStorage extends BlockStorage, OpaqueChunk {
 
 	@Override
-	ChunkView getView();
+	ChunkView view();
 }

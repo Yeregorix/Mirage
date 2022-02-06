@@ -22,24 +22,17 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.api.volume.ChunkStorage;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 
-public interface InternalChunk extends ChunkStorage {
+public interface InternalChunk extends ChunkStorage, InternalChunkAccess {
 
 	@Override
-	NetworkChunk getView();
+	NetworkChunk view();
 
 	@Override
-	InternalWorld getWorld();
+	InternalWorld world();
 
-	void markActive();
-
-	long getValidCacheDate();
-
-	void setValidCacheDate(long value);
-
-	boolean captureContainers();
-
-	void requireContainer(int index);
+	LevelChunkSection requireSection(int y);
 }

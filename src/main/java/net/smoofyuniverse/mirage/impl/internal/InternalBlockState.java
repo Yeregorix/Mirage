@@ -24,7 +24,5 @@ package net.smoofyuniverse.mirage.impl.internal;
 
 public interface InternalBlockState {
 
-	void optimizeExpositionCheck();
-
 	boolean isOpaque();
 }

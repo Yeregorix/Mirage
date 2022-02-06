@@ -22,55 +22,38 @@
 
 package net.smoofyuniverse.mirage.impl.network;
 
-import co.aikar.timings.Timing;
-import com.flowpowered.math.vector.Vector3i;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.Mirage;
-import net.smoofyuniverse.mirage.MirageTimings;
+import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import net.smoofyuniverse.mirage.impl.internal.InternalBlockContainer;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-import net.smoofyuniverse.mirage.impl.network.cache.BlockContainerSnapshot;
-import net.smoofyuniverse.mirage.impl.network.cache.ChunkSnapshot;
+import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
-import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
+import net.smoofyuniverse.mirage.util.BlockUtil;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.util.DiscreteTransform3;
-import org.spongepowered.api.world.extent.ImmutableBlockVolume;
-import org.spongepowered.api.world.extent.MutableBlockVolume;
-import org.spongepowered.api.world.extent.StorageType;
-import org.spongepowered.api.world.extent.UnmodifiableBlockVolume;
-import org.spongepowered.api.world.extent.worker.MutableBlockVolumeWorker;
+import org.spongepowered.api.fluid.FluidState;
+import org.spongepowered.api.world.volume.stream.StreamOptions;
+import org.spongepowered.api.world.volume.stream.VolumeStream;
 import org.spongepowered.common.util.VecHelper;
-import org.spongepowered.common.util.gen.ArrayImmutableBlockBuffer;
-import org.spongepowered.common.util.gen.ArrayMutableBlockBuffer;
-import org.spongepowered.common.world.extent.ExtentBufferUtil;
-import org.spongepowered.common.world.extent.MutableBlockViewDownsize;
-import org.spongepowered.common.world.extent.MutableBlockViewTransform;
-import org.spongepowered.common.world.extent.UnmodifiableBlockVolumeWrapper;
-import org.spongepowered.common.world.extent.worker.SpongeMutableBlockVolumeWorker;
-import org.spongepowered.common.world.schematic.GlobalPalette;
 import org.spongepowered.common.world.storage.SpongeChunkLayout;
+import org.spongepowered.math.vector.Vector3i;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
-import static net.smoofyuniverse.mirage.util.MathUtil.*;
+import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
+import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 
 /**
- * Represents a chunk viewed for the network (akka online players)
+ * Represents a chunk viewed for the network (aka online players)
  */
 public class NetworkChunk implements ChunkView {
-	public static final int maxDynamismDistance2 = squared(160);
-
 	private final InternalChunk chunk;
 
 	private final NetworkWorld world;
@@ -79,7 +62,7 @@ public class NetworkChunk implements ChunkView {
 	private final boolean dynamismEnabled;
 	private final long seed;
 
-	private final NetworkBlockContainer[] containers = new NetworkBlockContainer[16];
+	private final NetworkSection[] sections = new NetworkSection[16];
 	private final Random random = new Random();
 	private State state = State.DEOBFUSCATED;
 	private ChunkChangeListener listener;
@@ -87,66 +70,89 @@ public class NetworkChunk implements ChunkView {
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
 		this.world = world;
-		this.position = chunk.getPosition();
-		this.blockMin = chunk.getBlockMin();
-		this.blockMax = chunk.getBlockMax();
+		this.position = chunk.chunkPosition();
+		this.blockMin = chunk.min();
+		this.blockMax = chunk.max();
 		this.dynamismEnabled = world.isDynamismEnabled();
-		this.x = this.position.getX();
-		this.z = this.position.getZ();
+		this.x = this.position.x();
+		this.z = this.position.z();
 
-		long wSeed = world.getConfig().seed;
+		long wSeed = world.config().seed;
 		this.random.setSeed(wSeed);
 		long k = this.random.nextLong() / 2L * 2L + 1L;
 		long l = this.random.nextLong() / 2L * 2L + 1L;
 		this.seed = (long) this.x * k + (long) this.z * l ^ wSeed;
 	}
 
-	public void captureContainer(ExtendedBlockStorage storage) {
-		if (storage != null)
-			captureContainer(((InternalBlockContainer) storage.getData()).getNetworkBlockContainer());
+	public void captureSection(int y) {
+		captureSection(this.chunk.getSections()[y]);
 	}
 
-	public void captureContainer(NetworkBlockContainer container) {
-		if (container == null)
+	public void captureSection(LevelChunkSection section) {
+		if (section != null)
+			captureSection(((InternalSection) section).view());
+	}
+
+	private void captureSection(NetworkSection section) {
+		if (section == null)
 			return;
 
-		int index = container.getY() >> 4;
-		NetworkBlockContainer old = this.containers[index];
-		if (old == container)
+		int y = section.getY();
+		NetworkSection old = this.sections[y];
+		if (old == section)
 			return;
 
 		if (old != null && !old.isEmpty())
-			Mirage.LOGGER.warn("A new container has been captured and will replace a non-empty one (" + this.x + ", " + index + ", " + this.z + ").");
+			Mirage.LOGGER.warn("A new section has been captured and will replace a non-empty one (" + this.x + ", " + y + ", " + this.z + ").");
 
-		this.containers[index] = container;
+		this.sections[y] = section;
+	}
+
+	public ChunkChangeListener getListener() {
+		return this.listener;
+	}
+
+	public boolean isDirty() {
+		for (NetworkSection container : this.sections) {
+			if (container != null && container.dirty)
+				return true;
+		}
+		return false;
 	}
 
 	public void saveToCacheLater() {
 		if (shouldSave()) {
-			long date;
+			long time = ((ServerLevel) this.world.storage()).getGameTime();
+
 			if (this.world.useCache()) {
-				ChunkSnapshot chunk = save(new ChunkSnapshot());
-				this.world.addPendingSave(this.x, this.z, chunk);
-				date = chunk.getDate();
-			} else
-				date = System.currentTimeMillis();
-			this.chunk.setValidCacheDate(date);
-			((Chunk) this.chunk).markDirty();
+				CompoundTag tag = serialize();
+				tag.putLong("LastUpdate", time);
+
+				this.world.addPendingSave(this.x, this.z, tag);
+			}
+
+			this.chunk.setCacheTime(time);
+			((LevelChunk) this.chunk).markUnsaved();
 			clearDirty();
 		}
-	}
-
-	public Optional<ChunkChangeListener> getListener() {
-		return Optional.ofNullable(this.listener);
 	}
 
 	public void setListener(ChunkChangeListener listener) {
 		this.listener = listener;
 	}
 
-	@Override
-	public State getState() {
-		return this.state;
+	public CompoundTag serialize() {
+		CompoundTag tag = new CompoundTag();
+		tag.putInt("xPos", this.x);
+		tag.putInt("zPos", this.z);
+
+		ListTag sectionsTag = new ListTag();
+		for (NetworkSection section : this.sections) {
+			if (section != null)
+				sectionsTag.add(section.serialize());
+		}
+		tag.put("Sections", sectionsTag);
+		return tag;
 	}
 
 	public boolean shouldSave() {
@@ -154,56 +160,36 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	private void clearDirty() {
-		for (NetworkBlockContainer container : this.containers) {
+		for (NetworkSection container : this.sections) {
 			if (container != null)
 				container.dirty = false;
 		}
 	}
 
-	public boolean isDirty() {
-		for (NetworkBlockContainer container : this.containers) {
-			if (container != null && container.dirty)
-				return true;
-		}
-		return false;
-	}
-
 	public void saveToCacheNow() {
 		if (shouldSave()) {
-			long date;
+			long time = ((ServerLevel) this.world.storage()).getGameTime();
+
 			if (this.world.useCache()) {
-				ChunkSnapshot chunk = save(new ChunkSnapshot());
+				CompoundTag tag = serialize();
+				tag.putLong("LastUpdate", time);
+
 				this.world.removePendingSave(this.x, this.z);
-				this.world.saveToCache(this.x, this.z, chunk);
-				date = chunk.getDate();
-			} else
-				date = System.currentTimeMillis();
-			this.chunk.setValidCacheDate(date);
-			((Chunk) this.chunk).markDirty();
+				this.world.saveToCache(this.x, this.z, tag);
+			}
+
+			this.chunk.setCacheTime(time);
+			((LevelChunk) this.chunk).markUnsaved();
 			clearDirty();
 		}
 	}
 
-	public ChunkSnapshot save(ChunkSnapshot out) {
-		List<BlockContainerSnapshot> list = new ArrayList<>(this.containers.length);
-		for (NetworkBlockContainer container : this.containers) {
-			if (container != null) {
-				BlockContainerSnapshot data = new BlockContainerSnapshot();
-				container.save(data);
-				list.add(data);
-			}
-		}
-		out.setContainers(list.toArray(new BlockContainerSnapshot[0]));
-		out.setDate(System.currentTimeMillis());
-		return out;
-	}
-
 	public void loadFromCacheNow() {
 		if (this.world.useCache()) {
-			ChunkSnapshot chunk = this.world.readFromCache(this.x, this.z);
-			if (chunk != null && chunk.getDate() == this.chunk.getValidCacheDate()) {
+			CompoundTag tag = this.world.readFromCache(this.x, this.z);
+			if (tag != null && tag.getLong("LastUpdate") == this.chunk.getCacheTime()) {
 				this.world.removePendingSave(this.x, this.z);
-				load(chunk);
+				deserialize(tag);
 
 				this.state = State.OBFUSCATED;
 				clearDirty();
@@ -211,14 +197,30 @@ public class NetworkChunk implements ChunkView {
 		}
 	}
 
-	public void load(ChunkSnapshot in) {
-		this.chunk.captureContainers();
+	public void deserialize(CompoundTag tag) {
+		captureSections();
 
-		for (BlockContainerSnapshot data : in.getContainers()) {
-			NetworkBlockContainer container = this.containers[data.getSection()];
+		for (Tag t : tag.getList("Sections", 10)) {
+			CompoundTag sectionTag = (CompoundTag) t;
+			NetworkSection container = this.sections[sectionTag.getByte("Y")];
 			if (container != null)
-				container.load(data);
+				container.deserialize(sectionTag);
 		}
+	}
+
+	public void captureSections() {
+		for (LevelChunkSection section : this.chunk.getSections())
+			captureSection(section);
+	}
+
+	@Override
+	public InternalChunk storage() {
+		return this.chunk;
+	}
+
+	@Override
+	public State state() {
+		return this.state;
 	}
 
 	@Override
@@ -239,12 +241,10 @@ public class NetworkChunk implements ChunkView {
 		if (this.state == State.OBFUSCATED)
 			return;
 
-		this.chunk.captureContainers();
-
-		MirageTimings.OBFUSCATION.startTiming();
+		captureSections();
 
 		boolean requireNeighbors = false;
-		for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
+		for (ConfiguredModifier mod : this.world.config().modifiers) {
 			if (mod.modifier.requireNeighborsLoaded()) {
 				requireNeighbors = true;
 				break;
@@ -256,28 +256,34 @@ public class NetworkChunk implements ChunkView {
 		} else {
 			this.random.setSeed(this.seed);
 
-			for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
-				Timing timing = mod.modifier.getTiming();
-				timing.startTiming();
-
+			for (ConfiguredModifier mod : this.world.config().modifiers) {
 				try {
 					mod.modifier.modify(this, this.random, mod.config);
 				} catch (Exception ex) {
-					Mirage.LOGGER.error("Modifier " + mod.modifier.getId() + " has thrown an exception while modifying a network chunk", ex);
+					Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while modifying a network chunk", ex);
 				}
-
-				timing.stopTiming();
 			}
 
 			this.state = State.OBFUSCATED;
 		}
-
-		MirageTimings.OBFUSCATION.stopTiming();
 	}
 
 	@Override
-	public InternalChunk getStorage() {
-		return this.chunk;
+	public void deobfuscate() {
+		if (this.state == State.DEOBFUSCATED)
+			return;
+
+		for (NetworkSection section : this.sections) {
+			if (section != null) {
+				section.clearDynamism();
+				section.deobfuscate(this.listener);
+			}
+		}
+
+		if (this.listener != null)
+			this.listener.clearDynamism();
+
+		this.state = State.DEOBFUSCATED;
 	}
 
 	@Override
@@ -286,37 +292,19 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public void setDynamism(int x, int y, int z, int distance) {
-		checkBlockPosition(x, y, z);
-		if (!this.dynamismEnabled)
-			return;
-
-		distance = clamp(distance, 0, 10);
-		requireContainer(y >> 4).setDynamism(x & 15, y & 15, z & 15, distance);
-		if (this.listener != null)
-			this.listener.updateDynamism(x & 15, y, z & 15, distance);
-	}
-
-	@Override
-	public void deobfuscate() {
-		if (this.state == State.DEOBFUSCATED)
-			return;
-
-		MirageTimings.DEOBFUSCATION.startTiming();
-
-		for (NetworkBlockContainer c : this.containers) {
-			if (c != null) {
-				c.clearDynamism();
-				c.deobfuscate(this.listener);
-			}
+	public void clearDynamism() {
+		for (NetworkSection section : this.sections) {
+			if (section != null)
+				section.clearDynamism();
 		}
 
 		if (this.listener != null)
 			this.listener.clearDynamism();
+	}
 
-		this.state = State.DEOBFUSCATED;
-
-		MirageTimings.DEOBFUSCATION.stopTiming();
+	@Override
+	public NetworkWorld world() {
+		return this.world;
 	}
 
 	@Override
@@ -328,60 +316,50 @@ public class NetworkChunk implements ChunkView {
 		obfuscate();
 	}
 
-	public void collectDynamicPositions(DynamicChunk chunk) {
+	@Override
+	public void setDynamism(int x, int y, int z, int distance) {
+		checkBlockPosition(x, y, z);
 		if (!this.dynamismEnabled)
 			return;
 
-		Vector3i relCenter = chunk.getRelativeCenter();
-		int cX = relCenter.getX(), cY = relCenter.getY(), cZ = relCenter.getZ();
-
-		int minXZDistance2 = lengthSquared(clamp(cX, 0, 15) - cX, clamp(cZ, 0, 15) - cZ);
-		if (minXZDistance2 + squared(clamp(cY, 0, 255) - cY) > maxDynamismDistance2)
-			return;
-
-		for (NetworkBlockContainer c : this.containers) {
-			if (c != null) {
-				int relY = cY - c.getY();
-
-				int d2 = minXZDistance2 + squared(clamp(relY, 0, 15) - relY);
-				if (d2 > maxDynamismDistance2 || d2 > squared(c.getMaxDynamism()) << 8)
-					continue;
-
-				c.collectDynamicPositions(chunk);
-			}
-		}
-
+		distance = clamp(distance, 0, 10);
+		requireSection(y >> 4).setDynamism(x & 15, y & 15, z & 15, distance);
 		if (this.listener != null)
-			this.listener.markDirty();
+			this.listener.updateDynamism(x & 15, y, z & 15, distance);
 	}
 
-	@Override
-	public NetworkWorld getWorld() {
-		return this.world;
-	}
-
-	@Override
-	public Vector3i getPosition() {
-		return this.position;
-	}
-
-	private NetworkBlockContainer requireContainer(int index) {
-		NetworkBlockContainer container = this.containers[index];
+	private NetworkSection requireSection(int y) {
+		NetworkSection container = this.sections[y];
 		if (container == null) {
-			this.chunk.requireContainer(index);
-			container = this.containers[index];
+			captureSection(this.chunk.requireSection(y));
+			container = this.sections[y];
 		}
 		return container;
 	}
 
 	@Override
-	public int getDynamism(int x, int y, int z) {
+	public int dynamism(int x, int y, int z) {
 		checkBlockPosition(x, y, z);
 		if (!this.dynamismEnabled)
 			return 0;
 
-		NetworkBlockContainer c = this.containers[y >> 4];
-		return c == null ? 0 : c.getDynamism(x & 15, y & 15, z & 15);
+		NetworkSection section = this.sections[y >> 4];
+		return section == null ? 0 : section.getDynamism(x & 15, y & 15, z & 15);
+	}
+
+	@Override
+	public boolean deobfuscate(int x, int y, int z) {
+		checkBlockPosition(x, y, z);
+		if (this.state == State.DEOBFUSCATED)
+			return false;
+
+		NetworkSection section = this.sections[y >> 4];
+		return section != null && section.deobfuscate(this.listener, x & 15, y & 15, z & 15);
+	}
+
+	@Override
+	public Vector3i chunkPosition() {
+		return this.position;
 	}
 
 	@Override
@@ -401,53 +379,37 @@ public class NetworkChunk implements ChunkView {
 
 		// x + 1
 		if (x == 15) {
-			NetworkChunk c = this.world.getChunk(this.x + 1, this.z);
-			if (c == null || !c.isOpaque(0, y, z))
+			NetworkChunk section = this.world.chunk(this.x + 1, this.z);
+			if (section == null || !section.isOpaque(0, y, z))
 				return true;
 		} else if (!isOpaque(x + 1, y, z))
 			return true;
 
 		// x - 1
 		if (x == 0) {
-			NetworkChunk c = this.world.getChunk(this.x - 1, this.z);
-			if (c == null || !c.isOpaque(15, y, z))
+			NetworkChunk section = this.world.chunk(this.x - 1, this.z);
+			if (section == null || !section.isOpaque(15, y, z))
 				return true;
 		} else if (!isOpaque(x - 1, y, z))
 			return true;
 
 		// z + 1
 		if (z == 15) {
-			NetworkChunk c = this.world.getChunk(this.x, this.z + 1);
-			if (c == null || !c.isOpaque(x, y, 0))
+			NetworkChunk section = this.world.chunk(this.x, this.z + 1);
+			if (section == null || !section.isOpaque(x, y, 0))
 				return true;
 		} else if (!isOpaque(x, y, z + 1))
 			return true;
 
 		// z - 1
 		if (z == 0) {
-			NetworkChunk c = this.world.getChunk(this.x, this.z - 1);
-			if (c == null || !c.isOpaque(x, y, 15))
+			NetworkChunk section = this.world.chunk(this.x, this.z - 1);
+			if (section == null || !section.isOpaque(x, y, 15))
 				return true;
 		} else if (!isOpaque(x, y, z - 1))
 			return true;
 
 		return false;
-	}
-
-	@Override
-	public boolean isOpaque(int x, int y, int z) {
-		NetworkBlockContainer c = this.containers[y >> 4];
-		return c != null && ((InternalBlockState) c.get(x & 15, y & 15, z & 15)).isOpaque();
-	}
-
-	@Override
-	public boolean deobfuscate(int x, int y, int z) {
-		checkBlockPosition(x, y, z);
-		if (this.state == State.DEOBFUSCATED)
-			return false;
-
-		NetworkBlockContainer container = this.containers[y >> 4];
-		return container != null && container.deobfuscate(this.listener, x & 15, y & 15, z & 15);
 	}
 
 	@Override
@@ -459,54 +421,57 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public Vector3i getBlockMin() {
+	public boolean isOpaque(int x, int y, int z) {
+		NetworkSection section = this.sections[y >> 4];
+		return section != null && ((InternalBlockState) section.getBlockState(x & 15, y & 15, z & 15)).isOpaque();
+	}
+
+	@Override
+	public Vector3i min() {
 		return this.blockMin;
 	}
 
 	@Override
-	public Vector3i getBlockMax() {
+	public Vector3i max() {
 		return this.blockMax;
 	}
 
 	@Override
-	public Vector3i getBlockSize() {
+	public Vector3i size() {
 		return SpongeChunkLayout.CHUNK_SIZE;
 	}
 
 	@Override
-	public boolean containsBlock(int x, int y, int z) {
+	public boolean contains(int x, int y, int z) {
 		return VecHelper.inBounds(x, y, z, this.blockMin, this.blockMax);
 	}
 
 	@Override
-	public BlockType getBlockType(int x, int y, int z) {
-		return getBlock(x, y, z).getType();
+	public boolean isAreaAvailable(int x, int y, int z) {
+		return contains(x, y, z);
 	}
 
 	@Override
-	public UnmodifiableBlockVolume getUnmodifiableBlockView() {
-		return new UnmodifiableBlockVolumeWrapper(this);
+	public boolean areNeighborsLoaded() {
+		return this.world.isChunkLoaded(this.x + 1, this.z) && this.world.isChunkLoaded(this.x, this.z + 1) && this.world.isChunkLoaded(this.x - 1, this.z) && this.world.isChunkLoaded(this.x, this.z - 1);
 	}
 
-	@Override
-	public MutableBlockVolume getBlockCopy(StorageType type) {
-		switch (type) {
-			case STANDARD:
-				return new ArrayMutableBlockBuffer(GlobalPalette.getBlockPalette(), getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
-			case THREAD_SAFE:
-			default:
-				throw new UnsupportedOperationException(type.name());
+	protected void reobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
+		Vector3i min = new Vector3i(minX, minY, minZ), max = new Vector3i(maxX, maxY, maxZ);
+
+		for (ConfiguredModifier mod : this.world.config().modifiers) {
+			try {
+				mod.modifier.modify(this, min, max, this.random, mod.config);
+			} catch (Exception ex) {
+				Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while (re)modifying a part of a network chunk", ex);
+			}
 		}
-	}
-
-	@Override
-	public ImmutableBlockVolume getImmutableBlockCopy() {
-		return ArrayImmutableBlockBuffer.newWithoutArrayClone(GlobalPalette.getBlockPalette(), getBlockMin(), getBlockSize(), ExtentBufferUtil.copyToArray(this, getBlockMin(), getBlockMax(), getBlockSize()));
 	}
 
 	protected void deobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 		for (int y = minY; y <= maxY; y++) {
-			NetworkBlockContainer container = this.containers[y >> 4];
+			NetworkSection container = this.sections[y >> 4];
 			if (container == null)
 				continue;
 
@@ -519,76 +484,51 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	@Override
-	public MutableBlockVolume getBlockView(Vector3i newMin, Vector3i newMax) {
-		return new MutableBlockViewDownsize(this, newMin, newMax);
+	public VolumeStream<Mutable, BlockState> blockStateStream(Vector3i min, Vector3i max, StreamOptions options) {
+		return BlockUtil.blockStateStream(this, min, max, options);
 	}
 
 	@Override
-	public MutableBlockVolume getBlockView(DiscreteTransform3 transform) {
-		return new MutableBlockViewTransform(this, transform);
-	}
-
-	@Override
-	public MutableBlockVolumeWorker<? extends MutableBlockVolume> getBlockWorker() {
-		return new SpongeMutableBlockVolumeWorker<>(this);
-	}
-
-	@Override
-	public boolean areNeighborsLoaded() {
-		return this.world.isChunkLoaded(this.x + 1, this.z) && this.world.isChunkLoaded(this.x, this.z + 1) && this.world.isChunkLoaded(this.x - 1, this.z) && this.world.isChunkLoaded(this.x, this.z - 1);
-	}
-
-
-
-	protected void reobfuscate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		deobfuscate(minX, minY, minZ, maxX, maxY, maxZ);
-		Vector3i min = new Vector3i(minX, minY, minZ), max = new Vector3i(maxX, maxY, maxZ);
-
-		MirageTimings.REOBFUSCATION.startTiming();
-
-		for (ConfiguredModifier mod : this.world.getConfig().modifiers) {
-			Timing timing = mod.modifier.getTiming();
-			timing.startTiming();
-
-			try {
-				mod.modifier.modify(this, min, max, this.random, mod.config);
-			} catch (Exception ex) {
-				Mirage.LOGGER.error("Modifier " + mod.modifier.getId() + " has thrown an exception while (re)modifying a part of a network chunk", ex);
-			}
-
-			timing.stopTiming();
-		}
-
-		MirageTimings.REOBFUSCATION.stopTiming();
-	}
-
-	@Override
-	public void clearDynamism() {
-		for (NetworkBlockContainer c : this.containers) {
-			if (c != null)
-				c.clearDynamism();
-		}
-
-		if (this.listener != null)
-			this.listener.clearDynamism();
-	}
-
-	@Override
-	public BlockState getBlock(int x, int y, int z) {
+	public BlockState block(int x, int y, int z) {
 		checkBlockPosition(x, y, z);
-		NetworkBlockContainer c = this.containers[y >> 4];
-		return c == null ? BlockTypes.AIR.getDefaultState() : (BlockState) c.get(x & 15, y & 15, z & 15);
+		NetworkSection section = this.sections[y >> 4];
+		return section == null ? AIR : (BlockState) section.getBlockState(x & 15, y & 15, z & 15);
+	}
+
+	@Override
+	public FluidState fluid(int x, int y, int z) {
+		return block(x, y, z).fluidState();
+	}
+
+	@Override
+	public int highestYAt(int x, int z) {
+		for (int i = 15; i >= 0; i--) {
+			NetworkSection section = this.sections[i];
+			if (section != null && !section.isEmpty()) {
+				for (int y = 15; y >= 0; y--) {
+					if (!section.getBlockState(x, y, z).isAir())
+						return (i << 4) + y + 1;
+				}
+			}
+		}
+		return 0;
 	}
 
 	@Override
 	public boolean setBlock(int x, int y, int z, BlockState block) {
 		checkBlockPosition(x, y, z);
 
-		requireContainer(y >> 4).set(x & 15, y & 15, z & 15, (IBlockState) block);
+		requireSection(y >> 4).setBlockState(x & 15, y & 15, z & 15, (net.minecraft.world.level.block.state.BlockState) block);
 		if (this.listener != null)
 			this.listener.addChange(x & 15, y, z & 15);
 		return true;
 	}
+
+	@Override
+	public boolean removeBlock(int x, int y, int z) {
+		return setBlock(x, y, z, AIR);
+	}
+
 
 	public static long asLong(int x, int z) {
 		return (long) x & 4294967295L | ((long) z & 4294967295L) << 32;

@@ -20,23 +20,23 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.api.volume;
+package net.smoofyuniverse.mirage.mixin.chunk;
 
-/**
- * Represents an immutable server-side world.
- */
-public interface WorldStorage extends BlockStorage, OpaqueWorld<ChunkStorage> {
+import net.minecraft.world.level.chunk.ProtoChunk;
+import net.smoofyuniverse.mirage.impl.internal.InternalChunkAccess;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(ProtoChunk.class)
+public abstract class ProtoChunkMixin implements InternalChunkAccess {
+	private long cacheTime;
 
 	@Override
-	default WorldStorage world() {
-		return this;
+	public long getCacheTime() {
+		return this.cacheTime;
 	}
 
 	@Override
-	WorldView view();
-
-	@Override
-	default boolean isViewAvailable() {
-		return true;
+	public void setCacheTime(long value) {
+		this.cacheTime = value;
 	}
 }

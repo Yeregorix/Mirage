@@ -22,20 +22,21 @@
 
 package net.smoofyuniverse.mirage.api.modifier;
 
-import co.aikar.timings.Timing;
-import co.aikar.timings.Timings;
-import com.flowpowered.math.vector.Vector3i;
+import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
 import net.smoofyuniverse.mirage.api.volume.ChunkView;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import org.spongepowered.api.CatalogType;
+import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.registry.DefaultedRegistryType;
+import org.spongepowered.api.registry.RegistryRoots;
+import org.spongepowered.api.registry.RegistryType;
 import org.spongepowered.api.util.annotation.CatalogedBy;
-import org.spongepowered.api.world.DimensionType;
-import org.spongepowered.api.world.storage.WorldProperties;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.api.world.server.storage.ServerWorldProperties;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.math.vector.Vector3i;
 
 import java.util.Random;
 
@@ -43,52 +44,22 @@ import java.util.Random;
  * This object is used to modify chunk per chunk the view of the world sent to players.
  */
 @CatalogedBy(ChunkModifiers.class)
-public abstract class ChunkModifier implements CatalogType {
-	private final Timing timing;
-	private final String id, name;
-
-	/**
-	 * @param plugin The plugin owning this modifier
-	 * @param name   The name of this modifier
-	 */
-	public ChunkModifier(Object plugin, String name) {
-		if (name == null || name.isEmpty())
-			throw new IllegalArgumentException("Name");
-		PluginContainer container = Sponge.getGame().getPluginManager().fromInstance(plugin).orElseThrow(() -> new IllegalArgumentException("Provided object is not a plugin instance"));
-		this.timing = Timings.of(container, "Modifier: " + name);
-		this.id = container.getId() + ":" + name.toLowerCase();
-		this.name = name;
-	}
-
-	@Override
-	public final String getId() {
-		return this.id;
-	}
-
-	@Override
-	public final String getName() {
-		return this.name;
-	}
-
-	/**
-	 * @return A Timing that will be used to monitor performances of this modifier
-	 */
-	public final Timing getTiming() {
-		return this.timing;
-	}
+public interface ChunkModifier {
+	ResourceKey REGISTRY_TYPE_KEY = Mirage.key("chunk_modifier");
+	DefaultedRegistryType<ChunkModifier> REGISTRY_TYPE = RegistryType.of(RegistryRoots.SPONGE, REGISTRY_TYPE_KEY).asDefaultedType(Sponge::game);
 
 	/**
 	 * @return false if this modifier is lightweight and cache is useless, true otherwise
 	 */
-	public boolean requireCache() {
+	default boolean requireCache() {
 		return true;
 	}
 
 	/**
-	 * @param world The world
-	 * @return true if this modifier is compatible with this world
+	 * @param properties The world properties
+	 * @return true if this modifier is compatible with the world properties
 	 */
-	public boolean isCompatible(WorldProperties world) {
+	default boolean isCompatible(ServerWorldProperties properties) {
 		return true;
 	}
 
@@ -96,27 +67,27 @@ public abstract class ChunkModifier implements CatalogType {
 	 * Generates a configuration from the given node.
 	 *
 	 * @param node      The configuration node (mutable)
-	 * @param dimension The dimension defined in the main configuration, might differ from the actual world dimension
+	 * @param worldType The world type defined in the main configuration, might differ from the actual world type
 	 * @param preset    An optional preset
 	 * @return The configuration
 	 */
-	public abstract Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException;
+	Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException;
 
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.
 	 * A different signature from the cached one will cause the cached object to be invalidated.
 	 *
 	 * @param builder The signature builder
-	 * @param config The configuration
+	 * @param config  The configuration
 	 */
-	public abstract void appendSignature(Signature.Builder builder, Object config);
+	void appendSignature(Signature.Builder builder, Object config);
 
 	/**
 	 * Checks whether this modifier requires that the neighbor chunks are loaded.
 	 *
 	 * @return true if this modifier requires that the neighbor chunks are loaded.
 	 */
-	public boolean requireNeighborsLoaded() {
+	default boolean requireNeighborsLoaded() {
 		return true;
 	}
 
@@ -124,12 +95,12 @@ public abstract class ChunkModifier implements CatalogType {
 	 * Modifies the ChunkView that will be send to players.
 	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
 	 *
-	 * @param view The ChunkView to modify
-	 * @param r The Random object that should be used by the modifier
+	 * @param view   The ChunkView to modify
+	 * @param r      The Random object that should be used by the modifier
 	 * @param config The configuration
 	 */
-	public void modify(ChunkView view, Random r, Object config) {
-		modify(view, view.getBlockMin(), view.getBlockMax(), r, config);
+	default void modify(ChunkView view, Random r, Object config) {
+		modify(view, view.min(), view.max(), r, config);
 	}
 
 	/**
@@ -142,5 +113,5 @@ public abstract class ChunkModifier implements CatalogType {
 	 * @param r    The Random object that should be used by the modifier
 	 * @param config The configuration
 	 */
-	public abstract void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config);
+	void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config);
 }

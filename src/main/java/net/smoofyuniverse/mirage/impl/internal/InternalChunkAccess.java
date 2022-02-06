@@ -20,23 +20,13 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.api.volume;
+package net.smoofyuniverse.mirage.impl.internal;
 
-/**
- * Represents an immutable server-side world.
- */
-public interface WorldStorage extends BlockStorage, OpaqueWorld<ChunkStorage> {
+import net.minecraft.world.level.chunk.ChunkAccess;
 
-	@Override
-	default WorldStorage world() {
-		return this;
-	}
+public interface InternalChunkAccess extends ChunkAccess {
 
-	@Override
-	WorldView view();
+	long getCacheTime();
 
-	@Override
-	default boolean isViewAvailable() {
-		return true;
-	}
+	void setCacheTime(long value);
 }

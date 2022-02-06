@@ -20,47 +20,22 @@
  * SOFTWARE.
  */
 
-buildscript {
-    repositories {
-        maven {
-            name = 'forge'
-            url = 'https://maven.minecraftforge.net'
-        }
-        maven {
-            name = 'sponge'
-            url = 'https://repo.spongepowered.org/repository/maven-public/'
-        }
-    }
-
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
-        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
-    }
-}
-
 plugins {
-    id 'java'
-    id 'com.github.johnrengelman.shadow' version '4.0.4'
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'org.spongepowered.gradle.vanilla' version '0.2'
 }
 
-apply plugin: 'net.minecraftforge.gradle.forge'
-apply plugin: 'org.spongepowered.mixin'
+group 'net.smoofyuniverse'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-minecraft {
-    version = '1.12.2-14.23.5.2838'
-    mappings = 'snapshot_20180808'
-
-    runDir = 'run'
-    makeObfSourceJar = false
-}
-
-sourceSets {
-    main {
-        ext.refMap = 'mixins.mirage.refmap.json'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "utf-8"
 }
 
 repositories {
@@ -71,58 +46,62 @@ repositories {
     }
 }
 
+configurations {
+    spongevanilla
+}
+
 dependencies {
-    compile 'org.spongepowered:spongecommon:1.12.2-7.3.0:dev'
-    compile 'net.smoofyuniverse:oreupdater:1.0.1'
-    compile 'net.smoofyuniverse:bingo:1.0.1'
-    compile 'net.smoofyuniverse:worldmap:1.0.0'
+    implementation 'org.spongepowered:sponge:1.16.5-8.0.0-SNAPSHOT:dev'
+    implementation 'org.spongepowered:mixin:0.8.4'
+    implementation 'org.ow2.asm:asm-util:9.2'
+
+    implementation 'net.smoofyuniverse:oreupdater:1.1.1'
+    implementation 'net.smoofyuniverse:worldmap:1.1.0'
+    implementation 'net.smoofyuniverse:bingo:1.0.1'
+
+    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.0.0-RC1062:universal'
+}
+
+minecraft {
+    version("1.16.5")
+
+    project.sourceSets.main.resources
+            .filter { it.name.endsWith(".accesswidener") }
+            .files.forEach { accessWideners(it) }
 }
 
 jar {
     classifier 'base'
     manifest {
         attributes(
-                'FMLCorePluginContainsFMLMod': 'true',
-                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
                 'MixinConfigs': 'mixins.mirage.json',
-                'FMLAT': 'mirage_at.cfg',
-                'ForceLoadAsMod' : true
+                'Access-Widener': 'mirage.accesswidener'
         )
     }
 }
 
-reobf.jar.mappingType = 'SEARGE'
-
 shadowJar {
     classifier ''
-    mainSpec.sourcePaths.clear()
-    dependsOn reobfJar
 
     dependencies {
         include dependency('net.smoofyuniverse:oreapi')
         include dependency('net.smoofyuniverse:oreupdater')
-        include dependency('net.smoofyuniverse:bingo')
         include dependency('net.smoofyuniverse:worldmap')
+        include dependency('net.smoofyuniverse:bingo')
     }
 
     relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
-    relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
     relocate 'net.smoofyuniverse.map', 'net.smoofyuniverse.mirage.map'
-
-    exclude "dummyThing"
-    afterEvaluate {
-        from zipTree(reobfJar.jar)
-    }
+    relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
 }
 
-task updatePlugin <<{
-    copy {
-        from 'build/libs/Mirage.jar'
-        into 'run/forge/mods'
-    }
-    copy {
-        from 'build/libs/Mirage.jar'
-        into 'run/vanilla/mods'
+task setupVanillaServer(type: Copy) {
+    into 'run/vanilla'
+
+    from configurations.spongevanilla
+    rename('spongevanilla-(.*).jar', 'spongevanilla.jar')
+
+    into('mods') {
+        from shadowJar
     }
 }
-updatePlugin.dependsOn shadowJar

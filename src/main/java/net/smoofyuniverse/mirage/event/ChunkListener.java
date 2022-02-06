@@ -20,16 +20,35 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.internal.compat;
+package net.smoofyuniverse.mirage.event;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.ChunkWatchEvent;
+import net.smoofyuniverse.mirage.Mirage;
+import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
+import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
+import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
+import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
+import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.world.SaveWorldEvent;
+import org.spongepowered.api.event.world.chunk.ChunkEvent;
 
-public class ForgeUtil {
+public class ChunkListener {
 
-	public static void postChunkWatchEvent(Chunk chunk, EntityPlayerMP player) {
-		MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(chunk, player));
+	@Listener
+	public void onWorldSave(SaveWorldEvent.Pre e) {
+		((InternalWorld) e.world()).view().loadedOpaqueChunks().forEach(NetworkChunk::saveToCacheLater);
+	}
+
+	@Listener
+	public void onChunkLoad(ChunkEvent.Load e) {
+		try {
+			InternalChunk chunk = (InternalChunk) e.chunk();
+			if (chunk.isViewAvailable()) {
+				NetworkChunk netChunk = chunk.view();
+				if (netChunk.state() != State.OBFUSCATED)
+					netChunk.loadFromCacheNow();
+			}
+		} catch (Exception ex) {
+			Mirage.LOGGER.error("Failed to load a network chunk from cache", ex);
+		}
 	}
 }

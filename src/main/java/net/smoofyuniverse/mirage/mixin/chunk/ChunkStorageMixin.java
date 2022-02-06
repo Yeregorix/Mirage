@@ -20,30 +20,24 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.mixin.world;
+package net.smoofyuniverse.mirage.mixin.chunk;
 
-import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.storage.ChunkStorage;
+import net.minecraft.world.level.chunk.storage.IOWorker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(WorldServer.class)
-public abstract class WorldServerMixin extends WorldMixin {
-	private NetworkWorld networkWorld;
+import java.util.concurrent.CompletableFuture;
 
-	@Inject(method = "init", at = @At("RETURN"))
-	public void onInit(CallbackInfoReturnable<World> ci) {
-		this.networkWorld = new NetworkWorld(this);
-		this.networkWorld.loadConfig();
-	}
+@Mixin(ChunkStorage.class)
+public class ChunkStorageMixin {
+	protected CompletableFuture<Void> writeFuture;
 
-	@Override
-	public NetworkWorld getView() {
-		if (this.networkWorld == null)
-			throw new IllegalStateException("NetworkWorld not available");
-		return this.networkWorld;
+	@Redirect(method = "write", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/storage/IOWorker;store(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)Ljava/util/concurrent/CompletableFuture;"))
+	public CompletableFuture<Void> onWrite(IOWorker instance, ChunkPos pos, CompoundTag tag) {
+		return this.writeFuture = instance.store(pos, tag);
 	}
 }

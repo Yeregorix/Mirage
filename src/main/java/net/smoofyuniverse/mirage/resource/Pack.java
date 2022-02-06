@@ -195,7 +195,7 @@ public final class Pack implements Comparable<Pack> {
 		URL defaultUrl = Mirage.class.getClassLoader().getResource("default.pack");
 		if (defaultUrl != null) {
 			Pack p = new Pack("default");
-			Mirage.LOGGER.info("Reading default pack ..");
+			Mirage.LOGGER.info("Reading default pack ...");
 			try {
 				p.read(defaultUrl);
 				packs.add(p);
@@ -208,20 +208,20 @@ public final class Pack implements Comparable<Pack> {
 		if (!Files.exists(packsDir))
 			return packs;
 
-		PluginManager pm = Sponge.getPluginManager();
+		PluginManager pm = Sponge.pluginManager();
 		try (DirectoryStream<Path> st = Files.newDirectoryStream(packsDir)) {
 			for (Path file : st) {
 				String fn = file.getFileName().toString();
 
 				if (fn.endsWith(".pack")) {
 					Pack p = new Pack(fn.substring(0, fn.length() - 5));
-					Mirage.LOGGER.info("Reading pack: " + p.name + " ..");
+					Mirage.LOGGER.info("Reading pack: " + p.name + " ...");
 					try {
 						p.read(file);
 
 						Set<String> missingMods = new HashSet<>();
 						for (String id : p.required) {
-							if (!pm.isLoaded(id))
+							if (!pm.plugin(id).isPresent())
 								missingMods.add(id);
 						}
 

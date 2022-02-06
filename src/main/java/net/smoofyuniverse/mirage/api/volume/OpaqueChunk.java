@@ -22,7 +22,7 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
+import org.spongepowered.math.vector.Vector3i;
 
 public interface OpaqueChunk extends OpaqueBlockVolume {
 
@@ -31,7 +31,7 @@ public interface OpaqueChunk extends OpaqueBlockVolume {
 	 *
 	 * @return The position
 	 */
-	Vector3i getPosition();
+	Vector3i chunkPosition();
 
 	/**
 	 * Checks if neighbor chunks are loaded to be sure that we can call {@link OpaqueBlockVolume#isExposed(int, int, int)}.

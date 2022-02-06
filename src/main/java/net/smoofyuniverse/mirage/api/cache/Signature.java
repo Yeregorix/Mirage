@@ -23,11 +23,9 @@
 package net.smoofyuniverse.mirage.api.cache;
 
 import net.smoofyuniverse.bingo.WeightedList;
-import org.spongepowered.api.CatalogType;
+import org.spongepowered.api.ResourceKey;
+import org.spongepowered.api.block.BlockState;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -49,9 +47,8 @@ public class Signature {
 		this.bytes = bytes;
 	}
 
-	public void write(DataOutputStream out) throws IOException {
-		out.writeShort(this.bytes.length);
-		out.write(this.bytes);
+	public byte[] bytes() {
+		return Arrays.copyOf(this.bytes, this.bytes.length);
 	}
 
 	@Override
@@ -62,12 +59,6 @@ public class Signature {
 	@Override
 	public String toString() {
 		return toHexString(this.bytes);
-	}
-
-	public static Signature read(DataInputStream in) throws IOException {
-		byte[] bytes = new byte[in.readShort()];
-		in.readFully(bytes);
-		return new Signature(bytes);
 	}
 
 	public static Signature empty() {
@@ -156,14 +147,18 @@ public class Signature {
 			return this;
 		}
 
-		public Builder append(Iterable<? extends CatalogType> it) {
-			for (CatalogType type : it)
-				append(type);
+		public Builder append(Iterable<? extends BlockState> it) {
+			for (BlockState value : it)
+				append(value);
 			return this;
 		}
 
-		public Builder append(CatalogType type) {
-			return type == null ? append(0) : append(type.getId());
+		public Builder append(BlockState value) {
+			return append(value.toString());
+		}
+
+		public Builder append(ResourceKey key) {
+			return append(key.formatted());
 		}
 
 		public Builder append(String value) {
@@ -213,7 +208,7 @@ public class Signature {
 			return this;
 		}
 
-		public Builder append(WeightedList<? extends CatalogType> list) {
+		public Builder append(WeightedList<? extends BlockState> list) {
 			list.forEach(e -> append(e.value).append(e.weight));
 			return this;
 		}

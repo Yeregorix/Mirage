@@ -22,9 +22,9 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
 import org.spongepowered.api.util.PositionOutOfBoundsException;
-import org.spongepowered.api.world.extent.BlockVolume;
+import org.spongepowered.api.world.volume.block.BlockVolume;
+import org.spongepowered.math.vector.Vector3i;
 
 public interface OpaqueBlockVolume extends BlockVolume {
 
@@ -53,8 +53,8 @@ public interface OpaqueBlockVolume extends BlockVolume {
 	 * @throws PositionOutOfBoundsException if the position is not contained in the volume
 	 */
 	default void checkBlockPosition(int x, int y, int z) {
-		if (!containsBlock(x, y, z))
-			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), getBlockMin(), getBlockMax());
+		if (!contains(x, y, z))
+			throw new PositionOutOfBoundsException(new Vector3i(x, y, z), min(), max());
 	}
 
 	/**
@@ -64,7 +64,7 @@ public interface OpaqueBlockVolume extends BlockVolume {
 	 * @return Whether the block is exposed
 	 */
 	default boolean isExposed(Vector3i pos) {
-		return isExposed(pos.getX(), pos.getY(), pos.getZ());
+		return isExposed(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -84,7 +84,7 @@ public interface OpaqueBlockVolume extends BlockVolume {
 	 * @return Whether the block is opaque
 	 */
 	default boolean isOpaque(Vector3i pos) {
-		return isOpaque(pos.getX(), pos.getY(), pos.getZ());
+		return isOpaque(pos.x(), pos.y(), pos.z());
 	}
 
 	/**

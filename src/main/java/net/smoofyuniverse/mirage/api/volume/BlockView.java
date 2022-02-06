@@ -22,28 +22,25 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
-import com.flowpowered.math.vector.Vector3i;
-import org.spongepowered.api.world.extent.MutableBlockVolume;
-
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import org.spongepowered.api.world.volume.block.BlockVolume;
+import org.spongepowered.math.vector.Vector3i;
 
 /**
  * A BlockView is a MutableBlockVolume associated with immutable BlockStorage. This object is used to represent a client-side BlockVolume.
  */
-public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
+public interface BlockView extends BlockVolume.Mutable, OpaqueBlockVolume {
 
 	/**
 	 * Gets the world associated to this volume.
 	 *
 	 * @return The world
 	 */
-	WorldView getWorld();
+	WorldView world();
 
 	/**
 	 * @return The BlockStorage which is associated with this BlockView
 	 */
-	BlockStorage getStorage();
+	BlockStorage storage();
 
 	/**
 	 * @return Whether dynamic obfuscation is enabled in this volume
@@ -57,7 +54,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @param distance The distance of dynamism, between 0 and 15
 	 */
 	default void setDynamism(Vector3i pos, int distance) {
-		setDynamism(pos.getX(), pos.getY(), pos.getZ(), distance);
+		setDynamism(pos.x(), pos.y(), pos.z(), distance);
 	}
 
 	/**
@@ -74,8 +71,8 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @param pos The position
 	 * @return The distance of dynamism, between 0 and 15
 	 */
-	default int getDynamism(Vector3i pos) {
-		return getDynamism(pos.getX(), pos.getY(), pos.getZ());
+	default int dynamism(Vector3i pos) {
+		return dynamism(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -84,7 +81,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @param z The Z position
 	 * @return The distance of dynamism, between 0 and 15
 	 */
-	int getDynamism(int x, int y, int z);
+	int dynamism(int x, int y, int z);
 
 	/**
 	 * Deobfuscates a single block at the given position.
@@ -93,7 +90,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @return Whether the block has been deobfuscated
 	 */
 	default boolean deobfuscate(Vector3i pos) {
-		return deobfuscate(pos.getX(), pos.getY(), pos.getZ());
+		return deobfuscate(pos.x(), pos.y(), pos.z());
 	}
 
 	/**
@@ -115,7 +112,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
 	default void deobfuscateSurrounding(Vector3i pos, int radius, boolean silentFail) {
-		deobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius, silentFail);
+		deobfuscateSurrounding(pos.x(), pos.y(), pos.z(), radius, silentFail);
 	}
 
 	/**
@@ -137,9 +134,10 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 		if (radius == 0)
 			deobfuscate(x, y, z);
 		else {
-			Vector3i min = getBlockMin(), max = getBlockMax();
-			deobfuscateArea(max(x - radius, min.getX()), max(y - radius, min.getY()), max(z - radius, min.getZ()),
-					min(x + radius, max.getX()), min(y + radius, max.getY()), min(z + radius, max.getZ()), silentFail);
+			Vector3i min = min(), max = max();
+			deobfuscateArea(
+					Math.max(x - radius, min.x()), Math.max(y - radius, min.y()), Math.max(z - radius, min.z()),
+					Math.min(x + radius, max.x()), Math.min(y + radius, max.y()), Math.min(z + radius, max.z()), silentFail);
 		}
 	}
 
@@ -166,7 +164,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @throws IllegalStateException if affected chunks are not loaded and silent fail is disabled
 	 */
 	default void deobfuscateArea(Vector3i min, Vector3i max, boolean silentFail) {
-		deobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ(), silentFail);
+		deobfuscateArea(min.x(), min.y(), min.z(), max.x(), max.y(), max.z(), silentFail);
 	}
 
 	/**
@@ -178,7 +176,7 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateSurrounding(Vector3i pos, int radius, boolean silentFail) {
-		reobfuscateSurrounding(pos.getX(), pos.getY(), pos.getZ(), radius, silentFail);
+		reobfuscateSurrounding(pos.x(), pos.y(), pos.z(), radius, silentFail);
 	}
 
 	/**
@@ -197,9 +195,10 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 		if (radius < 0)
 			throw new IllegalArgumentException("Negative radius");
 
-		Vector3i min = getBlockMin(), max = getBlockMax();
-		reobfuscateArea(max(x - radius, min.getX()), max(y - radius, min.getY()), max(z - radius, min.getZ()),
-				min(x + radius, max.getX()), min(y + radius, max.getY()), min(z + radius, max.getZ()), silentFail);
+		Vector3i min = min(), max = max();
+		reobfuscateArea(
+				Math.max(x - radius, min.x()), Math.max(y - radius, min.y()), Math.max(z - radius, min.z()),
+				Math.min(x + radius, max.x()), Math.min(y + radius, max.y()), Math.min(z + radius, max.z()), silentFail);
 	}
 
 	/**
@@ -225,6 +224,6 @@ public interface BlockView extends MutableBlockVolume, OpaqueBlockVolume {
 	 * @throws IllegalStateException if affected chunks are not obfuscated and silent fail is disabled
 	 */
 	default void reobfuscateArea(Vector3i min, Vector3i max, boolean silentFail) {
-		reobfuscateArea(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ(), silentFail);
+		reobfuscateArea(min.x(), min.y(), min.z(), max.x(), max.y(), max.z(), silentFail);
 	}
 }

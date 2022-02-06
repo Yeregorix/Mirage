@@ -20,21 +20,30 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.internal;
+package net.smoofyuniverse.mirage.mixin.chunk;
 
-import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
-import org.spongepowered.api.entity.living.player.Player;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.smoofyuniverse.mirage.impl.internal.InternalPalettedContainer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.function.BiConsumer;
 
-public interface InternalChunkMap {
+@Mixin(PalettedContainer.class)
+public class PalettedContainerMixin implements InternalPalettedContainer {
+	private BiConsumer<ListTag, long[]> onReadListener;
 
-	boolean isDynamismEnabled();
+	@Override
+	public void setOnRead(BiConsumer<ListTag, long[]> listener) {
+		this.onReadListener = listener;
+	}
 
-	DynamicWorld getOrCreateDynamicWorld(Player player);
-
-	Optional<DynamicWorld> getDynamicWorld(UUID id);
-
-	void removeDynamicWorld(UUID id);
+	@Inject(method = "read(Lnet/minecraft/nbt/ListTag;[J)V", at = @At("RETURN"))
+	public void onRead(ListTag palette, long[] states, CallbackInfo ci) {
+		if (this.onReadListener != null)
+			this.onReadListener.accept(palette, states);
+	}
 }

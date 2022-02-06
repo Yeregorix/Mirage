@@ -23,9 +23,6 @@
 package net.smoofyuniverse.mirage.util;
 
 import net.smoofyuniverse.mirage.Mirage;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -34,10 +31,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public class IOUtil {
-
-	public static ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(Path file) {
-		return HoconConfigurationLoader.builder().setPath(file).build();
-	}
 
 	public static Optional<Path> backup(Path file) {
 		if (!Files.exists(file))

@@ -22,24 +22,29 @@
 
 package net.smoofyuniverse.mirage.config.world;
 
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
 
 @ConfigSerializable
 public class DeobfuscationConfig {
-	@Setting(value = "NaturalRadius", comment = "Radius to deobfuscate on natural block update, between 1 and 4")
+
+	@Comment("Radius to deobfuscate on natural block update, between 1 and 4")
+	@Setting("NaturalRadius")
 	public int naturalRadius = 1;
-	@Setting(value = "PlayerRadius", comment = "Radius to deobfuscate on player block update, between 1 and 4")
+
+	@Comment("Radius to deobfuscate on player block update, between 1 and 4")
+	@Setting("PlayerRadius")
 	public int playerRadius = 2;
 
-	public Immutable toImmutable() {
-		return new Immutable(this.naturalRadius, this.playerRadius);
+	public Resolved resolve() {
+		return new Resolved(this.naturalRadius, this.playerRadius);
 	}
 
-	public static class Immutable {
+	public static class Resolved {
 		public final int naturalRadius, playerRadius;
 
-		public Immutable(int naturalRadius, int playerRadius) {
+		public Resolved(int naturalRadius, int playerRadius) {
 			this.naturalRadius = naturalRadius;
 			this.playerRadius = playerRadius;
 		}

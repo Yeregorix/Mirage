@@ -22,56 +22,50 @@
 
 package net.smoofyuniverse.mirage.modifier;
 
-import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.TypeToken;
 import net.smoofyuniverse.bingo.WeightedList;
-import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.modifier.RandomBlockModifier.Config.Resolved;
 import net.smoofyuniverse.mirage.resource.Resources;
-import net.smoofyuniverse.mirage.util.BlockSet;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.world.DimensionType;
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.math.vector.Vector3i;
 
 import java.util.*;
 
 import static net.smoofyuniverse.mirage.resource.Categories.*;
+import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
+import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 
 /**
  * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
  */
-public class RandomBlockModifier extends ChunkModifier {
-
-	public RandomBlockModifier() {
-		super(Mirage.get(), "random_block");
-	}
+public class RandomBlockModifier implements ChunkModifier {
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, DimensionType dimension, String preset) throws ObjectMappingException {
-		Config cfg = node.getValue(Config.TOKEN);
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
 		if (cfg.blocks == null)
-			cfg.blocks = Resources.of(dimension).getBlocks(GROUND, COMMON, RARE);
+			cfg.blocks = Resources.of(worldType).getBlocks(GROUND, COMMON, RARE);
 
 		if (cfg.replacements == null) {
 			cfg.replacements = new HashMap<>();
 
-			BlockSet set = Resources.of(dimension).getBlocks(COMMON);
+			Resources r = Resources.of(worldType);
+			for (String id : r.getBlocks(COMMON))
+				cfg.replacements.put(id, 1d);
 
-			for (BlockState state : set.getAll())
-				cfg.replacements.put(state, 1d);
-
-			cfg.replacements.put(Resources.of(dimension).getGround(), Math.max(cfg.replacements.size(), 1d));
+			cfg.replacements.put(r.getGround(), Math.max(cfg.replacements.size(), 1d));
 		}
 
 		cfg.minY = clamp(cfg.minY, 0, 255);
@@ -83,26 +77,26 @@ public class RandomBlockModifier extends ChunkModifier {
 			cfg.maxY = t;
 		}
 
-		node.setValue(Config.TOKEN, cfg);
-		return cfg.toImmutable();
+		node.set(cfg);
+		return cfg.resolve();
 	}
 
 	@Override
 	public void appendSignature(Builder builder, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
+		Resolved cfg = (Resolved) config;
 		builder.append(cfg.blocks).append(cfg.replacements).append(cfg.minY).append(cfg.maxY);
 	}
 
 	@Override
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
-		Config.Immutable cfg = (Config.Immutable) config;
-		final int maxX = max.getX(), maxY = Math.min(max.getY(), cfg.maxY), maxZ = max.getZ();
+		Resolved cfg = (Resolved) config;
+		final int maxX = max.x(), maxY = Math.min(max.y(), cfg.maxY), maxZ = max.z();
 
-		for (int y = Math.max(min.getY(), cfg.minY); y <= maxY; y++) {
-			for (int z = min.getZ(); z <= maxZ; z++) {
-				for (int x = min.getX(); x <= maxX; x++) {
-					BlockState b = view.getBlock(x, y, z);
-					if (b.getType() == BlockTypes.AIR)
+		for (int y = Math.max(min.y(), cfg.minY); y <= maxY; y++) {
+			for (int z = min.z(); z <= maxZ; z++) {
+				for (int x = min.x(); x <= maxX; x++) {
+					BlockState b = view.block(x, y, z);
+					if (b == AIR)
 						continue;
 
 					if (cfg.blocks.contains(b) && !view.isExposed(x, y, z))
@@ -112,29 +106,35 @@ public class RandomBlockModifier extends ChunkModifier {
 		}
 	}
 
-	@ConfigSerializable
+	@org.spongepowered.configurate.objectmapping.ConfigSerializable
 	public static final class Config {
-		public static final TypeToken<Config> TOKEN = TypeToken.of(Config.class);
+		@Comment("Blocks that will be hidden by the modifier")
+		@Setting("Blocks")
+		public Set<String> blocks;
 
-		@Setting(value = "Blocks", comment = "Blocks that will be hidden by the modifier")
-		public BlockSet blocks;
-		@Setting(value = "Replacements", comment = "Blocks and their weight used to randomly replace hidden blocks")
-		public Map<BlockState, Double> replacements;
-		@Setting(value = "MinY", comment = "The minimum Y of the section to obfuscate")
+		@Comment("Blocks and their weight used to randomly replace hidden blocks")
+		@Setting("Replacements")
+		public Map<String, Double> replacements;
+
+		@Comment("The minimum Y of the section to obfuscate")
+		@Setting("MinY")
 		public int minY = 0;
-		@Setting(value = "MaxY", comment = "The maximum Y of the section to obfuscate")
+
+		@Comment("The maximum Y of the section to obfuscate")
+		@Setting("MaxY")
 		public int maxY = 255;
 
-		public Immutable toImmutable() {
-			return new Immutable(this.blocks.getAll(), WeightedList.of(this.replacements), this.minY, this.maxY);
+		public Resolved resolve() {
+			return new Resolved(resolveBlockStates(this.blocks),
+					WeightedList.of(resolveBlockStates(this.replacements)), this.minY, this.maxY);
 		}
 
-		public static final class Immutable {
+		public static final class Resolved {
 			public final Set<BlockState> blocks;
 			public final WeightedList<BlockState> replacements;
 			public final int minY, maxY;
 
-			public Immutable(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int minY, int maxY) {
+			public Resolved(Collection<BlockState> blocks, WeightedList<BlockState> replacements, int minY, int maxY) {
 				this.blocks = ImmutableSet.copyOf(blocks);
 				this.replacements = replacements;
 				this.minY = minY;
