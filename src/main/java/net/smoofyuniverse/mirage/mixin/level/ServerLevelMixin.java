@@ -46,10 +46,9 @@ public abstract class ServerLevelMixin extends LevelMixin {
 	public void onInit(CallbackInfo ci) {
 		this.networkWorld = new NetworkWorld(this);
 		this.networkWorld.loadConfig();
-		this.dynamismEnabled = this.networkWorld.isDynamismEnabled();
 
-		if (this.dynamismEnabled)
-			this.dynamicWorlds = new HashMap<>();
+		this.dynamicWorlds = new HashMap<>();
+		this.dynamismEnabled = this.networkWorld.isDynamismEnabled();
 	}
 
 	@Override
