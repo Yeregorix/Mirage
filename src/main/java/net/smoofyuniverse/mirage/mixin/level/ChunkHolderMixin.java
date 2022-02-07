@@ -172,7 +172,7 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	}
 
 	@Shadow
-	public abstract void blockChanged(BlockPos param0);
+	public abstract void blockChanged(BlockPos pos);
 
 	@Override
 	public void setDynamismEnabled(boolean value) {

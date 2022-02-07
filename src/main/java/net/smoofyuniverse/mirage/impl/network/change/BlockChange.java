@@ -111,12 +111,12 @@ public class BlockChange {
 			if (changes == 0)
 				return new BlockChange();
 
-			int minX = this.pos.minBlockX() << 4, minZ = this.pos.minBlockZ();
+			int minX = this.pos.minBlockX(), minY = this.pos.minBlockY(), minZ = this.pos.minBlockZ();
 
 			if (changes == 1) {
 				Entry<BlockState> e = this.blocks.short2ObjectEntrySet().iterator().next();
 				short key = e.getShortKey();
-				BlockPos pos = new BlockPos(minX + (key >> 8 & 15), key & 15, minZ + (key >> 4 & 15));
+				BlockPos pos = new BlockPos(minX + (key >> 8 & 15), minY + (key & 15), minZ + (key >> 4 & 15));
 				BlockState state = e.getValue();
 
 				ClientboundBlockUpdatePacket p = new ClientboundBlockUpdatePacket(pos, state);
@@ -148,7 +148,7 @@ public class BlockChange {
 					BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 					for (i = 0; i < changes; i++) {
 						short key = p.positions[i];
-						pos.set(minX + (key >> 8 & 15), key & 15, minZ + (key >> 4 & 15));
+						pos.set(minX + (key >> 8 & 15), minY + (key & 15), minZ + (key >> 4 & 15));
 
 						ClientboundBlockEntityDataPacket p2 = getEntityPacket(pos, p.states[i]);
 						if (p2 != null)
