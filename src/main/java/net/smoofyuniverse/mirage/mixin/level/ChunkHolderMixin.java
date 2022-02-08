@@ -29,26 +29,25 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkHolder.PlayerProvider;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
-import net.smoofyuniverse.mirage.impl.network.change.BlockChange;
+import net.smoofyuniverse.mirage.impl.network.change.BlockChanges;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
-import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.world.volume.block.BlockVolume;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Mixin(ChunkHolder.class)
@@ -100,52 +99,58 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 			if (this.dynamismEnabled) {
 				NetworkChunk view = storage.view();
 
-				Iterator<Player> playerIt = getPlayers().iterator();
+				Iterator<ServerPlayer> playerIt = getPlayers().iterator();
 				while (playerIt.hasNext()) {
-					Player p = playerIt.next();
+					ServerPlayer p = playerIt.next();
 					DynamicChunk dynChunk = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
 
 					for (int y = 0; y < 16; y++) {
 						DynamicSection dynSection = dynChunk == null ? null : dynChunk.sections[y];
-						BlockChange.Builder b = BlockChange.builder(chunk, y);
+						BlockChanges changes = new BlockChanges(chunk, y);
 						int minY = y << 4;
 
-						ShortSet changes = this.changedBlocksPerSection[y];
-						if (changes != null) {
-							ShortIterator it = changes.iterator();
+						ShortSet storageChanges = this.changedBlocksPerSection[y];
+						if (storageChanges != null) {
+							ShortIterator it = storageChanges.iterator();
 							while (it.hasNext()) {
 								short pos = it.nextShort();
-								b.add(pos, (dynSection != null && dynSection.currentlyContains(pos) ? storage : view)
+								changes.add(pos, (BlockState) (dynSection != null && dynSection.currentlyContains(pos) ? storage : view)
 										.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
 							}
 						}
 
 						if (dynSection != null) {
-							dynSection.getChanges(b);
+							dynSection.getChanges(changes);
 							dynSection.applyChanges();
 						}
 
-						b.build().sendTo(p);
+						changes.sendTo(p);
 					}
 				}
 			} else {
 				BlockVolume volume = storage.isViewAvailable() ? storage.view() : storage;
+				List<Packet<?>> packets = new ArrayList<>();
 
 				for (int y = 0; y < 16; y++) {
-					ShortSet changes = this.changedBlocksPerSection[y];
-					if (changes != null) {
-						BlockChange.Builder b = BlockChange.builder(chunk, y);
+					ShortSet storageChanges = this.changedBlocksPerSection[y];
+					if (storageChanges != null) {
+						BlockChanges changes = new BlockChanges(chunk, y);
 						int minY = y << 4;
 
-						ShortIterator it = changes.iterator();
+						ShortIterator it = storageChanges.iterator();
 						while (it.hasNext()) {
 							short pos = it.nextShort();
-							b.add(pos, volume.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
+							changes.add(pos, (BlockState) volume.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
 						}
 
-						b.build().sendTo(getPlayers());
+						changes.sendTo(packets::add);
 					}
 				}
+
+				getPlayers().forEach(p -> {
+					for (Packet<?> packet : packets)
+						p.connection.send(packet);
+				});
 			}
 
 			clearChanges();
@@ -155,8 +160,8 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	@Shadow
 	protected abstract void broadcast(Packet<?> param0, boolean param1);
 
-	private Stream<Player> getPlayers() {
-		return (Stream) this.playerProvider.getPlayers(this.pos, false);
+	private Stream<ServerPlayer> getPlayers() {
+		return this.playerProvider.getPlayers(this.pos, false);
 	}
 
 	public void clearChanges() {

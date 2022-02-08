@@ -28,8 +28,7 @@ import it.unimi.dsi.fastutil.shorts.ShortSet;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
-import net.smoofyuniverse.mirage.impl.network.change.BlockChange;
-import org.spongepowered.api.block.BlockState;
+import net.smoofyuniverse.mirage.impl.network.change.BlockChanges;
 import org.spongepowered.math.vector.Vector3i;
 
 import static net.smoofyuniverse.mirage.util.MathUtil.squared;
@@ -103,13 +102,7 @@ public final class DynamicSection {
 		return this.currentPositions.contains(pos);
 	}
 
-	public BlockChange.Builder getChanges() {
-		BlockChange.Builder b = BlockChange.builder((LevelChunk) this.chunk.storage, this.y);
-		getChanges(b);
-		return b;
-	}
-
-	public void getChanges(BlockChange.Builder b) {
+	public void getChanges(BlockChanges changes) {
 		if (this.modified) {
 			InternalSection storage = storage();
 			NetworkSection view = storage.view();
@@ -119,7 +112,7 @@ public final class DynamicSection {
 			while (it.hasNext()) {
 				short pos = it.nextShort();
 				if (!this.currentPositions.contains(pos))
-					b.add(pos, (BlockState) storage.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
+					changes.add(pos, storage.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
 			}
 
 			// Hide
@@ -127,7 +120,7 @@ public final class DynamicSection {
 			while (it.hasNext()) {
 				short pos = it.nextShort();
 				if (!this.nextPositions.contains(pos))
-					b.add(pos, (BlockState) view.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
+					changes.add(pos, view.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
 			}
 		}
 	}
@@ -136,20 +129,20 @@ public final class DynamicSection {
 		return (InternalSection) this.chunk.storage.getSections()[this.y];
 	}
 
-	public BlockChange.Builder getCurrent() {
-		BlockChange.Builder b = BlockChange.builder((LevelChunk) this.chunk.storage, this.y);
-		getCurrent(b);
-		return b;
+	public BlockChanges getCurrent() {
+		BlockChanges changes = new BlockChanges((LevelChunk) this.chunk.storage, this.y);
+		getCurrent(changes);
+		return changes;
 	}
 
-	public void getCurrent(BlockChange.Builder b) {
+	public void getCurrent(BlockChanges changes) {
 		InternalSection storage = storage();
 
 		// Reveal
 		ShortIterator it = this.currentPositions.iterator();
 		while (it.hasNext()) {
 			short pos = it.nextShort();
-			b.add(pos, (BlockState) storage.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
+			changes.add(pos, storage.getBlockState(pos >> 8 & 15, pos & 15, pos >> 4 & 15));
 		}
 	}
 
