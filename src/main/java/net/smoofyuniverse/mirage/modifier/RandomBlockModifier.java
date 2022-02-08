@@ -41,8 +41,8 @@ import java.util.*;
 
 import static net.smoofyuniverse.mirage.resource.Categories.*;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
-import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
+import static org.spongepowered.math.GenericMath.clamp;
 
 /**
  * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores

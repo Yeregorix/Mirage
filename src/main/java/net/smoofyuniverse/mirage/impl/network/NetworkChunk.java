@@ -48,7 +48,7 @@ import org.spongepowered.math.vector.Vector3i;
 import java.util.Random;
 
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
-import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
+import static org.spongepowered.math.GenericMath.clamp;
 
 /**
  * Represents a chunk viewed for the network (aka online players)

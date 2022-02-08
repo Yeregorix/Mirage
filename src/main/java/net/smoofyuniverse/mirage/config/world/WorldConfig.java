@@ -42,7 +42,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
+import static org.spongepowered.math.GenericMath.clamp;
 
 public class WorldConfig {
 	public static final int CURRENT_VERSION = 3, MINIMUM_VERSION = 3;

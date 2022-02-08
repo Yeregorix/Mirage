@@ -44,8 +44,8 @@ import java.util.Set;
 import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
 import static net.smoofyuniverse.mirage.resource.Categories.RARE;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
-import static net.smoofyuniverse.mirage.util.MathUtil.clamp;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
+import static org.spongepowered.math.GenericMath.clamp;
 
 /**
  * This modifier only hides ores which are not exposed to the view of normal users.

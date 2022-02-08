@@ -24,22 +24,6 @@ package net.smoofyuniverse.mirage.util;
 
 public class MathUtil {
 
-	public static double clamp(double value, double min, double max) {
-		if (value < min)
-			return min;
-		if (value > max)
-			return max;
-		return value;
-	}
-
-	public static int clamp(int value, int min, int max) {
-		if (value < min)
-			return min;
-		if (value > max)
-			return max;
-		return value;
-	}
-
 	public static float squared(float value) {
 		return value * value;
 	}
@@ -50,9 +34,5 @@ public class MathUtil {
 
 	public static int lengthSquared(int dx, int dz) {
 		return dx * dx + dz * dz;
-	}
-
-	public static int lengthSquared(int dx, int dy, int dz) {
-		return dx * dx + dy * dy + dz * dz;
 	}
 }

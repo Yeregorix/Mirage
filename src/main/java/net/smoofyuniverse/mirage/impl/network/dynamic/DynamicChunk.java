@@ -29,7 +29,9 @@ import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import org.spongepowered.math.vector.Vector3i;
 
-import static net.smoofyuniverse.mirage.util.MathUtil.*;
+import static net.smoofyuniverse.mirage.util.MathUtil.lengthSquared;
+import static net.smoofyuniverse.mirage.util.MathUtil.squared;
+import static org.spongepowered.math.GenericMath.clamp;
 
 public final class DynamicChunk {
 	public static final int maxDistance2 = squared(160);
