@@ -25,27 +25,26 @@ group=rare
 minecraft:chest
 minecraft:end_portal
 minecraft:end_portal_frame
-minecraft:mob_spawner
-minecraft:monster_egg
 minecraft:mossy_cobblestone
-minecraft:portal
+minecraft:nether_portal
+minecraft:spawner
 minecraft:trapped_chest
 
-section=minecraft:nether
+section=minecraft:the_nether
 
 group=ground
 minecraft:netherrack
 
 group=common
 minecraft:glowstone
-minecraft:magma
+minecraft:magma_block
 minecraft:nether_quartz_ore
 minecraft:nether_gold_ore
 
 group=rare
 minecraft:chest
-minecraft:mob_spawner
-minecraft:portal
+minecraft:nether_portal
+minecraft:spawner
 minecraft:trapped_chest
 
 section=minecraft:the_end
@@ -57,5 +56,5 @@ group=rare
 minecraft:chest
 minecraft:end_portal
 minecraft:end_portal_frame
-minecraft:mob_spawner
+minecraft:spawner
 minecraft:trapped_chest
