@@ -10,7 +10,7 @@ Compiled artifacts and additional information can be found on Ore: https://ore.s
 
 ## Developers
 
-SuperPiston requires Java 8 and Gradle 7 to build.
+Mirage requires Java 8 and Gradle 7 to build.
 
 Tasks:
 
