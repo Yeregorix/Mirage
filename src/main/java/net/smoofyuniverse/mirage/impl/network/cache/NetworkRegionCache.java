@@ -62,23 +62,25 @@ public class NetworkRegionCache {
 	}
 
 	public void load() throws Exception {
-		// Directory
 		try {
 			Files.createDirectories(this.directory);
 		} catch (IOException ignored) {
 		}
 
-		// Version
 		int version;
-		Path versionFile = this.directory.resolve("version");
-		if (Files.exists(versionFile)) {
-			try (DataInputStream in = new DataInputStream(Files.newInputStream(versionFile))) {
+		long seed;
+
+		Path file = this.directory.resolve("cache.dat");
+		if (Files.exists(file)) {
+			try (DataInputStream in = new DataInputStream(Files.newInputStream(file))) {
 				version = in.readInt();
+				seed = in.readLong();
 			}
 		} else if (IOUtil.isEmptyDirectory(this.directory)) {
 			version = CURRENT_VERSION;
+			seed = ThreadLocalRandom.current().nextLong();
 		} else {
-			throw new IllegalArgumentException("directory is not empty");
+			throw new IllegalArgumentException("Cache directory is not empty");
 		}
 
 		if (version != CURRENT_VERSION) {
@@ -89,22 +91,12 @@ public class NetworkRegionCache {
 			version = CURRENT_VERSION;
 		}
 
-		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(versionFile))) {
+		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(file))) {
 			out.writeInt(version);
+			out.writeLong(seed);
 		}
 
-		// Seed
-		Path seedFile = this.directory.resolve("seed");
-		if (Files.exists(seedFile)) {
-			try (DataInputStream in = new DataInputStream(Files.newInputStream(seedFile))) {
-				this.seed = in.readLong();
-			}
-		} else {
-			this.seed = ThreadLocalRandom.current().nextLong();
-			try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(seedFile))) {
-				out.writeLong(version);
-			}
-		}
+		this.seed = seed;
 	}
 
 	public void close() throws IOException {

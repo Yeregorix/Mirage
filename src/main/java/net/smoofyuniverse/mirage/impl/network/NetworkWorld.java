@@ -156,7 +156,9 @@ public class NetworkWorld implements WorldView {
 			Signature.Builder b = Signature.builder();
 			for (ConfiguredModifier mod : modifiers)
 				b.append(modifierRegistry.valueKey(mod.modifier));
-			String cacheName = this.world.uniqueId() + "/" + b.build();
+			ResourceKey key = this.world.key();
+			b.append(key.namespace());
+			String cacheName = key.value() + "/" + b.build();
 
 			try {
 				this.cache = new NetworkRegionCache(cacheName);
@@ -257,7 +259,7 @@ public class NetworkWorld implements WorldView {
 		try {
 			this.cache.write(x, z, tag);
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to save chunk " + x + " " + z + " to cache in world " + this.world.uniqueId() + ".", e);
+			Mirage.LOGGER.warn("Failed to save chunk " + x + " " + z + " to cache in world " + this.world.key() + ".", e);
 		}
 	}
 
@@ -271,7 +273,7 @@ public class NetworkWorld implements WorldView {
 			if (tag != null && new Signature(tag.getByteArray("Signature")).equals(this.signature))
 				return tag.getCompound("Level");
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to read chunk " + x + " " + z + " from cache in world " + this.world.uniqueId() + ".", e);
+			Mirage.LOGGER.warn("Failed to read chunk " + x + " " + z + " from cache in world " + this.world.key() + ".", e);
 		}
 
 		return null;
