@@ -26,8 +26,8 @@ import com.google.common.collect.ImmutableSet;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.config.resources.Resources;
 import net.smoofyuniverse.mirage.modifier.HideAllModifier.Config.Resolved;
-import net.smoofyuniverse.mirage.resource.Resources;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -41,8 +41,8 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import static net.smoofyuniverse.mirage.resource.Categories.COMMON;
-import static net.smoofyuniverse.mirage.resource.Categories.RARE;
+import static net.smoofyuniverse.mirage.config.resources.Resources.COMMON;
+import static net.smoofyuniverse.mirage.config.resources.Resources.RARE;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 import static org.spongepowered.math.GenericMath.clamp;
@@ -72,7 +72,7 @@ public class HideAllModifier implements ChunkModifier {
 			if (cfg.blocks == null)
 				cfg.blocks = Resources.of(worldType).getBlocks(COMMON, RARE);
 			if (cfg.replacement == null)
-				cfg.replacement = Resources.of(worldType).getGround();
+				cfg.replacement = Resources.of(worldType).ground;
 
 			cfg.minY = clamp(cfg.minY, 0, 255);
 			cfg.maxY = clamp(cfg.maxY, 0, 255);

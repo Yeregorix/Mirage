@@ -27,8 +27,8 @@ import net.smoofyuniverse.bingo.WeightedList;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.config.resources.Resources;
 import net.smoofyuniverse.mirage.modifier.RandomBlockModifier.Config.Resolved;
-import net.smoofyuniverse.mirage.resource.Resources;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -39,7 +39,7 @@ import org.spongepowered.math.vector.Vector3i;
 
 import java.util.*;
 
-import static net.smoofyuniverse.mirage.resource.Categories.*;
+import static net.smoofyuniverse.mirage.config.resources.Resources.*;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 import static org.spongepowered.math.GenericMath.clamp;
@@ -65,7 +65,7 @@ public class RandomBlockModifier implements ChunkModifier {
 			for (String id : r.getBlocks(COMMON))
 				cfg.replacements.put(id, 1d);
 
-			cfg.replacements.put(r.getGround(), Math.max(cfg.replacements.size(), 1d));
+			cfg.replacements.put(r.ground, Math.max(cfg.replacements.size(), 1d));
 		}
 
 		cfg.minY = clamp(cfg.minY, 0, 255);

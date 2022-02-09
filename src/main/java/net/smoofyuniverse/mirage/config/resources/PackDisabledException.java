@@ -20,8 +20,11 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.resource;
+package net.smoofyuniverse.mirage.config.resources;
 
-public final class Categories {
-	public static final String GROUND = "ground", COMMON = "common", RARE = "rare";
+public class PackDisabledException extends Exception {
+
+	public PackDisabledException(String message) {
+		super(message);
+	}
 }

@@ -34,13 +34,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Stream;
 
 public class BlockResolver {
 	private final Registry<BlockType> blockTypeRegistry = RegistryTypes.BLOCK_TYPE.get();
 	private final BlockState.Builder blockStateBuilder = BlockState.builder();
 	private final Set<String> unknownKeys = new HashSet<>(), invalidPatterns = new HashSet<>();
 
-	public void resolve(String input, Consumer consumer) {
+	public boolean resolve(String input) {
+		return resolve(input, Consumer.IGNORE);
+	}
+
+	public boolean resolve(String input, Consumer consumer) {
 		boolean negate = input.startsWith("-");
 		if (negate)
 			input = input.substring(1);
@@ -52,34 +57,35 @@ public class BlockResolver {
 			try {
 				pattern = Pattern.compile(input, Pattern.CASE_INSENSITIVE);
 			} catch (PatternSyntaxException e) {
-				invalidPatterns.add(input);
-				return;
+				this.invalidPatterns.add(input);
+				return false;
 			}
 
-			blockTypeRegistry.stream()
-					.flatMap(type -> type.validStates().stream())
-					.filter(state -> pattern.matcher(state.toString()).matches())
-					.forEach(state -> consumer.accept(state, negate));
-			return;
+			consumer.accept(this.blockTypeRegistry.stream()
+							.flatMap(type -> type.validStates().stream())
+							.filter(state -> pattern.matcher(state.toString()).matches()),
+					pattern, negate);
+			return true;
 		}
 
 		try {
-			Optional<BlockType> type = blockTypeRegistry.findValue(ResourceKey.resolve(input));
+			Optional<BlockType> type = this.blockTypeRegistry.findValue(ResourceKey.resolve(input));
 			if (type.isPresent()) {
 				consumer.accept(type.get(), negate);
-				return;
+				return true;
 			}
 		} catch (Exception ignored) {
 		}
 
 		try {
-			BlockState state = blockStateBuilder.reset().fromString(input).build();
+			BlockState state = this.blockStateBuilder.reset().fromString(input).build();
 			consumer.accept(state, negate);
-			return;
+			return true;
 		} catch (Exception ignored) {
 		}
 
-		unknownKeys.add(input);
+		this.unknownKeys.add(input);
+		return false;
 	}
 
 	public void flushErrors() {
@@ -105,11 +111,26 @@ public class BlockResolver {
 	}
 
 	interface Consumer {
+		static Consumer IGNORE = new Consumer() {
+			@Override
+			public void accept(Stream<BlockState> states, Pattern pattern, boolean negate) {}
+
+			@Override
+			public void accept(BlockType type, boolean negate) {}
+
+			@Override
+			public void accept(BlockState state, boolean negate) {}
+		};
+
 		default void accept(BlockType type, boolean negate) {
 			for (BlockState state : type.validStates())
 				accept(state, negate);
 		}
 
 		void accept(BlockState state, boolean negate);
+
+		default void accept(Stream<BlockState> states, Pattern pattern, boolean negate) {
+			states.forEach(state -> accept(state, negate));
+		}
 	}
 }

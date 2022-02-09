@@ -25,8 +25,8 @@ package net.smoofyuniverse.mirage.modifier;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
+import net.smoofyuniverse.mirage.config.resources.Resources;
 import net.smoofyuniverse.mirage.modifier.RandomBedrockModifier.Config.Resolved;
-import net.smoofyuniverse.mirage.resource.Resources;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
 import org.spongepowered.api.world.WorldTypes;
@@ -60,7 +60,7 @@ public class RandomBedrockModifier implements ChunkModifier {
 			cfg = new Config();
 
 		if (cfg.ground == null)
-			cfg.ground = Resources.of(worldType).getGround();
+			cfg.ground = Resources.of(worldType).ground;
 		if (cfg.height < 0)
 			cfg.height = 0;
 

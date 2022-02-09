@@ -30,14 +30,14 @@ import net.smoofyuniverse.map.WorldMapLoader;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
+import net.smoofyuniverse.mirage.config.resources.Resources;
+import net.smoofyuniverse.mirage.config.resources.ResourcesLoader;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import net.smoofyuniverse.mirage.event.BlockListener;
 import net.smoofyuniverse.mirage.event.ChunkListener;
 import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
-import net.smoofyuniverse.mirage.resource.Pack;
-import net.smoofyuniverse.mirage.resource.Resources;
 import net.smoofyuniverse.ore.update.UpdateChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,8 +59,10 @@ import org.spongepowered.configurate.loader.ConfigurationLoader;
 import org.spongepowered.plugin.PluginContainer;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class Mirage {
 	public static final Logger LOGGER = LogManager.getLogger("Mirage");
@@ -79,6 +81,8 @@ public class Mirage {
 	private ConfigurationOptions configOptions;
 	private WorldMapLoader<WorldConfig> configMapLoader;
 	private WorldMap<WorldConfig> configMap;
+
+	private Map<ResourceKey, Resources> worldTypeToResources;
 
 	private ScheduledTask obfuscationTask;
 
@@ -118,6 +122,10 @@ public class Mirage {
 		return HoconConfigurationLoader.builder().defaultOptions(this.configOptions).path(file).build();
 	}
 
+	public ConfigurationLoader<CommentedConfigurationNode> createConfigLoader(URL url) {
+		return HoconConfigurationLoader.builder().defaultOptions(this.configOptions).url(url).build();
+	}
+
 	@Listener
 	public void onRegisterRegistry(RegisterRegistryEvent.GameScoped e) {
 		e.register(ChunkModifier.REGISTRY_TYPE_KEY, true, () -> ImmutableMap.of(
@@ -134,12 +142,6 @@ public class Mirage {
 
 	@Listener
 	public void onServerStarting(StartingEngineEvent<Server> e) {
-		try {
-			Resources.loadResources(Pack.loadAll());
-		} catch (Exception ex) {
-			LOGGER.warn("Failed to load resources", ex);
-		}
-
 		loadConfigs();
 
 		EventManager em = this.game.eventManager();
@@ -153,6 +155,11 @@ public class Mirage {
 	}
 
 	private void loadConfigs() {
+		ResourcesLoader loader = new ResourcesLoader(this);
+		loader.addDefault();
+		loader.addDirectory(this.configDir.resolve("packs"));
+		this.worldTypeToResources = loader.build();
+
 		this.configMap = this.configMapLoader.load();
 	}
 
@@ -207,5 +214,18 @@ public class Mirage {
 
 	public WorldConfig getConfig(ServerWorld world) {
 		return this.configMap.get(world.properties());
+	}
+
+	public Resources getResources(ResourceKey worldType) {
+		if (worldType == null)
+			throw new IllegalArgumentException("worldType");
+
+		Resources r = this.worldTypeToResources.get(worldType);
+		if (r == null) {
+			Mirage.LOGGER.warn("No resources are registered for world type " + worldType + ".");
+			r = new Resources(worldType);
+			this.worldTypeToResources.put(worldType, r);
+		}
+		return r;
 	}
 }
