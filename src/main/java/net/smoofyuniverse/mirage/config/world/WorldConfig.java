@@ -114,8 +114,11 @@ public class WorldConfig {
 			modsNode.appendListNode().node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
 		}
 
+		boolean enabled = cfg.enabled;
+		boolean cache = cfg.cache;
+
 		ImmutableList.Builder<ConfiguredModifier> mods = ImmutableList.builder();
-		if (cfg.enabled) {
+		if (enabled) {
 			for (ConfigurationNode node : modsNode.childrenList()) {
 				String type = node.node("Type").getString();
 				if (type == null)
@@ -142,12 +145,12 @@ public class WorldConfig {
 		}
 
 		List<ConfiguredModifier> modifiers = mods.build();
-		if (cfg.enabled && modifiers.isEmpty()) {
+		if (enabled && modifiers.isEmpty()) {
 			Mirage.LOGGER.info("No valid modifier was found. Obfuscation will be disabled.");
-			cfg.enabled = false;
+			enabled = false;
 		}
 
-		if (cfg.enabled && cfg.cache) {
+		if (enabled && cache) {
 			boolean requireCache = false;
 			for (ConfiguredModifier mod : modifiers) {
 				if (mod.modifier.requireCache()) {
@@ -158,7 +161,7 @@ public class WorldConfig {
 
 			if (!requireCache) {
 				Mirage.LOGGER.info("No modifier requiring cache was found. Cache will be disabled.");
-				cfg.cache = false;
+				cache = false;
 			}
 		}
 
@@ -166,6 +169,8 @@ public class WorldConfig {
 		cfgNode.set(cfg);
 		loader.save(root);
 
+		cfg.enabled = enabled;
+		cfg.cache = cache;
 		return new WorldConfig(cfg.resolve(worldType), modifiers, 0);
 	}
 
