@@ -66,4 +66,12 @@ public class RegistryUtil {
 		resolver.flushErrors();
 		return result;
 	}
+
+	public static BlockState resolveBlockState(String input) {
+		try {
+			return BlockState.fromString(input);
+		} catch (Exception e) {
+			throw new IllegalArgumentException(input + " is not a valid block state");
+		}
+	}
 }

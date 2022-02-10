@@ -44,6 +44,7 @@ import java.util.Set;
 import static net.smoofyuniverse.mirage.config.resources.Resources.COMMON;
 import static net.smoofyuniverse.mirage.config.resources.Resources.RARE;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
+import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockState;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 import static org.spongepowered.math.GenericMath.clamp;
 
@@ -148,7 +149,7 @@ public class HideObviousModifier implements ChunkModifier {
 
 		public Resolved resolve() {
 			return new Resolved(resolveBlockStates(this.blocks),
-					BlockState.fromString(this.replacement), this.dynamism, this.minY, this.maxY);
+					resolveBlockState(this.replacement), this.dynamism, this.minY, this.maxY);
 		}
 
 		public static final class Resolved {

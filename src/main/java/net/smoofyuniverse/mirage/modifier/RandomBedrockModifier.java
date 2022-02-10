@@ -40,6 +40,7 @@ import org.spongepowered.math.vector.Vector3i;
 import java.util.Random;
 
 import static net.smoofyuniverse.mirage.util.BlockUtil.BEDROCK;
+import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockState;
 
 public class RandomBedrockModifier implements ChunkModifier {
 
@@ -109,7 +110,7 @@ public class RandomBedrockModifier implements ChunkModifier {
 		public int height = 5;
 
 		public Resolved resolve() {
-			return new Resolved(BlockState.fromString(this.ground), this.height);
+			return new Resolved(resolveBlockState(this.ground), this.height);
 		}
 
 		public static final class Resolved {
