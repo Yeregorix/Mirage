@@ -32,6 +32,7 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
+import org.spongepowered.api.world.explosion.Explosion;
 import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.math.vector.Vector3i;
 
@@ -42,6 +43,9 @@ public class BlockListener {
 
 	@Listener(order = Order.POST)
 	public void onBlockChange(ChangeBlockEvent.All e) {
+		if (e.cause().containsType(Explosion.class))
+			return;
+
 		boolean player = e.cause().containsType(Player.class);
 
 		for (BlockTransaction t : e.transactions()) {
@@ -72,13 +76,15 @@ public class BlockListener {
 		Set<Vector3i> blocks = new HashSet<>();
 
 		for (ServerLocation loc : e.affectedLocations()) {
-			Vector3i pos = loc.blockPosition();
-			blocks.add(pos.add(1, 0, 0));
-			blocks.add(pos.add(-1, 0, 0));
-			blocks.add(pos.add(0, 1, 0));
-			blocks.add(pos.add(0, -1, 0));
-			blocks.add(pos.add(0, 0, 1));
-			blocks.add(pos.add(0, 0, -1));
+			if (BlockUtil.isOpaque(loc.block())) {
+				Vector3i pos = loc.blockPosition();
+				blocks.add(pos.add(1, 0, 0));
+				blocks.add(pos.add(-1, 0, 0));
+				blocks.add(pos.add(0, 1, 0));
+				blocks.add(pos.add(0, -1, 0));
+				blocks.add(pos.add(0, 0, 1));
+				blocks.add(pos.add(0, 0, -1));
+			}
 		}
 
 		for (ServerLocation loc : e.affectedLocations())
