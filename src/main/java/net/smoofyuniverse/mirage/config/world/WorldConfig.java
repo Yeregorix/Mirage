@@ -124,7 +124,7 @@ public class WorldConfig {
 				if (type == null)
 					continue;
 
-				ChunkModifier mod = modifierRegistry.findValue(ResourceKey.resolve(type)).orElse(null);
+				ChunkModifier mod = modifierRegistry.findValue(Mirage.key(type)).orElse(null);
 				if (mod == null) {
 					Mirage.LOGGER.warn("Modifier '" + type + "' does not exists.");
 					continue;

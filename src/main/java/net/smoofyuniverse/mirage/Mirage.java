@@ -137,7 +137,10 @@ public class Mirage {
 	}
 
 	public static ResourceKey key(String value) {
-		return ResourceKey.of("mirage", value);
+		int i = value.indexOf(':');
+		if (i == -1)
+			return ResourceKey.of("mirage", value);
+		return ResourceKey.of(value.substring(0, i), value.substring(i + 1));
 	}
 
 	@Listener
