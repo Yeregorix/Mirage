@@ -35,21 +35,21 @@ public abstract class ClientboundLevelChunkPacketMixin {
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;write(Lnet/minecraft/network/FriendlyByteBuf;)V"))
 	public void writeModified(LevelChunkSection section, FriendlyByteBuf buffer) {
-		((InternalSection) section).view().write(buffer);
+		((InternalSection) section)._write(buffer);
 	}
 
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;getSerializedSize()I"))
-	public int calculateModifiedSize(LevelChunkSection section) {
-		return ((InternalSection) section).view().getSerializedSize();
+	public int getModifiedSize(LevelChunkSection section) {
+		return ((InternalSection) section)._getSerializedSize();
 	}
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;isEmpty()Z"))
 	public boolean isModifiedEmpty1(LevelChunkSection section) {
-		return ((InternalSection) section).view().isEmpty();
+		return ((InternalSection) section)._isEmpty();
 	}
 
 	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;isEmpty()Z"))
 	public boolean isModifiedEmpty2(LevelChunkSection section) {
-		return ((InternalSection) section).view().isEmpty();
+		return ((InternalSection) section)._isEmpty();
 	}
 }

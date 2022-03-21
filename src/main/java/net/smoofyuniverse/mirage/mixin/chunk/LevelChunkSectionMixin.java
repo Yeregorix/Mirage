@@ -22,32 +22,69 @@
 
 package net.smoofyuniverse.mirage.mixin.chunk;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.smoofyuniverse.mirage.impl.internal.InternalPalettedContainer;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LevelChunkSection.class)
 public abstract class LevelChunkSectionMixin implements InternalSection {
-	private NetworkSection networkContainer;
+	@Shadow
+	@Final
+	private PalettedContainer<BlockState> states;
+	private NetworkSection networkSection;
 
-	@Inject(method = "<init>(ISSS)V", at = @At("RETURN"))
-	public void onInit(int bottomBlockY, short nonEmptyBlockCount, short tickingBlockCount, short tickingFluidCount, CallbackInfo ci) {
-		this.networkContainer = new NetworkSection((LevelChunkSection) (Object) this);
-	}
+	@Shadow
+	public abstract boolean isEmpty();
+
+	@Shadow
+	public abstract void write(FriendlyByteBuf param0);
+
+	@Shadow
+	public abstract int getSerializedSize();
 
 	@Override
 	public NetworkSection view() {
-		return this.networkContainer;
+		if (this.networkSection == null) {
+			this.networkSection = new NetworkSection((LevelChunkSection) (Object) this);
+			((InternalPalettedContainer) this.states).setOnRead(this.networkSection::readStates);
+
+			if (!isEmpty())
+				this.networkSection.deobfuscate(null);
+		}
+		return this.networkSection;
 	}
 
 	@Inject(method = "setBlockState(IIILnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;", at = @At("RETURN"))
 	public void onSet(int x, int y, int z, BlockState state, boolean lock, CallbackInfoReturnable<BlockState> cir) {
-		this.networkContainer.setBlockState(x, y, z, state);
+		if (this.networkSection != null)
+			this.networkSection.setBlockState(x, y, z, state);
+	}
+
+	@Override
+	public void _write(FriendlyByteBuf buffer) {
+		if (this.networkSection == null)
+			write(buffer);
+		else
+			this.networkSection.write(buffer);
+	}
+
+	@Override
+	public int _getSerializedSize() {
+		return this.networkSection == null ? getSerializedSize() : this.networkSection.getSerializedSize();
+	}
+
+	@Override
+	public boolean _isEmpty() {
+		return this.networkSection == null ? isEmpty() : this.networkSection.isEmpty();
 	}
 }

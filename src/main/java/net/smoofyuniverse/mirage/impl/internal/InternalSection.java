@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.state.BlockState;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 
@@ -30,4 +31,10 @@ public interface InternalSection {
 	NetworkSection view();
 
 	BlockState getBlockState(int x, int y, int z);
+
+	void _write(FriendlyByteBuf buffer);
+
+	int _getSerializedSize();
+
+	boolean _isEmpty();
 }

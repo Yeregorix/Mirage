@@ -32,7 +32,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.smoofyuniverse.mirage.impl.internal.InternalPalettedContainer;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
@@ -60,8 +59,6 @@ public class NetworkSection {
 		this.states = new PalettedContainer<>(GLOBAL_BLOCKSTATE_PALETTE, Block.BLOCK_STATE_REGISTRY, NbtUtils::readBlockState, NbtUtils::writeBlockState, Blocks.AIR.defaultBlockState());
 		this.dynamism = new DataLayer();
 		this.dynCount[0] = 4096;
-
-		((InternalPalettedContainer) section.getStates()).setOnRead(this::readStates);
 	}
 
 	public void readStates(ListTag palette, long[] states) {
