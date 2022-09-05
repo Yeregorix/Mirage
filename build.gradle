@@ -51,7 +51,7 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.spongepowered:sponge:1.16.5-8.0.0-SNAPSHOT:dev'
+    implementation 'org.spongepowered:sponge:1.16.5-8.1.0-SNAPSHOT:dev'
     implementation 'org.spongepowered:mixin:0.8.4'
     implementation 'org.ow2.asm:asm-util:9.2'
 
@@ -59,7 +59,7 @@ dependencies {
     implementation 'net.smoofyuniverse:worldmap:1.1.0'
     implementation 'net.smoofyuniverse:bingo:1.0.1'
 
-    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.0.0-RC1062:universal'
+    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.1.0-RC1185:universal'
 }
 
 minecraft {
