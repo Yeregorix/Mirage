@@ -57,6 +57,7 @@ import org.spongepowered.configurate.ConfigurationOptions;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.loader.ConfigurationLoader;
 import org.spongepowered.plugin.PluginContainer;
+import org.spongepowered.plugin.builtin.jvm.Plugin;
 
 import java.io.IOException;
 import java.net.URL;
@@ -64,6 +65,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+@Plugin("mirage")
 public class Mirage {
 	public static final Logger LOGGER = LogManager.getLogger("Mirage");
 	private static Mirage instance;
