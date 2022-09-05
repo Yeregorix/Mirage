@@ -48,6 +48,7 @@ repositories {
 
 configurations {
     spongevanilla
+    spongeforge
 }
 
 dependencies {
@@ -60,6 +61,7 @@ dependencies {
     implementation 'net.smoofyuniverse:bingo:1.0.1'
 
     spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.1.0-RC1185:universal'
+    spongeforge 'org.spongepowered:spongeforge:1.16.5-36.2.5-8.1.0-RC1185:universal'
 }
 
 minecraft {
@@ -104,4 +106,13 @@ task setupVanillaServer(type: Copy) {
     into('mods') {
         from shadowJar
     }
+}
+
+task setupForgeServer(type: Copy) {
+    into 'run/forge/mods'
+
+    from configurations.spongeforge
+    rename('spongeforge-(.*).jar', 'spongeforge.jar')
+
+    from shadowJar
 }
