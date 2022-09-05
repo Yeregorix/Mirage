@@ -63,7 +63,7 @@ public class BlockResolver {
 
 			consumer.accept(this.blockTypeRegistry.stream()
 							.flatMap(type -> type.validStates().stream())
-							.filter(state -> pattern.matcher(state.toString()).matches()),
+							.filter(state -> pattern.matcher(state.asString()).matches()),
 					pattern, negate);
 			return true;
 		}
@@ -111,15 +111,18 @@ public class BlockResolver {
 	}
 
 	interface Consumer {
-		static Consumer IGNORE = new Consumer() {
+		Consumer IGNORE = new Consumer() {
 			@Override
-			public void accept(Stream<BlockState> states, Pattern pattern, boolean negate) {}
+			public void accept(Stream<BlockState> states, Pattern pattern, boolean negate) {
+			}
 
 			@Override
-			public void accept(BlockType type, boolean negate) {}
+			public void accept(BlockType type, boolean negate) {
+			}
 
 			@Override
-			public void accept(BlockState state, boolean negate) {}
+			public void accept(BlockState state, boolean negate) {
+			}
 		};
 
 		default void accept(BlockType type, boolean negate) {
