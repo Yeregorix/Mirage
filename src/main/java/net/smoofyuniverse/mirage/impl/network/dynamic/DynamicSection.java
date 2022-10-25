@@ -26,6 +26,7 @@ import it.unimi.dsi.fastutil.shorts.ShortIterator;
 import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 import net.smoofyuniverse.mirage.impl.network.change.BlockChanges;
@@ -104,8 +105,8 @@ public final class DynamicSection {
 
 	public void getChanges(BlockChanges changes) {
 		if (this.modified) {
-			InternalSection storage = storage();
-			NetworkSection view = storage.view();
+			LevelChunkSection storage = storage();
+			NetworkSection view = ((InternalSection) storage).view();
 
 			// Reveal
 			ShortIterator it = this.nextPositions.iterator();
@@ -125,8 +126,8 @@ public final class DynamicSection {
 		}
 	}
 
-	private InternalSection storage() {
-		return (InternalSection) this.chunk.storage.getSections()[this.y];
+	private LevelChunkSection storage() {
+		return this.chunk.storage.getSections()[this.y];
 	}
 
 	public BlockChanges getCurrent() {
@@ -136,7 +137,7 @@ public final class DynamicSection {
 	}
 
 	public void getCurrent(BlockChanges changes) {
-		InternalSection storage = storage();
+		LevelChunkSection storage = storage();
 
 		// Reveal
 		ShortIterator it = this.currentPositions.iterator();
