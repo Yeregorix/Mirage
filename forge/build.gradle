@@ -19,16 +19,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pluginManagement {
-    repositories {
-        maven { url "https://repo.spongepowered.org/repository/maven-public" }
-        maven { url "https://maven.architectury.dev/" }
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        gradlePluginPortal()
+plugins {
+    id "net.smoofyuniverse.loom" version "0.12.0-SNAPSHOT"
+}
+
+archivesBaseName = 'Mirage-forge'
+
+loom {
+    silentMojangMappingsLicense()
+    accessWidenerPath = file('../src/main/resources/mirage.accesswidener')
+
+    forge {
+        convertAccessWideners = true
+    }
+
+    mixin {
+        useLegacyMixinAp = false
     }
 }
 
-rootProject.name = 'Mirage'
+configurations {
+    spongeforge
+}
 
-include ':forge'
-include ':vanilla'
+dependencies {
+    minecraft 'com.mojang:minecraft:1.16.5'
+    forge 'net.minecraftforge:forge:1.16.5-36.2.5'
+    mappings loom.officialMojangMappings()
+
+    spongeforge 'org.spongepowered:spongeforge:1.16.5-36.2.5-8.1.0-RC1185:universal'
+}
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+}
+
+build.dependsOn remapJar
+
+task setupServer(type: Copy) {
+    into 'run/mods'
+
+    from configurations.spongeforge
+    rename('spongeforge-(.*).jar', 'spongeforge.jar')
+
+    from remapJar
+}

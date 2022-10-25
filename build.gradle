@@ -23,96 +23,87 @@
 plugins {
     id 'java-library'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
-    id 'org.spongepowered.gradle.vanilla' version '0.2'
+    id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
 }
 
-group 'net.smoofyuniverse'
+allprojects {
+    apply plugin: 'java-library'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+    group 'net.smoofyuniverse'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "utf-8"
+    }
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = 'sponge'
+            url = 'https://repo.spongepowered.org/repository/maven-public/'
+        }
+    }
+
+    configurations {
+        provided
+        shade
+
+        provided.extendsFrom shade
+        implementation.extendsFrom provided
+    }
+
+    jar {
+        classifier 'base'
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = "utf-8"
-}
+subprojects {
+    apply plugin: 'com.github.johnrengelman.shadow'
 
-repositories {
-    mavenCentral()
-    maven {
-        name = 'sponge'
-        url = 'https://repo.spongepowered.org/repository/maven-public/'
+    shadowJar {
+        classifier 'shadow'
+        configurations = [project.configurations.shade]
+
+        dependencies {
+            include project(':')
+            include dependency('net.smoofyuniverse:oreapi')
+            include dependency('net.smoofyuniverse:oreupdater')
+            include dependency('net.smoofyuniverse:worldmap')
+            include dependency('net.smoofyuniverse:bingo')
+        }
+
+        relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
+        relocate 'net.smoofyuniverse.map', 'net.smoofyuniverse.mirage.map'
+        relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
+
+        manifest {
+            attributes('MixinConfigs': 'mixins.mirage.json')
+        }
     }
-}
 
-configurations {
-    spongevanilla
-    spongeforge
+    dependencies {
+        provided project(path: ':', configuration: 'provided')
+        shade project(path: ':', transitive: false)
+        shade project(path: ':', configuration: 'shade')
+    }
 }
 
 dependencies {
-    implementation 'org.spongepowered:sponge:1.16.5-8.1.0-SNAPSHOT:dev'
-    implementation 'org.spongepowered:mixin:0.8.4'
-    implementation 'org.ow2.asm:asm-util:9.2'
+    provided 'org.spongepowered:sponge:1.16.5-8.1.0-SNAPSHOT:dev'
+    provided 'org.spongepowered:mixin:0.8.4'
+    provided 'org.ow2.asm:asm-util:9.2'
 
-    implementation 'net.smoofyuniverse:oreupdater:1.1.1'
-    implementation 'net.smoofyuniverse:worldmap:1.1.0'
-    implementation 'net.smoofyuniverse:bingo:1.0.1'
-
-    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.1.0-RC1185:universal'
-    spongeforge 'org.spongepowered:spongeforge:1.16.5-36.2.5-8.1.0-RC1185:universal'
+    shade 'net.smoofyuniverse:oreupdater:1.1.1'
+    shade 'net.smoofyuniverse:worldmap:1.1.0'
+    shade 'net.smoofyuniverse:bingo:1.0.1'
 }
 
 minecraft {
-    version("1.16.5")
-
-    project.sourceSets.main.resources
-            .filter { it.name.endsWith(".accesswidener") }
-            .files.forEach { accessWideners(it) }
-}
-
-jar {
-    classifier 'base'
-    manifest {
-        attributes(
-                'MixinConfigs': 'mixins.mirage.json',
-                'Access-Widener': 'mirage.accesswidener'
-        )
-    }
-}
-
-shadowJar {
-    classifier ''
-
-    dependencies {
-        include dependency('net.smoofyuniverse:oreapi')
-        include dependency('net.smoofyuniverse:oreupdater')
-        include dependency('net.smoofyuniverse:worldmap')
-        include dependency('net.smoofyuniverse:bingo')
-    }
-
-    relocate 'net.smoofyuniverse.ore', 'net.smoofyuniverse.mirage.ore'
-    relocate 'net.smoofyuniverse.map', 'net.smoofyuniverse.mirage.map'
-    relocate 'net.smoofyuniverse.bingo', 'net.smoofyuniverse.mirage.bingo'
-}
-
-task setupVanillaServer(type: Copy) {
-    into 'run/vanilla'
-
-    from configurations.spongevanilla
-    rename('spongevanilla-(.*).jar', 'spongevanilla.jar')
-
-    into('mods') {
-        from shadowJar
-    }
-}
-
-task setupForgeServer(type: Copy) {
-    into 'run/forge/mods'
-
-    from configurations.spongeforge
-    rename('spongeforge-(.*).jar', 'spongeforge.jar')
-
-    from shadowJar
+    version '1.16.5'
+    accessWideners(file("src/main/resources/mirage.accesswidener"))
 }

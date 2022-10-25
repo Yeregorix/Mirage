@@ -19,16 +19,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-pluginManagement {
-    repositories {
-        maven { url "https://repo.spongepowered.org/repository/maven-public" }
-        maven { url "https://maven.architectury.dev/" }
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        gradlePluginPortal()
+archivesBaseName = 'Mirage-vanilla'
+
+configurations {
+    spongevanilla
+}
+
+dependencies {
+    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.1.0-RC1185:universal'
+}
+
+shadowJar {
+    classifier ''
+
+    manifest {
+        attributes('Access-Widener': 'mirage.accesswidener')
     }
 }
 
-rootProject.name = 'Mirage'
+build.dependsOn shadowJar
 
-include ':forge'
-include ':vanilla'
+task setupServer(type: Copy) {
+    into 'run'
+
+    from configurations.spongevanilla
+    rename('spongevanilla-(.*).jar', 'spongevanilla.jar')
+
+    into('mods') {
+        from shadowJar
+    }
+}
