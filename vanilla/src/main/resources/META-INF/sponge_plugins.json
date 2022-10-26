@@ -8,7 +8,7 @@
     {
       "id": "mirage",
       "name": "Mirage",
-      "version": "1.5.0-vanilla",
+      "version": "1.5.1-vanilla",
       "entrypoint": "net.smoofyuniverse.mirage.Mirage",
       "description": "The best solution against xray users",
       "links": {
