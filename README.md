@@ -14,5 +14,18 @@ Mirage requires Java 17 and Gradle 7 to build.
 
 Tasks:
 
-- `shadowJar` constructs a jar that includes all its dependencies.
-- `setupVanillaServer` setups a vanilla server in directory `run/vanilla`.
+- `build` constructs jars for SpongeVanilla and SpongeForge.
+- `setupServer` setups sponge servers in directories `vanilla/run` and `forge/run`.
+
+## Known issues
+
+### Incompatibility with elytradev's mod
+
+The Mirage plugin distributed on Ore and the elytradev's mod share the same identifier.
+This causes a crash on server startup with the following error
+message: `java.lang.NoClassDefFoundError: com/elytradev/mirage/event/GatherLightsEvent`.
+
+To fix this, please use the Mirage plugin jar hosted at https://files.smoofyuniverse.net/smoofymirage/.
+
+Mirage version 1.5.0 and above should not be affected by this issue, because elytradev's mod has not been updated past
+Minecraft 1.12.2.
