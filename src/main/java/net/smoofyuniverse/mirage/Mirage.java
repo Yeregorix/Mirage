@@ -42,6 +42,7 @@ import net.smoofyuniverse.ore.update.UpdateChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.Platform;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Server;
 import org.spongepowered.api.config.ConfigDir;
@@ -155,8 +156,10 @@ public class Mirage {
 			em.registerListeners(this.container, new ChunkListener());
 		}
 
+		String platformId = this.game.platform().container(Platform.Component.IMPLEMENTATION).metadata().id();
+
 		em.registerListeners(this.container, new UpdateChecker(LOGGER, this.container,
-				createConfigLoader(this.configDir.resolve("update.conf")), "Yeregorix", "Mirage"));
+				createConfigLoader(this.configDir.resolve("update.conf")), "Yeregorix", "Mirage", platformId));
 	}
 
 	private void loadConfigs() {

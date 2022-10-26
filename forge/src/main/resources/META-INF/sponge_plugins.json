@@ -24,6 +24,12 @@
       ],
       "dependencies": [
         {
+          "id": "spongeapi",
+          "version": "8.1.0",
+          "load-order": "AFTER",
+          "optional": false
+        },
+        {
           "id": "spongeforge",
           "version": "8.1.0",
           "load-order": "AFTER",
