@@ -70,8 +70,8 @@ public abstract class ServerLevelMixin extends LevelMixin {
 			if (!this.dynamismEnabled)
 				throw new IllegalStateException();
 
-			dynWorld = new DynamicWorld(this, player);
-			dynWorld.updateCenter();
+			dynWorld = new DynamicWorld(this);
+			dynWorld.updateCenter(player);
 			this.dynamicWorlds.put(player.uniqueId(), dynWorld);
 		}
 		return dynWorld;

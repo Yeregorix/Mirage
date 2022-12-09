@@ -41,6 +41,7 @@ import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
 import net.smoofyuniverse.mirage.mixin.chunk.ChunkStorageMixin;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -107,7 +108,7 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 		if (((InternalWorld) this.level).isDynamismEnabled()) {
 			DynamicWorld world = ((InternalPlayer) player).getDynamicWorld();
 			if (world != null)
-				world.updateCenter();
+				world.updateCenter((Player) player);
 		}
 	}
 

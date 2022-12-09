@@ -34,18 +34,16 @@ import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
 
 public final class DynamicWorld {
 	private final InternalWorld storage;
-	private final Player player;
 
 	private final Long2ObjectMap<DynamicChunk> chunks = new Long2ObjectOpenHashMap<>();
 	private Vector3i center;
 
-	public DynamicWorld(InternalWorld storage, Player player) {
+	public DynamicWorld(InternalWorld storage) {
 		this.storage = storage;
-		this.player = player;
 	}
 
-	public void updateCenter() {
-		Vector3i newCenter = this.player.position().add(0, 1.62, 0).toInt();
+	public void updateCenter(Player player) {
+		Vector3i newCenter = player.position().add(0, 1.62, 0).toInt();
 		if (!newCenter.equals(this.center)) {
 			this.center = newCenter;
 			for (DynamicChunk chunk : this.chunks.values())
