@@ -99,27 +99,6 @@ public class NetworkRegionCache {
 		this.seed = seed;
 	}
 
-	public void close() throws IOException {
-		this.storage.close();
-		this.storage.regionCache.clear();
-	}
-
-	private static boolean isRegionFile(String name) {
-		if (name.startsWith("r.") && name.endsWith(".dat")) {
-			String pos = name.substring(2, name.length() - 4);
-			int i = pos.indexOf('.');
-			if (i == -1)
-				return false;
-
-			try {
-				Integer.parseInt(pos.substring(0, i));
-				Integer.parseInt(pos.substring(i + 1));
-			} catch (Exception ignored) {
-			}
-		}
-		return false;
-	}
-
 	private void deleteRegionFiles() throws IOException {
 		ExceptionCollector<IOException> errors = new ExceptionCollector<>();
 
