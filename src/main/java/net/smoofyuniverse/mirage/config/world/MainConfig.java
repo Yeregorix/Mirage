@@ -31,17 +31,21 @@ import org.spongepowered.configurate.objectmapping.meta.Setting;
 @ConfigSerializable
 public class MainConfig {
 
-	@Comment("Enable or disable Mirage in this world")
+	@Comment("Enable Mirage in this world")
 	@Setting("Enabled")
 	public boolean enabled = true;
 
-	@Comment("Enable or disable caching fake chunks on disk")
+	@Comment("Cache obfuscated chunks on disk")
 	@Setting("Cache")
 	public boolean cache = true;
 
-	@Comment("Enable or disable dynamic obfuscation")
+	@Comment("Hide blocks based on the distance to the player")
 	@Setting("Dynamism")
 	public boolean dynamism = true;
+
+	@Comment("Replace the hashed seed sent to the client")
+	@Setting("FakeSeed")
+	public boolean fakeSeed = true;
 
 	@Comment("The world type used for automatic config generation")
 	@Setting("WorldType")
@@ -51,24 +55,26 @@ public class MainConfig {
 	public DeobfuscationConfig deobf = new DeobfuscationConfig();
 
 	public Resolved resolve(WorldType worldType) {
-		return new Resolved(this.enabled, this.cache, this.dynamism, worldType, this.deobf.resolve());
+		return new Resolved(this.enabled, this.cache, this.dynamism, this.fakeSeed, worldType, this.deobf.resolve());
 	}
 
 	public static class Resolved {
-		public final boolean enabled, cache, dynamism;
+		public final boolean enabled, cache, dynamism, fakeSeed;
 		public final WorldType worldType;
 		public final DeobfuscationConfig.Resolved deobf;
 
-		public Resolved(boolean enabled, boolean cache, boolean dynamism, WorldType worldType, DeobfuscationConfig.Resolved deobf) {
+		public Resolved(boolean enabled, boolean cache, boolean dynamism, boolean fakeSeed,
+						WorldType worldType, DeobfuscationConfig.Resolved deobf) {
 			this.enabled = enabled;
 			this.cache = cache;
 			this.dynamism = dynamism;
+			this.fakeSeed = fakeSeed;
 			this.worldType = worldType;
 			this.deobf = deobf;
 		}
 
 		public Resolved disable() {
-			return this.enabled ? new Resolved(false, this.cache, this.dynamism, this.worldType, this.deobf) : this;
+			return this.enabled ? new Resolved(false, this.cache, this.dynamism, this.fakeSeed, this.worldType, this.deobf) : this;
 		}
 	}
 }

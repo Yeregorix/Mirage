@@ -23,6 +23,7 @@
 package net.smoofyuniverse.mirage.config.world;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.Hashing;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
@@ -50,12 +51,14 @@ public class WorldConfig {
 
 	public final Resolved main;
 	public final List<ConfiguredModifier> modifiers;
-	public final long seed;
+	public final long obfuscationSeed, fakeSeed, hashedFakeSeed;
 
-	public WorldConfig(Resolved main, List<ConfiguredModifier> modifiers, long seed) {
+	public WorldConfig(Resolved main, List<ConfiguredModifier> modifiers, long obfuscationSeed, long fakeSeed) {
 		this.main = main;
 		this.modifiers = ImmutableList.copyOf(modifiers);
-		this.seed = seed;
+		this.obfuscationSeed = obfuscationSeed;
+		this.fakeSeed = fakeSeed;
+		this.hashedFakeSeed = Hashing.sha256().hashLong(fakeSeed).asLong();
 	}
 
 	public static WorldConfig load(Path file) throws IOException {
@@ -171,12 +174,12 @@ public class WorldConfig {
 
 		cfg.enabled = enabled;
 		cfg.cache = cache;
-		return new WorldConfig(cfg.resolve(worldType), modifiers, 0);
+		return new WorldConfig(cfg.resolve(worldType), modifiers, 0, 0);
 	}
 
 	static {
 		MainConfig main = new MainConfig();
 		main.enabled = false;
-		DISABLED = new WorldConfig(main.resolve(null), ImmutableList.of(), 0);
+		DISABLED = new WorldConfig(main.resolve(null), ImmutableList.of(), 0, 0);
 	}
 }

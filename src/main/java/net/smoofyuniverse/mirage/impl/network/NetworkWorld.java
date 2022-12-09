@@ -53,11 +53,11 @@ import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.math.vector.Vector3i;
 
 import javax.annotation.Nullable;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import static net.smoofyuniverse.mirage.impl.network.NetworkChunk.asLong;
@@ -150,8 +150,6 @@ public class NetworkWorld implements WorldView {
 			main = main.disable();
 		}
 
-		long seed = 0;
-
 		if (main.enabled && main.cache) {
 			Signature.Builder b = Signature.builder();
 			for (ConfiguredModifier mod : modifiers)
@@ -163,9 +161,8 @@ public class NetworkWorld implements WorldView {
 			try {
 				this.cache = new NetworkRegionCache(cacheName);
 				this.cache.load();
-				seed = this.cache.getSeed();
 
-				b = Signature.builder().append(seed).append(main.dynamism);
+				b = Signature.builder().append(this.cache.getObfuscationSeed()).append(main.dynamism);
 				for (ConfiguredModifier mod : modifiers)
 					mod.modifier.appendSignature(b, mod.config);
 				this.signature = b.build();
@@ -175,10 +172,17 @@ public class NetworkWorld implements WorldView {
 			}
 		}
 
-		if (this.cache == null)
-			seed = ThreadLocalRandom.current().nextLong();
+		long obfuscationSeed, fakeSeed;
+		if (this.cache == null) {
+			SecureRandom r = new SecureRandom();
+			obfuscationSeed = r.nextLong();
+			fakeSeed = r.nextLong();
+		} else {
+			obfuscationSeed = this.cache.getObfuscationSeed();
+			fakeSeed = this.cache.getFakeSeed();
+		}
 
-		this.config = new WorldConfig(main, modifiers, seed);
+		this.config = new WorldConfig(main, modifiers, obfuscationSeed, fakeSeed);
 	}
 
 	public void removePendingSave(int x, int z) {

@@ -77,7 +77,7 @@ public class NetworkChunk implements ChunkView {
 		this.x = this.position.x();
 		this.z = this.position.z();
 
-		long wSeed = world.config().seed;
+		long wSeed = world.config().obfuscationSeed;
 		this.random.setSeed(wSeed);
 		long k = this.random.nextLong() | 1L;
 		long l = this.random.nextLong() | 1L;

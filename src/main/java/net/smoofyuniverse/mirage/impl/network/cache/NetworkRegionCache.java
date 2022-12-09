@@ -36,16 +36,16 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 public class NetworkRegionCache {
-	public static final int CURRENT_VERSION = 3;
+	public static final int CURRENT_VERSION = 4;
 
 	public final Path directory;
 	public final String name;
 
 	private final RegionFileStorage storage;
-	private long seed;
+	private long obfuscationSeed, fakeSeed;
 
 	public NetworkRegionCache(String name) {
 		this(Mirage.get().getCacheDirectory().resolve(name), name);
@@ -57,8 +57,34 @@ public class NetworkRegionCache {
 		this.storage = new RegionFileStorage(directory.toFile(), false);
 	}
 
-	public long getSeed() {
-		return this.seed;
+	private static boolean isRegionFile(String name) {
+		if (name.startsWith("r.") && name.endsWith(".dat")) {
+			String pos = name.substring(2, name.length() - 4);
+			int i = pos.indexOf('.');
+			if (i == -1)
+				return false;
+
+			try {
+				Integer.parseInt(pos.substring(0, i));
+				Integer.parseInt(pos.substring(i + 1));
+				return true;
+			} catch (Exception ignored) {
+			}
+		}
+		return false;
+	}
+
+	public long getObfuscationSeed() {
+		return this.obfuscationSeed;
+	}
+
+	public long getFakeSeed() {
+		return this.fakeSeed;
+	}
+
+	public void close() throws IOException {
+		this.storage.close();
+		this.storage.regionCache.clear();
 	}
 
 	public void load() throws Exception {
@@ -68,35 +94,43 @@ public class NetworkRegionCache {
 		}
 
 		int version;
-		long seed;
+		long obfuscationSeed, fakeSeed;
 
 		Path file = this.directory.resolve("cache.dat");
 		if (Files.exists(file)) {
 			try (DataInputStream in = new DataInputStream(Files.newInputStream(file))) {
 				version = in.readInt();
-				seed = in.readLong();
+				obfuscationSeed = in.readLong();
+				fakeSeed = version >= 4 ? in.readLong() : 0;
 			}
 		} else if (IOUtil.isEmptyDirectory(this.directory)) {
 			version = CURRENT_VERSION;
-			seed = ThreadLocalRandom.current().nextLong();
+			SecureRandom r = new SecureRandom();
+			obfuscationSeed = r.nextLong();
+			fakeSeed = r.nextLong();
 		} else {
 			throw new IllegalArgumentException("Cache directory is not empty");
 		}
 
-		if (version != CURRENT_VERSION) {
+		if (version < 3 || version > CURRENT_VERSION) {
 			Mirage.LOGGER.info("Deleting outdated cache " + this.name + "/ ...");
 
 			close();
 			deleteRegionFiles();
-			version = CURRENT_VERSION;
+		}
+
+		if (version < 4) {
+			fakeSeed = new SecureRandom().nextLong();
 		}
 
 		try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(file))) {
-			out.writeInt(version);
-			out.writeLong(seed);
+			out.writeInt(CURRENT_VERSION);
+			out.writeLong(obfuscationSeed);
+			out.writeLong(fakeSeed);
 		}
 
-		this.seed = seed;
+		this.obfuscationSeed = obfuscationSeed;
+		this.fakeSeed = fakeSeed;
 	}
 
 	private void deleteRegionFiles() throws IOException {

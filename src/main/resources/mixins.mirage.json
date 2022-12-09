@@ -17,6 +17,8 @@
     "level.LevelMixin",
     "level.ServerLevelMixin",
     "network.ClientboundLevelChunkPacketMixin",
+    "network.ClientboundLoginPacketMixin",
+    "network.ClientboundRespawnPacketMixin",
     "player.ServerPlayerMixin",
     "server.MinecraftServerMixin"
   ],
