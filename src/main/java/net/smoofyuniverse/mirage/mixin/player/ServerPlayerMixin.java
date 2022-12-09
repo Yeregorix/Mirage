@@ -44,8 +44,10 @@ public abstract class ServerPlayerMixin implements InternalPlayer {
 		if (world.isDynamismEnabled()) {
 			DynamicChunk chunk = world.getOrCreateDynamicWorld(this).getOrCreateChunk(pos.x, pos.z);
 			for (DynamicSection section : chunk.sections) {
-				section.applyChanges();
-				section.getCurrent().sendTo((ServerPlayer) (Object) this);
+				if (section != null) {
+					section.applyChanges();
+					section.getCurrent().sendTo((ServerPlayer) (Object) this);
+				}
 			}
 		}
 	}
