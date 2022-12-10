@@ -107,8 +107,6 @@ public class WorldConfig {
 		ConfigurationNode modsNode = root.node("Modifiers");
 		if (modsNode.virtual()) {
 			if (worldType == WorldTypes.OVERWORLD.get()) {
-				modsNode.appendListNode().node("Type").set(modifierRegistry.valueKey(ChunkModifiers.RANDOM_BEDROCK));
-
 				ConfigurationNode water_dungeons = modsNode.appendListNode();
 				water_dungeons.node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
 				water_dungeons.node("Preset").set("water_dungeons");
