@@ -92,8 +92,8 @@ public interface ChunkModifier {
 	}
 
 	/**
-	 * Modifies the ChunkView that will be send to players.
-	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
+	 * Modifies the ChunkView that will be sent to players.
+	 * This method might check and modify thousands blocks and thus must be optimized to be as fast as possible.
 	 *
 	 * @param view   The ChunkView to modify
 	 * @param r      The Random object that should be used by the modifier
@@ -104,8 +104,8 @@ public interface ChunkModifier {
 	}
 
 	/**
-	 * Modifies the BlockView that will be send to players.
-	 * This method might check and modify thousands blocks and thus must optimized to be as fast as possible.
+	 * Modifies the BlockView that will be sent to players.
+	 * This method might check and modify thousands blocks and thus must be optimized to be as fast as possible.
 	 *
 	 * @param view The BlockView to modify
 	 * @param min  The lowest block location to modify
