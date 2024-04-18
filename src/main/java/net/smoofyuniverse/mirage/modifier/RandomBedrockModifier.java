@@ -79,17 +79,20 @@ public class RandomBedrockModifier implements ChunkModifier {
 	public void modify(BlockView view, Vector3i min, Vector3i max, Random r, Object config) {
 		Resolved cfg = (Resolved) config;
 
-		int height = Math.min(max.y(), cfg.height);
-		if (height == 0)
+		int height = cfg.height;
+
+		int floorY = view.min().y();
+		int maxY = Math.min(max.y(), floorY + height - 1);
+		if (maxY < min.y())
 			return;
 
 		for (int x = min.x(); x <= max.x(); x++) {
 			for (int z = min.z(); z <= max.z(); z++) {
-				for (int y = height; y >= 0; --y) {
+				for (int y = floorY; y <= maxY; y++) {
 					if (view.isExposed(x, y, z))
 						continue;
 
-					if (y <= r.nextInt(height)) {
+					if ((y - floorY) <= r.nextInt(height)) {
 						view.setBlock(x, y, z, BEDROCK);
 					} else if (view.block(x, y, z) == BEDROCK) {
 						view.setBlock(x, y, z, cfg.ground);

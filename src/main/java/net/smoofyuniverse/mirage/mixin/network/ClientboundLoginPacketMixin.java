@@ -28,7 +28,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -37,12 +39,16 @@ import org.spongepowered.common.SpongeCommon;
 
 @Mixin(ClientboundLoginPacket.class)
 public class ClientboundLoginPacketMixin {
+    @Mutable
+    @Final
     @Shadow
     private long seed;
+
+    @Final
     @Shadow
     private ResourceKey<Level> dimension;
 
-    @Inject(method = "<init>(ILnet/minecraft/world/level/GameType;Lnet/minecraft/world/level/GameType;JZLjava/util/Set;Lnet/minecraft/core/RegistryAccess$RegistryHolder;Lnet/minecraft/world/level/dimension/DimensionType;Lnet/minecraft/resources/ResourceKey;IIZZZZ)V", at = @At("RETURN"))
+    @Inject(method = "<init>(IZLnet/minecraft/world/level/GameType;Lnet/minecraft/world/level/GameType;Ljava/util/Set;Lnet/minecraft/core/RegistryAccess$Frozen;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/resources/ResourceKey;JIIIZZZZLjava/util/Optional;)V", at = @At("RETURN"))
     public void onInit(CallbackInfo ci) {
         ServerLevel level = SpongeCommon.server().getLevel(this.dimension);
         if (level != null) {

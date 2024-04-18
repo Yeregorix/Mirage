@@ -110,7 +110,7 @@ public class BlockResolver {
 		}
 	}
 
-	interface Consumer {
+	public interface Consumer {
 		Consumer IGNORE = new Consumer() {
 			@Override
 			public void accept(Stream<BlockState> states, Pattern pattern, boolean negate) {

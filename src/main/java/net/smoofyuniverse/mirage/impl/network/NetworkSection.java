@@ -23,8 +23,7 @@
 package net.smoofyuniverse.mirage.impl.network;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -32,19 +31,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
 
 import java.util.Arrays;
 
-import static net.minecraft.world.level.chunk.LevelChunkSection.GLOBAL_BLOCKSTATE_PALETTE;
-
 public class NetworkSection {
 	private final LevelChunkSection section;
 	private final int minY;
 
-	private final PalettedContainer<BlockState> states;
+	private PalettedContainer<BlockState> states;
 	private DataLayer dynamism;
 
 	private final int[] dynCount = new int[16];
@@ -56,15 +55,9 @@ public class NetworkSection {
 		this.section = section;
 		this.minY = section.bottomBlockY();
 
-		this.states = new PalettedContainer<>(GLOBAL_BLOCKSTATE_PALETTE, Block.BLOCK_STATE_REGISTRY, NbtUtils::readBlockState, NbtUtils::writeBlockState, Blocks.AIR.defaultBlockState());
+		this.states = new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 		this.dynamism = new DataLayer();
 		this.dynCount[0] = 4096;
-	}
-
-	public void readStates(ListTag palette, long[] states) {
-		this.states.read(palette, states);
-		recalculateAirBlocks();
-		this.dirty = true;
 	}
 
 	private void recalculateAirBlocks() {
@@ -79,19 +72,15 @@ public class NetworkSection {
 		return (InternalSection) this.section;
 	}
 
-	public int getBlockMinY() {
-		return this.minY;
-	}
-
-	public int getY() {
-		return this.minY >> 4;
-	}
-
-	public boolean isEmpty() {
+	public boolean hasOnlyAir() {
 		return this.nonAirBlocks == 0;
 	}
 
 	public void deobfuscate(ChunkChangeListener listener) {
+		if (hasOnlyAir() && this.section.hasOnlyAir()) {
+			return;
+		}
+
 		acquire();
 		this.nonAirBlocks = 0;
 
@@ -212,17 +201,20 @@ public class NetworkSection {
 		CompoundTag tag = new CompoundTag();
 		tag.putByte("Y", (byte) (this.minY >> 4));
 
-		this.states.write(tag, "Palette", "BlockStates");
+		tag.put("BlockStates", ChunkSerializer.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow(false, Mirage.LOGGER::error));
 		tag.putByteArray("Dynamism", Arrays.copyOf(this.dynamism.getData(), 2048));
 
 		return tag;
 	}
 
 	public void deserialize(CompoundTag tag) {
-		readStates(tag.getList("Palette", 10), tag.getLongArray("BlockStates"));
+		this.states = ChunkSerializer.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow(false, Mirage.LOGGER::error);
+		recalculateAirBlocks();
 
 		this.dynamism = new DataLayer(tag.getByteArray("Dynamism"));
 		recalculateDynCount();
+
+		this.dirty = true;
 	}
 
 	private void recalculateDynCount() {

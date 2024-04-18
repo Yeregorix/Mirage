@@ -41,8 +41,8 @@ import java.util.*;
 
 import static net.smoofyuniverse.mirage.config.resources.Resources.*;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
+import static net.smoofyuniverse.mirage.util.MathUtil.clampY;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
-import static org.spongepowered.math.GenericMath.clamp;
 
 /**
  * This modifier only hides ores which are not exposed and generates thousands of fake ores to hides things such as caves, bases and remaining ores
@@ -68,8 +68,8 @@ public class RandomBlockModifier implements ChunkModifier {
 			cfg.replacements.put(r.ground, Math.max(cfg.replacements.size(), 1d));
 		}
 
-		cfg.minY = clamp(cfg.minY, 0, 255);
-		cfg.maxY = clamp(cfg.maxY, 0, 255);
+		cfg.minY = clampY(worldType, cfg.minY);
+		cfg.maxY = clampY(worldType, cfg.maxY);
 
 		if (cfg.minY > cfg.maxY) {
 			int t = cfg.minY;
@@ -118,11 +118,11 @@ public class RandomBlockModifier implements ChunkModifier {
 
 		@Comment("The minimum Y of the section to obfuscate")
 		@Setting("MinY")
-		public int minY = 0;
+		public int minY = -64;
 
 		@Comment("The maximum Y of the section to obfuscate")
 		@Setting("MaxY")
-		public int maxY = 255;
+		public int maxY = 319;
 
 		public Resolved resolve() {
 			return new Resolved(resolveBlockStates(this.blocks),

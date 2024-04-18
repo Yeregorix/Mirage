@@ -2,13 +2,13 @@ accessWidener	v1	named
 
 accessible method net/minecraft/server/level/ChunkMap getChunks ()Ljava/lang/Iterable;
 
-accessible field net/minecraft/world/level/chunk/LevelChunkSection GLOBAL_BLOCKSTATE_PALETTE Lnet/minecraft/world/level/chunk/Palette;
+accessible field net/minecraft/world/level/chunk/storage/ChunkSerializer BLOCK_STATE_CODEC Lcom/mojang/serialization/Codec;
 
-accessible method net/minecraft/world/level/chunk/storage/RegionFileStorage <init> (Ljava/io/File;Z)V
+accessible method net/minecraft/world/level/chunk/storage/RegionFileStorage <init> (Ljava/nio/file/Path;Z)V
 accessible method net/minecraft/world/level/chunk/storage/RegionFileStorage write (Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)V
 accessible field net/minecraft/world/level/chunk/storage/RegionFileStorage regionCache Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;
 
-accessible field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket sectionPos Lnet/minecraft/core/SectionPos;
 accessible field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket positions [S
+mutable field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket positions [S
 accessible field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket states [Lnet/minecraft/world/level/block/state/BlockState;
-accessible field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket suppressLightUpdates Z
+mutable field net/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket states [Lnet/minecraft/world/level/block/state/BlockState;

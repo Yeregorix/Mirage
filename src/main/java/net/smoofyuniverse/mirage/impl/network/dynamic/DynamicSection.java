@@ -127,7 +127,7 @@ public final class DynamicSection {
 	}
 
 	private LevelChunkSection storage() {
-		return this.chunk.storage.getSections()[this.y];
+		return this.chunk.storage.getSections()[this.y - this.chunk.minSectionY];
 	}
 
 	public BlockChanges getCurrent() {

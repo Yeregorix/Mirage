@@ -25,10 +25,11 @@ package net.smoofyuniverse.mirage.impl.network.change;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.ShortSets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -65,7 +66,7 @@ public class BlockChanges {
 		sendTo(player.connection::send);
 	}
 
-	public void sendTo(Consumer<Packet<?>> consumer) {
+	public void sendTo(Consumer<Packet<ClientGamePacketListener>> consumer) {
 		int changes = this.blocks.size();
 		if (changes == 0)
 			return;
@@ -80,15 +81,13 @@ public class BlockChanges {
 
 			consumer.accept(new ClientboundBlockUpdatePacket(pos, state));
 
-			ClientboundBlockEntityDataPacket p2 = getEntityPacket(pos, state);
+			Packet<ClientGamePacketListener> p2 = getEntityPacket(pos, state);
 			if (p2 != null)
 				consumer.accept(p2);
 		} else {
-			ClientboundSectionBlocksUpdatePacket p = new ClientboundSectionBlocksUpdatePacket();
-			p.sectionPos = this.pos;
+			ClientboundSectionBlocksUpdatePacket p = new ClientboundSectionBlocksUpdatePacket(this.pos, ShortSets.emptySet(), null, true);
 			p.positions = new short[changes];
 			p.states = new BlockState[changes];
-			p.suppressLightUpdates = true;
 
 			int i = 0;
 			for (Entry<BlockState> e : this.blocks.short2ObjectEntrySet()) {
@@ -103,18 +102,18 @@ public class BlockChanges {
 				short key = p.positions[i];
 				pos.set(minX + (key >> 8 & 15), minY + (key & 15), minZ + (key >> 4 & 15));
 
-				ClientboundBlockEntityDataPacket p2 = getEntityPacket(pos, p.states[i]);
+				Packet<ClientGamePacketListener> p2 = getEntityPacket(pos, p.states[i]);
 				if (p2 != null)
 					consumer.accept(p2);
 			}
 		}
 	}
 
-	private ClientboundBlockEntityDataPacket getEntityPacket(BlockPos pos, BlockState state) {
-		if (state.getBlock().isEntityBlock()) {
+	private Packet<ClientGamePacketListener> getEntityPacket(BlockPos pos, BlockState state) {
+		if (state.hasBlockEntity()) {
 			BlockEntity entity = this.chunk.getBlockEntity(pos);
 			if (entity != null) {
-				ClientboundBlockEntityDataPacket packet = entity.getUpdatePacket();
+				Packet<ClientGamePacketListener> packet = entity.getUpdatePacket(); // usually ClientboundBlockEntityDataPacket
 				if (packet != null)
 					return packet;
 			}

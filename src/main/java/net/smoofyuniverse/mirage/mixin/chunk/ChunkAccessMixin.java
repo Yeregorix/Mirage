@@ -22,12 +22,27 @@
 
 package net.smoofyuniverse.mirage.mixin.chunk;
 
-import net.minecraft.world.level.chunk.ProtoChunk;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunkAccess;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(ProtoChunk.class)
-public abstract class ProtoChunkMixin implements InternalChunkAccess {
+@Mixin(ChunkAccess.class)
+public abstract class ChunkAccessMixin implements InternalChunkAccess {
+	@Shadow
+	@Final
+	protected ChunkPos chunkPos;
+
+	@Shadow
+	@Final
+	protected LevelChunkSection[] sections;
+
+	@Shadow
+	protected volatile boolean unsaved;
+
 	private long cacheTime;
 
 	@Override
@@ -38,5 +53,15 @@ public abstract class ProtoChunkMixin implements InternalChunkAccess {
 	@Override
 	public void setCacheTime(long value) {
 		this.cacheTime = value;
+	}
+
+	@Override
+	public void markUnsaved() {
+		this.unsaved = true;
+	}
+
+	@Override
+	public LevelChunkSection[] getSections() {
+		return this.sections;
 	}
 }

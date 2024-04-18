@@ -22,11 +22,16 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
-import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 
-public interface InternalChunkAccess extends ChunkAccess {
+public interface InternalChunkAccess extends BlockGetter {
 
 	long getCacheTime();
 
 	void setCacheTime(long value);
+
+	void markUnsaved();
+
+	LevelChunkSection[] getSections();
 }

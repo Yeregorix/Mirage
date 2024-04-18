@@ -32,6 +32,4 @@ public interface InternalSection {
 	void _write(FriendlyByteBuf buffer);
 
 	int _getSerializedSize();
-
-	boolean _isEmpty();
 }

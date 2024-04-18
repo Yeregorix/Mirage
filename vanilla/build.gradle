@@ -26,11 +26,11 @@ configurations {
 }
 
 dependencies {
-    spongevanilla 'org.spongepowered:spongevanilla:1.16.5-8.1.0-RC1185:universal'
+    spongevanilla('org.spongepowered:spongevanilla:1.19.4-10.0.0-RC1552:universal') { transitive = false }
 }
 
 shadowJar {
-    classifier ''
+    archiveClassifier = ''
 
     manifest {
         attributes('Access-Widener': 'mirage.accesswidener')
@@ -39,7 +39,7 @@ shadowJar {
 
 build.dependsOn shadowJar
 
-task setupServer(type: Copy) {
+tasks.register('setupServer', Copy) {
     into 'run'
 
     from configurations.spongevanilla

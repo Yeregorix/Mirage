@@ -44,6 +44,7 @@ import java.util.Set;
 import static net.smoofyuniverse.mirage.config.resources.Resources.COMMON;
 import static net.smoofyuniverse.mirage.config.resources.Resources.RARE;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
+import static net.smoofyuniverse.mirage.util.MathUtil.clampY;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockState;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 import static org.spongepowered.math.GenericMath.clamp;
@@ -77,8 +78,8 @@ public class HideObviousModifier implements ChunkModifier {
 				cfg.replacement = Resources.of(worldType).ground;
 
 			cfg.dynamism = clamp(cfg.dynamism, 0, 10);
-			cfg.minY = clamp(cfg.minY, 0, 255);
-			cfg.maxY = clamp(cfg.maxY, 0, 255);
+			cfg.minY = clampY(worldType, cfg.minY);
+			cfg.maxY = clampY(worldType, cfg.maxY);
 
 			if (cfg.minY > cfg.maxY) {
 				int t = cfg.minY;
@@ -141,11 +142,11 @@ public class HideObviousModifier implements ChunkModifier {
 
 		@Comment("The minimum Y of the section to obfuscate")
 		@Setting("MinY")
-		public int minY = 0;
+		public int minY = -64;
 
 		@Comment("The maximum Y of the section to obfuscate")
 		@Setting("MaxY")
-		public int maxY = 255;
+		public int maxY = 319;
 
 		public Resolved resolve() {
 			return new Resolved(resolveBlockStates(this.blocks),

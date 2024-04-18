@@ -22,7 +22,6 @@
 
 package net.smoofyuniverse.mirage.mixin.chunk;
 
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -32,34 +31,22 @@ import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
-import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.common.mixin.tracker.world.level.chunk.LevelChunkMixin_Tracker;
 
 @Mixin(value = LevelChunk.class, priority = 1200)
-public abstract class LevelChunkMixin implements InternalChunk {
+public abstract class LevelChunkMixin extends ChunkAccessMixin implements InternalChunk {
 	@Shadow
 	@Final
-	private ChunkPos chunkPos;
-
-	@Shadow
-	@Final
-	private LevelChunkSection[] sections;
-
-	@Shadow
-	@Final
-	private Level level;
+	Level level;
 
 	private NetworkChunk netChunk;
-	private long cacheTime;
 
-	@Inject(method = "<init>(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/ChunkBiomeContainer;Lnet/minecraft/world/level/chunk/UpgradeData;Lnet/minecraft/world/level/TickList;Lnet/minecraft/world/level/TickList;J[Lnet/minecraft/world/level/chunk/LevelChunkSection;Ljava/util/function/Consumer;)V",
+	@Inject(method = "<init>(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/UpgradeData;Lnet/minecraft/world/ticks/LevelChunkTicks;Lnet/minecraft/world/ticks/LevelChunkTicks;J[Lnet/minecraft/world/level/chunk/LevelChunkSection;Lnet/minecraft/world/level/chunk/LevelChunk$PostLoadProcessor;Lnet/minecraft/world/level/levelgen/blending/BlendingData;)V",
 			at = @At("RETURN"))
 	public void onInit(CallbackInfo ci) {
 		if (((Object) this) instanceof EmptyLevelChunk)
@@ -68,7 +55,6 @@ public abstract class LevelChunkMixin implements InternalChunk {
 		NetworkWorld netWorld = ((InternalWorld) this.level).view();
 		if (netWorld.isEnabled()) {
 			this.netChunk = new NetworkChunk(this, netWorld);
-			this.netChunk.captureSections();
 		}
 	}
 
@@ -87,35 +73,6 @@ public abstract class LevelChunkMixin implements InternalChunk {
 	@Override
 	public boolean isViewAvailable() {
 		return this.netChunk != null;
-	}
-
-	@Override
-	public LevelChunkSection requireSection(int y) {
-		LevelChunkSection section = this.sections[y];
-		if (section == null) {
-			section = new LevelChunkSection(y << 4);
-			this.sections[y] = section;
-		}
-		return section;
-	}
-
-	@Override
-	public long getCacheTime() {
-		return this.cacheTime;
-	}
-
-	@Override
-	public void setCacheTime(long value) {
-		this.cacheTime = value;
-	}
-
-	@Dynamic(mixin = LevelChunkMixin_Tracker.class)
-	@Redirect(method = "bridge$createChunkPipeline", at = @At(value = "NEW", target = "net/minecraft/world/level/chunk/LevelChunkSection"))
-	public LevelChunkSection onBlockChange_newSection(int minY) {
-		LevelChunkSection section = new LevelChunkSection(minY);
-		if (this.netChunk != null)
-			this.netChunk.captureSection(section);
-		return section;
 	}
 
 	@Override

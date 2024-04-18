@@ -39,12 +39,15 @@ public final class DynamicChunk {
 	public final DynamicWorld world;
 	public final InternalChunk storage;
 
-	public final DynamicSection[] sections = new DynamicSection[16];
+	public final DynamicSection[] sections;
+	public final int minSectionY;
 	private Vector3i relativeCenter;
 
 	DynamicChunk(DynamicWorld world, InternalChunk storage) {
 		this.world = world;
 		this.storage = storage;
+		this.sections = new DynamicSection[storage.getSectionsCount()];
+		this.minSectionY = storage.getMinSection();
 	}
 
 	public Vector3i getRelativeCenter() {
@@ -57,7 +60,7 @@ public final class DynamicChunk {
 		int xzDistance2 = lengthSquared(clamp(x, 0, 15) - x, clamp(z, 0, 15) - z);
 
 		LevelChunkSection[] storages = this.storage.getSections();
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < this.sections.length; i++) {
 			DynamicSection section = this.sections[i];
 			LevelChunkSection storage = storages[i];
 
@@ -65,7 +68,7 @@ public final class DynamicChunk {
 				if (storage == null)
 					continue;
 
-				section = new DynamicSection(this, i);
+				section = new DynamicSection(this, this.minSectionY + i);
 				this.sections[i] = section;
 			}
 
@@ -106,7 +109,7 @@ public final class DynamicChunk {
 	}
 
 	public void add(int x, int y, int z) {
-		int i = y >> 4;
+		int i = (y >> 4) - this.minSectionY;
 		DynamicSection section = this.sections[i];
 		if (section == null) {
 			section = new DynamicSection(this, i);
@@ -117,7 +120,8 @@ public final class DynamicChunk {
 	}
 
 	public void remove(int x, int y, int z) {
-		DynamicSection section = this.sections[y >> 4];
+		int i = (y >> 4) - this.minSectionY;
+		DynamicSection section = this.sections[i];
 		if (section != null)
 			section.remove(x, y & 15, z);
 	}

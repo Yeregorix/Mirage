@@ -22,7 +22,6 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.api.volume.ChunkStorage;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 
@@ -33,6 +32,4 @@ public interface InternalChunk extends ChunkStorage, InternalChunkAccess {
 
 	@Override
 	InternalWorld world();
-
-	LevelChunkSection requireSection(int y);
 }

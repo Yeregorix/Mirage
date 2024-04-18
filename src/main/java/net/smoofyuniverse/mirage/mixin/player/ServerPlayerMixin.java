@@ -38,8 +38,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin implements InternalPlayer {
 
+	// usually ClientboundLevelChunkWithLightPacket
 	@Inject(method = "trackChunk", at = @At("RETURN"))
-	public void onTrackChunk(ChunkPos pos, Packet<?> levelChunkPacket, Packet<?> lightUpdatePacket, CallbackInfo ci) {
+	public void onTrackChunk(ChunkPos pos, Packet<?> chunkPacket, CallbackInfo ci) {
 		InternalWorld world = ((InternalWorld) world());
 		if (world.isDynamismEnabled()) {
 			DynamicChunk chunk = world.getOrCreateDynamicWorld(this).getOrCreateChunk(pos.x, pos.z);

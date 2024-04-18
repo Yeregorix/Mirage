@@ -22,7 +22,7 @@
 
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
 }
 
@@ -33,7 +33,7 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(8)
+            languageVersion = JavaLanguageVersion.of(17)
         }
     }
 
@@ -58,7 +58,7 @@ allprojects {
     }
 
     jar {
-        classifier 'base'
+        archiveClassifier = 'base'
     }
 }
 
@@ -66,7 +66,7 @@ subprojects {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     shadowJar {
-        classifier 'shadow'
+        archiveClassifier = 'shadow'
         configurations = [project.configurations.shade]
 
         dependencies {
@@ -94,16 +94,16 @@ subprojects {
 }
 
 dependencies {
-    provided 'org.spongepowered:sponge:1.16.5-8.1.0-SNAPSHOT:dev'
-    provided 'org.spongepowered:mixin:0.8.4'
-    provided 'org.ow2.asm:asm-util:9.2'
+    provided 'org.spongepowered:sponge:1.19.4-10.0.0-SNAPSHOT:dev'
+    provided 'org.spongepowered:mixin:0.8.5'
+    provided 'org.ow2.asm:asm-util:9.7'
 
-    shade 'net.smoofyuniverse:oreupdater:1.1.2'
-    shade 'net.smoofyuniverse:worldmap:1.1.0'
+    shade 'net.smoofyuniverse:oreupdater:1.2.0'
+    shade 'net.smoofyuniverse:worldmap:1.2.0'
     shade 'net.smoofyuniverse:bingo:1.0.1'
 }
 
 minecraft {
-    version '1.16.5'
+    version '1.19.4'
     accessWideners(file("src/main/resources/mirage.accesswidener"))
 }

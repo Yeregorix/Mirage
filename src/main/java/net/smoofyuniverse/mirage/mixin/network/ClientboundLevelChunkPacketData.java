@@ -20,13 +20,25 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.internal;
+package net.smoofyuniverse.mirage.mixin.network;
 
-import net.minecraft.nbt.ListTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.smoofyuniverse.mirage.impl.internal.InternalSection;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
-import java.util.function.BiConsumer;
+@Mixin(net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData.class)
+public abstract class ClientboundLevelChunkPacketData {
 
-public interface InternalPalettedContainer {
+	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;write(Lnet/minecraft/network/FriendlyByteBuf;)V"))
+	private static void writeModified(LevelChunkSection section, FriendlyByteBuf buffer) {
+		((InternalSection) section)._write(buffer);
+	}
 
-	void setOnRead(BiConsumer<ListTag, long[]> listener);
+	@Redirect(method = "calculateChunkSize", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;getSerializedSize()I"))
+	private static int getModifiedSize(LevelChunkSection section) {
+		return ((InternalSection) section)._getSerializedSize();
+	}
 }

@@ -22,6 +22,9 @@
 
 package net.smoofyuniverse.mirage.util;
 
+import org.spongepowered.api.world.WorldType;
+import org.spongepowered.math.GenericMath;
+
 public class MathUtil {
 
 	public static float squared(float value) {
@@ -34,5 +37,11 @@ public class MathUtil {
 
 	public static int lengthSquared(int dx, int dz) {
 		return dx * dx + dz * dz;
+	}
+
+	public static int clampY(WorldType worldType, int y) {
+		int minY = worldType.floor();
+		int maxY = minY + worldType.height() - 1;
+		return GenericMath.clamp(y, minY, maxY);
 	}
 }

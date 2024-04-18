@@ -22,11 +22,13 @@
 
 package net.smoofyuniverse.mirage.mixin.chunk;
 
+import net.minecraft.core.Holder;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.smoofyuniverse.mirage.impl.internal.InternalPalettedContainer;
+import net.minecraft.world.level.chunk.PalettedContainerRO;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 import org.spongepowered.asm.mixin.Final;
@@ -41,10 +43,11 @@ public abstract class LevelChunkSectionMixin implements InternalSection {
 	@Shadow
 	@Final
 	private PalettedContainer<BlockState> states;
+
 	private NetworkSection networkSection;
 
 	@Shadow
-	public abstract boolean isEmpty();
+	private PalettedContainerRO<Holder<Biome>> biomes;
 
 	@Shadow
 	public abstract void write(FriendlyByteBuf param0);
@@ -52,13 +55,14 @@ public abstract class LevelChunkSectionMixin implements InternalSection {
 	@Shadow
 	public abstract int getSerializedSize();
 
+	@Shadow
+	public abstract boolean hasOnlyAir();
+
 	@Override
 	public NetworkSection view() {
 		if (this.networkSection == null) {
 			this.networkSection = new NetworkSection((LevelChunkSection) (Object) this);
-			((InternalPalettedContainer) this.states).setOnRead(this.networkSection::readStates);
-
-			if (!isEmpty())
+			if (!hasOnlyAir())
 				this.networkSection.deobfuscate(null);
 		}
 		return this.networkSection;
@@ -72,19 +76,16 @@ public abstract class LevelChunkSectionMixin implements InternalSection {
 
 	@Override
 	public void _write(FriendlyByteBuf buffer) {
-		if (this.networkSection == null)
+		if (this.networkSection == null) {
 			write(buffer);
-		else
+		} else {
 			this.networkSection.write(buffer);
+			this.biomes.write(buffer);
+		}
 	}
 
 	@Override
 	public int _getSerializedSize() {
-		return this.networkSection == null ? getSerializedSize() : this.networkSection.getSerializedSize();
-	}
-
-	@Override
-	public boolean _isEmpty() {
-		return this.networkSection == null ? isEmpty() : this.networkSection.isEmpty();
+		return this.networkSection == null ? getSerializedSize() : (this.networkSection.getSerializedSize() + this.biomes.getSerializedSize());
 	}
 }

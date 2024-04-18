@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 plugins {
-    id "net.smoofyuniverse.loom" version "0.12.0-SNAPSHOT"
+    id "dev.architectury.loom" version "1.5-SNAPSHOT"
 }
 
 archivesBaseName = 'Mirage-forge'
@@ -43,11 +43,11 @@ configurations {
 }
 
 dependencies {
-    minecraft 'com.mojang:minecraft:1.16.5'
-    forge 'net.minecraftforge:forge:1.16.5-36.2.5'
+    minecraft 'com.mojang:minecraft:1.19.4'
+    forge 'net.minecraftforge:forge:1.19.4-45.1.19'
     mappings loom.officialMojangMappings()
 
-    spongeforge 'org.spongepowered:spongeforge:1.16.5-36.2.5-8.1.0-RC1185:universal'
+    spongeforge('org.spongepowered:spongeforge:1.19.4-45.1.19-10.0.0-RC1552:universal') { transitive = false }
 }
 
 remapJar {
@@ -57,7 +57,7 @@ remapJar {
 
 build.dependsOn remapJar
 
-task setupServer(type: Copy) {
+tasks.register('setupServer', Copy) {
     into 'run/mods'
 
     from configurations.spongeforge

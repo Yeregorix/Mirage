@@ -23,7 +23,7 @@
 package net.smoofyuniverse.mirage.mixin.level;
 
 import com.mojang.datafixers.util.Either;
-import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.*;
 import net.minecraft.server.level.ChunkHolder.ChunkLoadingFailure;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter.Message;
@@ -41,6 +41,7 @@ import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
 import net.smoofyuniverse.mirage.mixin.chunk.ChunkStorageMixin;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -52,17 +53,17 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin extends ChunkStorageMixin {
 	@Shadow
 	@Final
-	private ServerLevel level;
+	ServerLevel level;
 	@Shadow
 	@Final
 	private ProcessorHandle<Message<Runnable>> mainThreadMailbox;
@@ -112,9 +113,9 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 		}
 	}
 
-	@Redirect(method = "postProcess", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
-	public CompletableFuture<Void> onChunkPostProcessSend(CompletableFuture<Either<LevelChunk, ChunkLoadingFailure>> instance,
-														  Consumer<?> consumer, Executor executor, ChunkHolder holder) {
+	@Redirect(method = "prepareTickingChunk", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
+	public CompletableFuture<Void> onChunkSend(CompletableFuture<Either<LevelChunk, ChunkLoadingFailure>> instance,
+											   Consumer<?> consumer, Executor executor, ChunkHolder holder) {
 		return instance.thenAcceptAsync((chunkOrFail) -> chunkOrFail.ifLeft((levelChunk) -> {
 			this.tickingGenerated.getAndIncrement();
 
@@ -131,23 +132,23 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 				view.setListener(listener);
 			}
 
-			Packet<?>[] packets = new Packet[2];
-			getPlayers(holder.getPos(), false).forEach(p -> playerLoadedChunk(p, packets, levelChunk));
+			MutableObject<ClientboundLevelChunkWithLightPacket> packet = new MutableObject<>();
+			getPlayers(holder.getPos(), false).forEach(p -> playerLoadedChunk(p, packet, levelChunk));
 		}), (task) -> this.mainThreadMailbox.tell(ChunkTaskPriorityQueueSorter.message(holder, task)));
 	}
 
 	@Shadow
-	public abstract Stream<ServerPlayer> getPlayers(ChunkPos param0, boolean param1);
+	public abstract List<ServerPlayer> getPlayers(ChunkPos param0, boolean param1);
 
 	@Shadow
-	protected abstract void playerLoadedChunk(ServerPlayer param0, Packet<?>[] param1, LevelChunk param2);
+	protected abstract void playerLoadedChunk(ServerPlayer param0, MutableObject<ClientboundLevelChunkWithLightPacket> param1, LevelChunk param2);
 
 	@Inject(method = "playerLoadedChunk", at = @At(value = "INVOKE", shift = Shift.AFTER,
-			target = "Lnet/minecraft/server/level/ServerPlayer;trackChunk(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/protocol/Packet;)V"))
-	public void afterChunkSent(ServerPlayer player, Packet<?>[] packets, LevelChunk levelChunk, CallbackInfo ci) {
+			target = "Lnet/minecraft/server/level/ServerPlayer;trackChunk(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/network/protocol/Packet;)V"))
+	public void afterChunkSent(ServerPlayer player, MutableObject<ClientboundLevelChunkWithLightPacket> packet, LevelChunk levelChunk, CallbackInfo ci) {
 		InternalChunk chunk = (InternalChunk) levelChunk;
 		if (chunk.isViewAvailable() && chunk.view().state() != State.OBFUSCATED) {
-			ChunkPos pos = chunk.getPos();
+			ChunkPos pos = levelChunk.getPos();
 			Mirage.LOGGER.warn("Chunk " + pos.x + " " + pos.z + " has been sent without obfuscation.");
 		}
 	}

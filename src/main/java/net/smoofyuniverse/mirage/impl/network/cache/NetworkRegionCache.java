@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 
 public class NetworkRegionCache {
-	public static final int CURRENT_VERSION = 4;
+	public static final int CURRENT_VERSION = 5;
 
 	public final Path directory;
 	public final String name;
@@ -54,7 +54,7 @@ public class NetworkRegionCache {
 	public NetworkRegionCache(Path directory, String name) {
 		this.directory = directory;
 		this.name = name;
-		this.storage = new RegionFileStorage(directory.toFile(), false);
+		this.storage = new RegionFileStorage(directory, false);
 	}
 
 	private static boolean isRegionFile(String name) {
@@ -112,7 +112,7 @@ public class NetworkRegionCache {
 			throw new IllegalArgumentException("Cache directory is not empty");
 		}
 
-		if (version < 3 || version > CURRENT_VERSION) {
+		if (version < 4 || version > CURRENT_VERSION) {
 			Mirage.LOGGER.info("Deleting outdated cache " + this.name + "/ ...");
 
 			close();
