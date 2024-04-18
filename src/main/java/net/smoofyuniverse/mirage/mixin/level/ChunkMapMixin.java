@@ -149,7 +149,7 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 		InternalChunk chunk = (InternalChunk) levelChunk;
 		if (chunk.isViewAvailable() && chunk.view().state() != State.OBFUSCATED) {
 			ChunkPos pos = levelChunk.getPos();
-			Mirage.LOGGER.warn("Chunk " + pos.x + " " + pos.z + " has been sent without obfuscation.");
+			Mirage.LOGGER.warn("Chunk {} {} has been sent without obfuscation.", pos.x, pos.z);
 		}
 	}
 }

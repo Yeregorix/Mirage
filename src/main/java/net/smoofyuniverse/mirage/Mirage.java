@@ -188,7 +188,7 @@ public class Mirage {
 				}
 			}).interval(Ticks.of(1)).plugin(this.container).build());
 
-			LOGGER.info("Mirage " + this.container.metadata().version() + " was loaded successfully.");
+			LOGGER.info("Mirage {} was loaded successfully.", this.container.metadata().version());
 		} else {
 			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
 		}
@@ -230,7 +230,7 @@ public class Mirage {
 
 		Resources r = this.worldTypeToResources.get(worldType);
 		if (r == null) {
-			Mirage.LOGGER.warn("No resources are registered for world type " + worldType + ".");
+			Mirage.LOGGER.warn("No resources are registered for world type {}.", worldType);
 			r = new Resources(worldType);
 			this.worldTypeToResources.put(worldType, r);
 		}

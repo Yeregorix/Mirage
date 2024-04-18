@@ -63,13 +63,13 @@ public class ResourcesLoader {
 				if (fn.endsWith(".conf")) {
 					String name = fn.substring(0, fn.length() - 5);
 
-					Mirage.LOGGER.info("Loading pack " + name + " ...");
+					Mirage.LOGGER.info("Loading pack {} ...", name);
 					try {
 						this.packs.add(Pack.load(name, this.mirage.createConfigLoader(file).load()));
 					} catch (PackDisabledException e) {
 						Mirage.LOGGER.info(e.getMessage());
 					} catch (Exception e) {
-						Mirage.LOGGER.error("Failed to load pack " + name, e);
+						Mirage.LOGGER.error("Failed to load pack {}", name, e);
 					}
 				}
 			}
@@ -87,7 +87,7 @@ public class ResourcesLoader {
 
 		Map<ResourceKey, Resources> map = new HashMap<>();
 		for (ResourceKey key : worldTypes) {
-			Mirage.LOGGER.debug("Building resources for world type " + key + " ...");
+			Mirage.LOGGER.debug("Building resources for world type {} ...", key);
 			Multimap<String, String> blocks = LinkedHashMultimap.create();
 
 			for (Pack pack : this.packs) {

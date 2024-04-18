@@ -127,7 +127,7 @@ public class WorldConfig {
 
 				ChunkModifier mod = modifierRegistry.findValue(Mirage.key(type)).orElse(null);
 				if (mod == null) {
-					Mirage.LOGGER.warn("Modifier '" + type + "' does not exists.");
+					Mirage.LOGGER.warn("Modifier '{}' does not exists.", type);
 					continue;
 				}
 
@@ -137,7 +137,7 @@ public class WorldConfig {
 					modCfg = mod.loadConfiguration(node.node("Options"), worldType, preset == null ? "" : preset.toLowerCase());
 					node.removeChild("Preset");
 				} catch (Exception e) {
-					Mirage.LOGGER.warn("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod) + " failed to loaded his configuration. This modifier will be ignored.", e);
+					Mirage.LOGGER.warn("Modifier {} failed to loaded his configuration. This modifier will be ignored.", ChunkModifier.REGISTRY_TYPE.get().valueKey(mod), e);
 					continue;
 				}
 

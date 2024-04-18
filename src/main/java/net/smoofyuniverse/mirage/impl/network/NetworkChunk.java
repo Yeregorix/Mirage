@@ -234,7 +234,7 @@ public class NetworkChunk implements ChunkView {
 				try {
 					mod.modifier.modify(this, this.random, mod.config);
 				} catch (Exception ex) {
-					Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while modifying a network chunk", ex);
+					Mirage.LOGGER.error("Modifier {} has thrown an exception while modifying a network chunk", ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier), ex);
 				}
 			}
 
@@ -423,7 +423,7 @@ public class NetworkChunk implements ChunkView {
 			try {
 				mod.modifier.modify(this, min, max, this.random, mod.config);
 			} catch (Exception ex) {
-				Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while (re)modifying a part of a network chunk", ex);
+				Mirage.LOGGER.error("Modifier {} has thrown an exception while (re)modifying a part of a network chunk", ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier), ex);
 			}
 		}
 	}

@@ -90,11 +90,11 @@ public class NetworkWorld implements WorldView {
 		if (this.config != null)
 			throw new IllegalStateException("Config already loaded");
 
-		Mirage.LOGGER.info("Loading configuration for world " + key() + " ...");
+		Mirage.LOGGER.info("Loading configuration for world {} ...", key());
 		try {
 			_loadConfig();
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to load configuration for world " + key(), e);
+			Mirage.LOGGER.warn("Failed to load configuration for world {}", key(), e);
 		}
 
 		if (this.config == null)
@@ -136,7 +136,7 @@ public class NetworkWorld implements WorldView {
 
 			for (ConfiguredModifier mod : modifiers) {
 				if (!mod.modifier.isCompatible(properties)) {
-					Mirage.LOGGER.warn("Modifier " + modifierRegistry.valueKey(mod.modifier) + " is not compatible with this world. This modifier will be ignored.");
+					Mirage.LOGGER.warn("Modifier {} is not compatible with this world. This modifier will be ignored.", modifierRegistry.valueKey(mod.modifier));
 					continue;
 				}
 
@@ -167,7 +167,7 @@ public class NetworkWorld implements WorldView {
 					mod.modifier.appendSignature(b, mod.config);
 				this.signature = b.build();
 			} catch (Exception e) {
-				Mirage.LOGGER.warn("Failed to load cache " + cacheName + "/. Cache will be disabled.", e);
+				Mirage.LOGGER.warn("Failed to load cache {}/. Cache will be disabled.", cacheName, e);
 				this.cache = null;
 			}
 		}
@@ -263,7 +263,7 @@ public class NetworkWorld implements WorldView {
 		try {
 			this.cache.write(x, z, tag);
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to save chunk " + x + " " + z + " to cache in world " + this.world.key() + ".", e);
+			Mirage.LOGGER.warn("Failed to save chunk {} {} to cache in world {}.", x, z, this.world.key(), e);
 		}
 	}
 
@@ -277,7 +277,7 @@ public class NetworkWorld implements WorldView {
 			if (tag != null && new Signature(tag.getByteArray("Signature")).equals(this.signature))
 				return tag.getCompound("Level");
 		} catch (Exception e) {
-			Mirage.LOGGER.warn("Failed to read chunk " + x + " " + z + " from cache in world " + this.world.key() + ".", e);
+			Mirage.LOGGER.warn("Failed to read chunk {} {} from cache in world {}.", x, z, this.world.key(), e);
 		}
 
 		return null;
@@ -417,7 +417,7 @@ public class NetworkWorld implements WorldView {
 			try {
 				mod.modifier.modify(this, min, max, this.random, mod.config);
 			} catch (Exception ex) {
-				Mirage.LOGGER.error("Modifier " + ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier) + " has thrown an exception while (re)modifying a part of a network world", ex);
+				Mirage.LOGGER.error("Modifier {} has thrown an exception while (re)modifying a part of a network world", ChunkModifier.REGISTRY_TYPE.get().valueKey(mod.modifier), ex);
 			}
 		}
 	}

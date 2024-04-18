@@ -113,7 +113,7 @@ public class NetworkRegionCache {
 		}
 
 		if (version < 4 || version > CURRENT_VERSION) {
-			Mirage.LOGGER.info("Deleting outdated cache " + this.name + "/ ...");
+			Mirage.LOGGER.info("Deleting outdated cache {}/ ...", this.name);
 
 			close();
 			deleteRegionFiles();

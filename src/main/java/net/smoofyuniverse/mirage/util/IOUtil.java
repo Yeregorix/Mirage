@@ -46,7 +46,7 @@ public class IOUtil {
 		try {
 			Files.move(file, backup);
 		} catch (IOException e) {
-			Mirage.LOGGER.warn("Failed to backup: " + backup, e);
+			Mirage.LOGGER.warn("Failed to backup: {}", backup, e);
 			return Optional.empty();
 		}
 
