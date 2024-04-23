@@ -55,7 +55,8 @@ public final class DynamicChunk {
 	}
 
 	void updateCenter() {
-		this.relativeCenter = this.world.getCenter().sub(this.storage.min());
+		Vector3i min = this.storage.min();
+		this.relativeCenter = this.world.getCenter().sub(min.x(), 0, min.z());
 		int x = this.relativeCenter.x(), z = this.relativeCenter.z();
 		int xzDistance2 = lengthSquared(clamp(x, 0, 15) - x, clamp(z, 0, 15) - z);
 
@@ -109,10 +110,11 @@ public final class DynamicChunk {
 	}
 
 	public void add(int x, int y, int z) {
-		int i = (y >> 4) - this.minSectionY;
+		int sectionY = y >> 4;
+		int i = sectionY - this.minSectionY;
 		DynamicSection section = this.sections[i];
 		if (section == null) {
-			section = new DynamicSection(this, i);
+			section = new DynamicSection(this, sectionY);
 			this.sections[i] = section;
 			section.setCenter();
 		}
