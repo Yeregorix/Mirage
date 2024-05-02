@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,15 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.config.resources;
+package net.smoofyuniverse.mirage.config.pack;
 
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
 import net.smoofyuniverse.mirage.Mirage;
-import org.spongepowered.api.ResourceKey;
 
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.TreeSet;
 
 public class ResourcesLoader {
 	private final Mirage mirage;
@@ -78,28 +75,7 @@ public class ResourcesLoader {
 		}
 	}
 
-	public Map<ResourceKey, Resources> build() {
-		Set<ResourceKey> worldTypes = new HashSet<>();
-		for (Pack pack : this.packs) {
-			for (Resources r : pack.resources)
-				worldTypes.addAll(r.worldTypes);
-		}
-
-		Map<ResourceKey, Resources> map = new HashMap<>();
-		for (ResourceKey key : worldTypes) {
-			Mirage.LOGGER.debug("Building resources for world type {} ...", key);
-			Multimap<String, String> blocks = LinkedHashMultimap.create();
-
-			for (Pack pack : this.packs) {
-				for (Resources r : pack.resources) {
-					if (r.worldTypes.contains(key))
-						blocks.putAll(r.blocks);
-				}
-			}
-
-			map.put(key, new Resources(key, blocks));
-		}
-
-		return map;
+	public Resources build() {
+		return Resources.merge(this.packs);
 	}
 }

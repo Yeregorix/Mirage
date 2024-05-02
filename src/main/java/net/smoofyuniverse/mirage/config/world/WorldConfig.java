@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
-import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
+import net.smoofyuniverse.mirage.config.pack.Resources;
 import net.smoofyuniverse.mirage.config.world.MainConfig.Resolved;
 import net.smoofyuniverse.mirage.util.IOUtil;
 import org.spongepowered.api.ResourceKey;
@@ -104,15 +104,16 @@ public class WorldConfig {
 		cfg.deobf.naturalRadius = clamp(cfg.deobf.naturalRadius, 1, 4);
 		cfg.deobf.playerRadius = clamp(cfg.deobf.playerRadius, 1, 4);
 
+		Resources resources = Mirage.get().getResources();
+
 		ConfigurationNode modsNode = root.node("Modifiers");
 		if (modsNode.virtual()) {
-			if (worldType == WorldTypes.OVERWORLD.get()) {
-				ConfigurationNode water_dungeons = modsNode.appendListNode();
-				water_dungeons.node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
-				water_dungeons.node("Preset").set("water_dungeons");
+			List<ConfigurationNode> defaultModifiers = resources.defaultModifiers.get(cfg.worldType);
+			if (defaultModifiers.isEmpty()) {
+				defaultModifiers = resources.defaultModifiers.get(WorldTypes.OVERWORLD.location());
 			}
 
-			modsNode.appendListNode().node("Type").set(modifierRegistry.valueKey(ChunkModifiers.HIDE_OBVIOUS));
+			modsNode.setList(ConfigurationNode.class, defaultModifiers);
 		}
 
 		boolean enabled = cfg.enabled;
@@ -134,8 +135,18 @@ public class WorldConfig {
 				Object modCfg;
 				try {
 					String preset = node.node("Preset").getString();
-					modCfg = mod.loadConfiguration(node.node("Options"), worldType, preset == null ? "" : preset.toLowerCase());
-					node.removeChild("Preset");
+					ConfigurationNode presetNode = null;
+
+					if (preset != null) {
+						presetNode = resources.presets.get(preset.toLowerCase());
+						if (presetNode == null) {
+							Mirage.LOGGER.warn("Preset '{}' does not exists.", preset);
+						} else {
+							presetNode = presetNode.copy();
+						}
+					}
+
+					modCfg = mod.loadConfiguration(node.node("Options"), worldType, presetNode);
 				} catch (Exception e) {
 					Mirage.LOGGER.warn("Modifier {} failed to loaded his configuration. This modifier will be ignored.", ChunkModifier.REGISTRY_TYPE.get().valueKey(mod), e);
 					continue;

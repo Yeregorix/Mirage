@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ public interface ChunkModifier {
 	 * @param preset    An optional preset
 	 * @return The configuration
 	 */
-	Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException;
+	Object loadConfiguration(ConfigurationNode node, WorldType worldType, ConfigurationNode preset) throws SerializationException;
 
 	/**
 	 * Generates a cache signature to make a summary of all elements that may impact the aspect of the modified chunk.

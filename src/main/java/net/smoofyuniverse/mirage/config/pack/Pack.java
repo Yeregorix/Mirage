@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +20,9 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.config.resources;
+package net.smoofyuniverse.mirage.config.pack;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.*;
 import net.smoofyuniverse.mirage.util.BlockResolver;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
@@ -33,23 +30,28 @@ import org.spongepowered.api.plugin.PluginManager;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public final class Pack implements Comparable<Pack> {
-	public static final int CURRENT_VERSION = 2, MINIMUM_VERSION = 2;
+public class Pack extends Resources implements Comparable<Pack> {
+	public static final int CURRENT_VERSION = 3, MINIMUM_VERSION = 3;
 
 	public final String name;
 	public final int priority;
-	public final List<Resources> resources;
 
-	public Pack(String name, int priority, Collection<Resources> resources) {
+	public Pack(
+			String name,
+			int priority,
+			SetMultimap<String, String> blocks,
+			Map<String, ConfigurationNode> presets,
+			ListMultimap<ResourceKey, ConfigurationNode> defaultModifiers
+	) {
+		super(blocks, presets, defaultModifiers);
 		this.name = name;
 		this.priority = priority;
-		this.resources = ImmutableList.copyOf(resources);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public final class Pack implements Comparable<Pack> {
 
 			Set<String> missingMods = new HashSet<>();
 			for (String id : requiredMods) {
-				if (!pm.plugin(id).isPresent())
+				if (pm.plugin(id).isEmpty())
 					missingMods.add(id);
 			}
 
@@ -78,25 +80,25 @@ public final class Pack implements Comparable<Pack> {
 
 		int priority = root.node("Priority").getInt();
 
-		ImmutableList.Builder<Resources> resources = ImmutableList.builder();
+		SetMultimap<String, String> blocks = LinkedHashMultimap.create();
 		BlockResolver resolver = new BlockResolver();
-
-		for (ConfigurationNode node : root.node("Resources").childrenList()) {
-			List<ResourceKey> worldTypes = node.node("WorldTypes").getList(ResourceKey.class);
-
-			SetMultimap<String, String> blocks = LinkedHashMultimap.create();
-			for (Entry<Object, ? extends ConfigurationNode> e : node.node("Blocks").childrenMap().entrySet()) {
-				Set<String> set = blocks.get((String) e.getKey());
-				for (String input : e.getValue().getList(String.class)) {
-					if (resolver.resolve(input))
-						set.add(input);
+		for (Entry<Object, ? extends ConfigurationNode> e : root.node("Blocks").childrenMap().entrySet()) {
+			Set<String> set = blocks.get((String) e.getKey());
+			for (String input : e.getValue().getList(String.class)) {
+				if (resolver.resolve(input)) {
+					set.add(input);
 				}
 			}
+		}
+		resolver.flushErrors();
 
-			resources.add(new Resources(worldTypes, blocks));
+		Map<String, ConfigurationNode> presets = (Map) root.node("Presets").childrenMap();
+
+		ListMultimap<ResourceKey, ConfigurationNode> defaultModifiers = ArrayListMultimap.create();
+		for (Entry<Object, ? extends ConfigurationNode> e : root.node("DefaultModifiers").childrenMap().entrySet()) {
+			defaultModifiers.putAll(ResourceKey.resolve((String) e.getKey()), e.getValue().childrenList());
 		}
 
-		resolver.flushErrors();
-		return new Pack(name, priority, resources.build());
+		return new Pack(name, priority, blocks, presets, defaultModifiers);
 	}
 }

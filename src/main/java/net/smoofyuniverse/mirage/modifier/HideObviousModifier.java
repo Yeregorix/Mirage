@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.config.resources.Resources;
+import net.smoofyuniverse.mirage.config.pack.Resources;
 import net.smoofyuniverse.mirage.modifier.HideObviousModifier.Config.Resolved;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
@@ -41,8 +41,8 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import static net.smoofyuniverse.mirage.config.resources.Resources.COMMON;
-import static net.smoofyuniverse.mirage.config.resources.Resources.RARE;
+import static net.smoofyuniverse.mirage.config.pack.Resources.COMMON;
+import static net.smoofyuniverse.mirage.config.pack.Resources.RARE;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.MathUtil.clampY;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockState;
@@ -55,37 +55,43 @@ import static org.spongepowered.math.GenericMath.clamp;
 public class HideObviousModifier implements ChunkModifier {
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, ConfigurationNode preset) throws SerializationException {
 		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
-		if (preset.equals("water_dungeons")) {
-			cfg.blocks = new HashSet<>();
-			cfg.blocks.add("minecraft:sea_lantern");
-			cfg.blocks.add("minecraft:prismarine_bricks");
-			cfg.blocks.add("minecraft:gold_block");
-
-			cfg.replacement = "minecraft:water";
-
-			cfg.dynamism = 8;
-			cfg.minY = 30;
-			cfg.maxY = 64;
-		} else {
+		if (preset != null) {
 			if (cfg.blocks == null)
-				cfg.blocks = Resources.of(worldType).getBlocks(COMMON, RARE);
+				cfg.blocks = Resources.getBlocks(preset, COMMON, RARE);
 			if (cfg.replacement == null)
-				cfg.replacement = Resources.of(worldType).ground;
+				cfg.replacement = Resources.getGround(preset).orElse(null);
+			if (cfg.dynamism == null)
+				cfg.dynamism = preset.node("Dynamism").get(Integer.class);
+			if (cfg.minY == null)
+				cfg.minY = preset.node("MinY").get(Integer.class);
+			if (cfg.maxY == null)
+				cfg.maxY = preset.node("MaxY").get(Integer.class);
+		}
 
-			cfg.dynamism = clamp(cfg.dynamism, 0, 10);
-			cfg.minY = clampY(worldType, cfg.minY);
-			cfg.maxY = clampY(worldType, cfg.maxY);
+		if (cfg.blocks == null)
+			cfg.blocks = new HashSet<>();
+		if (cfg.replacement == null)
+			cfg.replacement = "minecraft:stone";
+		if (cfg.dynamism == null)
+			cfg.dynamism = 4;
+		if (cfg.minY == null)
+			cfg.minY = Integer.MIN_VALUE;
+		if (cfg.maxY == null)
+			cfg.maxY = Integer.MAX_VALUE;
 
-			if (cfg.minY > cfg.maxY) {
-				int t = cfg.minY;
-				cfg.minY = cfg.maxY;
-				cfg.maxY = t;
-			}
+		cfg.dynamism = clamp(cfg.dynamism, 0, 10);
+		cfg.minY = clampY(worldType, cfg.minY);
+		cfg.maxY = clampY(worldType, cfg.maxY);
+
+		if (cfg.minY > cfg.maxY) {
+			int t = cfg.minY;
+			cfg.minY = cfg.maxY;
+			cfg.maxY = t;
 		}
 
 		node.set(cfg);
@@ -138,15 +144,15 @@ public class HideObviousModifier implements ChunkModifier {
 
 		@Comment("The dynamic obfuscation distance, between 0 and 10")
 		@Setting("Dynamism")
-		public int dynamism = 4;
+		public Integer dynamism;
 
 		@Comment("The minimum Y of the section to obfuscate")
 		@Setting("MinY")
-		public int minY = -64;
+		public Integer minY;
 
 		@Comment("The maximum Y of the section to obfuscate")
 		@Setting("MaxY")
-		public int maxY = 319;
+		public Integer maxY;
 
 		public Resolved resolve() {
 			return new Resolved(resolveBlockStates(this.blocks),

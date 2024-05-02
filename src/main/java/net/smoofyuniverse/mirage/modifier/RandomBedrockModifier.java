@@ -25,7 +25,7 @@ package net.smoofyuniverse.mirage.modifier;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.config.resources.Resources;
+import net.smoofyuniverse.mirage.config.pack.Resources;
 import net.smoofyuniverse.mirage.modifier.RandomBedrockModifier.Config.Resolved;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
@@ -55,13 +55,18 @@ public class RandomBedrockModifier implements ChunkModifier {
 	}
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, ConfigurationNode preset) throws SerializationException {
 		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
+		if (preset != null) {
+			if (cfg.ground == null)
+				cfg.ground = Resources.getGround(preset).orElse(null);
+		}
+
 		if (cfg.ground == null)
-			cfg.ground = Resources.of(worldType).ground;
+			cfg.ground = "minecraft:deepslate";
 		if (cfg.height < 0)
 			cfg.height = 0;
 

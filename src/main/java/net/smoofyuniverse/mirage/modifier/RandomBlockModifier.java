@@ -27,7 +27,7 @@ import net.smoofyuniverse.bingo.WeightedList;
 import net.smoofyuniverse.mirage.api.cache.Signature.Builder;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.volume.BlockView;
-import net.smoofyuniverse.mirage.config.resources.Resources;
+import net.smoofyuniverse.mirage.config.pack.Resources;
 import net.smoofyuniverse.mirage.modifier.RandomBlockModifier.Config.Resolved;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.world.WorldType;
@@ -39,7 +39,7 @@ import org.spongepowered.math.vector.Vector3i;
 
 import java.util.*;
 
-import static net.smoofyuniverse.mirage.config.resources.Resources.*;
+import static net.smoofyuniverse.mirage.config.pack.Resources.*;
 import static net.smoofyuniverse.mirage.util.BlockUtil.AIR;
 import static net.smoofyuniverse.mirage.util.MathUtil.clampY;
 import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
@@ -50,23 +50,38 @@ import static net.smoofyuniverse.mirage.util.RegistryUtil.resolveBlockStates;
 public class RandomBlockModifier implements ChunkModifier {
 
 	@Override
-	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, String preset) throws SerializationException {
+	public Object loadConfiguration(ConfigurationNode node, WorldType worldType, ConfigurationNode preset) throws SerializationException {
 		Config cfg = node.get(Config.class);
 		if (cfg == null)
 			cfg = new Config();
 
-		if (cfg.blocks == null)
-			cfg.blocks = Resources.of(worldType).getBlocks(GROUND, COMMON, RARE);
+		if (preset != null) {
+			if (cfg.blocks == null) {
+				cfg.blocks = Resources.getBlocks(preset, GROUND, COMMON, RARE);
+			}
 
-		if (cfg.replacements == null) {
-			cfg.replacements = new HashMap<>();
+			if (cfg.replacements == null) {
+				cfg.replacements = new HashMap<>();
 
-			Resources r = Resources.of(worldType);
-			for (String id : r.getBlocks(COMMON))
-				cfg.replacements.put(id, 1d);
+				for (String id : Resources.getBlocks(preset, COMMON)) {
+					cfg.replacements.put(id, 1d);
+				}
 
-			cfg.replacements.put(r.ground, Math.max(cfg.replacements.size(), 1d));
+				String ground = Resources.getGround(preset).orElse(null);
+				if (ground != null) {
+					cfg.replacements.put(ground, Math.max(cfg.replacements.size(), 1d));
+				}
+			}
 		}
+
+		if (cfg.blocks == null)
+			cfg.blocks = new HashSet<>();
+		if (cfg.replacements == null || cfg.replacements.isEmpty())
+			throw new IllegalArgumentException("No replacements");
+		if (cfg.minY == null)
+			cfg.minY = Integer.MIN_VALUE;
+		if (cfg.maxY == null)
+			cfg.maxY = Integer.MAX_VALUE;
 
 		cfg.minY = clampY(worldType, cfg.minY);
 		cfg.maxY = clampY(worldType, cfg.maxY);
@@ -118,11 +133,11 @@ public class RandomBlockModifier implements ChunkModifier {
 
 		@Comment("The minimum Y of the section to obfuscate")
 		@Setting("MinY")
-		public int minY = -64;
+		public Integer minY;
 
 		@Comment("The maximum Y of the section to obfuscate")
 		@Setting("MaxY")
-		public int maxY = 319;
+		public Integer maxY;
 
 		public Resolved resolve() {
 			return new Resolved(resolveBlockStates(this.blocks),

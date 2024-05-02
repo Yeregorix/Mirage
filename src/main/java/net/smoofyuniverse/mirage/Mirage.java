@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,8 @@ import net.smoofyuniverse.map.WorldMapLoader;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifiers;
 import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
-import net.smoofyuniverse.mirage.config.resources.Resources;
-import net.smoofyuniverse.mirage.config.resources.ResourcesLoader;
+import net.smoofyuniverse.mirage.config.pack.Resources;
+import net.smoofyuniverse.mirage.config.pack.ResourcesLoader;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import net.smoofyuniverse.mirage.event.BlockListener;
 import net.smoofyuniverse.mirage.event.ChunkListener;
@@ -64,7 +64,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
 @Plugin("mirage")
 public class Mirage {
@@ -85,7 +84,7 @@ public class Mirage {
 	private WorldMapLoader<WorldConfig> configMapLoader;
 	private WorldMap<WorldConfig> configMap;
 
-	private Map<ResourceKey, Resources> worldTypeToResources;
+	private Resources resources;
 
 	private ScheduledTask obfuscationTask;
 
@@ -166,7 +165,7 @@ public class Mirage {
 		ResourcesLoader loader = new ResourcesLoader(this);
 		loader.addDefault();
 		loader.addDirectory(this.configDir.resolve("packs"));
-		this.worldTypeToResources = loader.build();
+		this.resources = loader.build();
 
 		this.configMap = this.configMapLoader.load();
 	}
@@ -224,16 +223,7 @@ public class Mirage {
 		return this.configMap.get(world.properties());
 	}
 
-	public Resources getResources(ResourceKey worldType) {
-		if (worldType == null)
-			throw new IllegalArgumentException("worldType");
-
-		Resources r = this.worldTypeToResources.get(worldType);
-		if (r == null) {
-			Mirage.LOGGER.warn("No resources are registered for world type {}.", worldType);
-			r = new Resources(worldType);
-			this.worldTypeToResources.put(worldType, r);
-		}
-		return r;
+	public Resources getResources() {
+		return this.resources;
 	}
 }
