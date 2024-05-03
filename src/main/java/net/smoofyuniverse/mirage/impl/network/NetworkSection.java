@@ -76,6 +76,10 @@ public class NetworkSection {
 		return this.nonAirBlocks == 0;
 	}
 
+	public boolean hasNoDynamism() {
+		return this.dynCount[0] == 4096;
+	}
+
 	public void deobfuscate(ChunkChangeListener listener) {
 		if (hasOnlyAir() && this.section.hasOnlyAir()) {
 			return;
@@ -174,7 +178,7 @@ public class NetworkSection {
 	}
 
 	public void collectDynamicPositions(DynamicSection section) {
-		if (this.dynCount[0] == 4096)
+		if (this.hasNoDynamism())
 			return;
 
 		for (int y = 0; y < 16; y++) {

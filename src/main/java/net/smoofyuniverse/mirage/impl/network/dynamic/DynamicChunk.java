@@ -22,9 +22,8 @@
 
 package net.smoofyuniverse.mirage.impl.network.dynamic;
 
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
-import net.smoofyuniverse.mirage.impl.internal.InternalSection;
+import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import org.spongepowered.math.vector.Vector3i;
@@ -60,14 +59,15 @@ public final class DynamicChunk {
 		int x = this.relativeCenter.x(), z = this.relativeCenter.z();
 		int xzDistance2 = lengthSquared(clamp(x, 0, 15) - x, clamp(z, 0, 15) - z);
 
-		LevelChunkSection[] storages = this.storage.getSections();
+		NetworkChunk chunkView = this.storage.view();
 		for (int i = 0; i < this.sections.length; i++) {
 			DynamicSection section = this.sections[i];
-			LevelChunkSection storage = storages[i];
+			NetworkSection view = chunkView.sections[i];
 
 			if (section == null) {
-				if (storage == null)
+				if (view.hasNoDynamism()) {
 					continue;
+				}
 
 				section = new DynamicSection(this, this.minSectionY + i);
 				this.sections[i] = section;
@@ -79,14 +79,13 @@ public final class DynamicChunk {
 			int y = section.getRelativeCenter().y();
 			int d2 = xzDistance2 + squared(clamp(y, 0, 15) - y);
 			if (d2 <= maxDistance2) {
-				NetworkSection view = ((InternalSection) storage).view();
 				if (d2 <= squared(view.getMaxDynamism()) << 8) {
 					view.collectDynamicPositions(section);
 				}
 			}
 		}
 
-		ChunkChangeListener listener = this.storage.view().getListener();
+		ChunkChangeListener listener = chunkView.getListener();
 		if (listener != null)
 			listener.markChanged();
 	}

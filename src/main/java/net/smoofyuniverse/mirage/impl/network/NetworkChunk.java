@@ -56,12 +56,12 @@ public class NetworkChunk implements ChunkView {
 
 	private final NetworkWorld world;
 	private final Vector3i position, blockMin, blockMax, blockSize;
-	private final int minSectionY;
+	public final int minSectionY;
 	public final int x, z;
 	private final boolean dynamismEnabled;
 	private final long seed;
 
-	private final NetworkSection[] sections;
+	public final NetworkSection[] sections;
 	private final Random random = new Random();
 	private State state = State.DEOBFUSCATED;
 	private ChunkChangeListener listener;
