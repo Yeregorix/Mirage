@@ -40,6 +40,9 @@ public class MathUtil {
 	}
 
 	public static int clampY(WorldType worldType, int y) {
+		if (worldType == null) {
+			return GenericMath.clamp(y, -64, 319);
+		}
 		int minY = worldType.floor();
 		int maxY = minY + worldType.height() - 1;
 		return GenericMath.clamp(y, minY, maxY);
