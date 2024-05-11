@@ -35,7 +35,6 @@ import net.smoofyuniverse.mirage.config.pack.ResourcesLoader;
 import net.smoofyuniverse.mirage.config.world.WorldConfig;
 import net.smoofyuniverse.mirage.event.BlockListener;
 import net.smoofyuniverse.mirage.event.ChunkListener;
-import net.smoofyuniverse.mirage.impl.internal.InternalServer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.ore.update.UpdateChecker;
@@ -150,10 +149,8 @@ public class Mirage {
 		loadConfigs();
 
 		EventManager em = this.game.eventManager();
-		if (e.engine() instanceof InternalServer) {
-			em.registerListeners(this.container, new BlockListener());
-			em.registerListeners(this.container, new ChunkListener());
-		}
+		em.registerListeners(this.container, new BlockListener());
+		em.registerListeners(this.container, new ChunkListener());
 
 		String platformId = this.game.platform().container(Platform.Component.IMPLEMENTATION).metadata().id();
 
@@ -178,19 +175,15 @@ public class Mirage {
 	@Listener
 	public void onServerStarted(StartedEngineEvent<Server> e) {
 		Server server = e.engine();
-		if (server instanceof InternalServer) {
-			this.obfuscationTask = server.scheduler().submit(Task.builder().execute(() -> {
-				for (ServerWorld w : server.worldManager().worlds()) {
-					((InternalWorld) w).view().loadedOpaqueChunks()
-							.filter(chunk -> chunk.state() == State.OBFUSCATION_REQUESTED)
-							.forEach(NetworkChunk::obfuscate);
-				}
-			}).interval(Ticks.of(1)).plugin(this.container).build());
+		this.obfuscationTask = server.scheduler().submit(Task.builder().execute(() -> {
+			for (ServerWorld w : server.worldManager().worlds()) {
+				((InternalWorld) w).view().loadedOpaqueChunks()
+						.filter(chunk -> chunk.state() == State.OBFUSCATION_REQUESTED)
+						.forEach(NetworkChunk::obfuscate);
+			}
+		}).interval(Ticks.of(1)).plugin(this.container).build());
 
-			LOGGER.info("Mirage {} was loaded successfully.", this.container.metadata().version());
-		} else {
-			LOGGER.error("!!WARNING!! Mirage was not loaded correctly. Be sure that the jar file is at the root of your mods folder!");
-		}
+		LOGGER.info("Mirage {} was loaded successfully.", this.container.metadata().version());
 	}
 
 	public Path getConfigDirectory() {

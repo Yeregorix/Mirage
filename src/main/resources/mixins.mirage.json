@@ -18,8 +18,7 @@
     "network.ClientboundLevelChunkPacketData",
     "network.ClientboundLoginPacketMixin",
     "network.ClientboundRespawnPacketMixin",
-    "player.ServerPlayerMixin",
-    "server.MinecraftServerMixin"
+    "player.ServerPlayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
