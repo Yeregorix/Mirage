@@ -23,7 +23,6 @@
 package net.smoofyuniverse.mirage.config.world;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.Hashing;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
 import net.smoofyuniverse.mirage.api.modifier.ConfiguredModifier;
@@ -51,14 +50,13 @@ public class WorldConfig {
 
 	public final Resolved main;
 	public final List<ConfiguredModifier> modifiers;
-	public final long obfuscationSeed, fakeSeed, hashedFakeSeed;
+	public final long obfuscationSeed, fakeSeed;
 
 	public WorldConfig(Resolved main, List<ConfiguredModifier> modifiers, long obfuscationSeed, long fakeSeed) {
 		this.main = main;
 		this.modifiers = ImmutableList.copyOf(modifiers);
 		this.obfuscationSeed = obfuscationSeed;
 		this.fakeSeed = fakeSeed;
-		this.hashedFakeSeed = Hashing.sha256().hashLong(fakeSeed).asLong();
 	}
 
 	public static WorldConfig load(Path file) throws IOException {

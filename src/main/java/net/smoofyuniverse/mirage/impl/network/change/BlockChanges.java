@@ -85,7 +85,7 @@ public class BlockChanges {
 			if (p2 != null)
 				consumer.accept(p2);
 		} else {
-			ClientboundSectionBlocksUpdatePacket p = new ClientboundSectionBlocksUpdatePacket(this.pos, ShortSets.emptySet(), null, true);
+			ClientboundSectionBlocksUpdatePacket p = new ClientboundSectionBlocksUpdatePacket(this.pos, ShortSets.emptySet(), null);
 			p.positions = new short[changes];
 			p.states = new BlockState[changes];
 

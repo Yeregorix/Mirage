@@ -44,8 +44,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ChunkSerializerMixin {
 
 	@Redirect(method = "read", at = @At(value = "NEW", target = "net/minecraft/world/level/chunk/LevelChunkSection"))
-	private static LevelChunkSection onRead_newSection(int y, PalettedContainer<BlockState> blocks, PalettedContainerRO<Holder<Biome>> biomes, ServerLevel level, PoiManager pm, ChunkPos pos, CompoundTag tag) {
-		LevelChunkSection section = new LevelChunkSection(y, blocks, biomes);
+	private static LevelChunkSection onRead_newSection(PalettedContainer<BlockState> blocks, PalettedContainerRO<Holder<Biome>> biomes, ServerLevel level, PoiManager pm, ChunkPos pos, CompoundTag tag) {
+		LevelChunkSection section = new LevelChunkSection(blocks, biomes);
 		if (((InternalWorld) level).view().isEnabled())
 			((InternalSection) section).view(); // lazy-init network section before data is read
 		return section;

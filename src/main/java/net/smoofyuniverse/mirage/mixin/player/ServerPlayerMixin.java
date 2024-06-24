@@ -22,41 +22,24 @@
 
 package net.smoofyuniverse.mirage.mixin.player;
 
-import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.ChunkPos;
 import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
-import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicChunk;
-import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
-import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
+import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin implements InternalPlayer {
 
-	// usually ClientboundLevelChunkWithLightPacket
-	@Inject(method = "trackChunk", at = @At("RETURN"))
-	public void onTrackChunk(ChunkPos pos, Packet<?> chunkPacket, CallbackInfo ci) {
-		InternalWorld world = ((InternalWorld) world());
-		if (world.isDynamismEnabled()) {
-			DynamicChunk chunk = world.getOrCreateDynamicWorld(this).getOrCreateChunk(pos.x, pos.z);
-			for (DynamicSection section : chunk.sections) {
-				if (section != null) {
-					section.applyChanges();
-					section.getCurrent().sendTo((ServerPlayer) (Object) this);
-				}
-			}
+	@Redirect(method = "createCommonSpawnInfo", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;getSeed()J"))
+	public long useFakeSeed(ServerLevel level) {
+		NetworkWorld world = ((InternalWorld) level).view();
+		if (world.isEnabled() && world.config().main.fakeSeed) {
+			return world.config().fakeSeed;
 		}
-	}
-
-	@Inject(method = "untrackChunk", at = @At("RETURN"))
-	public void onUntrackChunk(ChunkPos pos, CallbackInfo ci) {
-		DynamicWorld dynWorld = getDynamicWorld();
-		if (dynWorld != null)
-			dynWorld.removeChunk(pos.x, pos.z);
+		return level.getSeed();
 	}
 }

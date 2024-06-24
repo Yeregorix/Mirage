@@ -55,7 +55,7 @@ import java.util.stream.Stream;
 public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	@Shadow
 	@Final
-	ChunkPos pos;
+	private ChunkPos pos;
 	@Shadow
 	private boolean hasChangedSections;
 	@Shadow
@@ -71,8 +71,6 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	@Final
 	private BitSet blockChangedLightSectionFilter;
 	@Shadow
-	private boolean resendLight;
-	@Shadow
 	@Final
 	private LevelLightEngine lightEngine;
 	@Shadow
@@ -87,76 +85,77 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	 */
 	@Overwrite
 	public void broadcastChanges(LevelChunk chunk) {
-		if (this.hasChangedSections || !this.skyChangedLightSectionFilter.isEmpty() || !this.blockChangedLightSectionFilter.isEmpty()) {
-			int totalChanges = 0;
-			for (ShortSet changes : this.changedBlocksPerSection) {
-				totalChanges += changes != null ? changes.size() : 0;
+		if (!this.skyChangedLightSectionFilter.isEmpty() || !this.blockChangedLightSectionFilter.isEmpty()) {
+			List<ServerPlayer> players = getPlayers(true);
+			if (!players.isEmpty()) {
+				broadcast(players, new ClientboundLightUpdatePacket(chunk.getPos(), this.lightEngine, this.skyChangedLightSectionFilter, this.blockChangedLightSectionFilter));
 			}
 
-			this.resendLight |= totalChanges >= 64;
-			if (!this.skyChangedLightSectionFilter.isEmpty() || !this.blockChangedLightSectionFilter.isEmpty()) {
-				broadcast(new ClientboundLightUpdatePacket(chunk.getPos(), this.lightEngine, this.skyChangedLightSectionFilter, this.blockChangedLightSectionFilter, true), !this.resendLight);
-				this.skyChangedLightSectionFilter.clear();
-				this.blockChangedLightSectionFilter.clear();
-			}
+			this.skyChangedLightSectionFilter.clear();
+			this.blockChangedLightSectionFilter.clear();
+		}
 
-			InternalChunk storage = (InternalChunk) chunk;
-			int minX = this.pos.x << 4, minZ = this.pos.z << 4;
+		if (this.hasChangedSections) {
+			List<ServerPlayer> players = getPlayers(false);
+			if (!players.isEmpty()) {
+				InternalChunk storage = (InternalChunk) chunk;
+				int minX = this.pos.x << 4, minZ = this.pos.z << 4;
 
-			if (this.dynamismEnabled) {
-				NetworkChunk view = storage.view();
+				if (this.dynamismEnabled) {
+					NetworkChunk view = storage.view();
 
-				for (ServerPlayer p : getPlayers()) {
-					DynamicChunk dynChunk = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
+					for (ServerPlayer p : players) {
+						DynamicChunk dynChunk = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
+
+						for (int i = 0; i < this.changedBlocksPerSection.length; i++) {
+							int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
+							DynamicSection dynSection = dynChunk == null ? null : dynChunk.sections[i];
+							BlockChanges changes = new BlockChanges(chunk, y);
+							int minY = y << 4;
+
+							ShortSet storageChanges = this.changedBlocksPerSection[i];
+							if (storageChanges != null) {
+								ShortIterator it = storageChanges.iterator();
+								while (it.hasNext()) {
+									short pos = it.nextShort();
+									changes.add(pos, (BlockState) (dynSection != null && dynSection.currentlyContains(pos) ? storage : view)
+											.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
+								}
+							}
+
+							if (dynSection != null) {
+								dynSection.getChanges(changes);
+								dynSection.applyChanges();
+							}
+
+							changes.sendTo(p);
+						}
+					}
+				} else {
+					BlockVolume volume = storage.isViewAvailable() ? storage.view() : storage;
+					List<Packet<?>> packets = new ArrayList<>();
 
 					for (int i = 0; i < this.changedBlocksPerSection.length; i++) {
-						int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
-						DynamicSection dynSection = dynChunk == null ? null : dynChunk.sections[i];
-						BlockChanges changes = new BlockChanges(chunk, y);
-						int minY = y << 4;
-
 						ShortSet storageChanges = this.changedBlocksPerSection[i];
 						if (storageChanges != null) {
+							int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
+							BlockChanges changes = new BlockChanges(chunk, y);
+							int minY = y << 4;
+
 							ShortIterator it = storageChanges.iterator();
 							while (it.hasNext()) {
 								short pos = it.nextShort();
-								changes.add(pos, (BlockState) (dynSection != null && dynSection.currentlyContains(pos) ? storage : view)
-										.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
+								changes.add(pos, (BlockState) volume.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
 							}
-						}
 
-						if (dynSection != null) {
-							dynSection.getChanges(changes);
-							dynSection.applyChanges();
+							changes.sendTo(packets::add);
 						}
-
-						changes.sendTo(p);
 					}
-				}
-			} else {
-				BlockVolume volume = storage.isViewAvailable() ? storage.view() : storage;
-				List<Packet<?>> packets = new ArrayList<>();
 
-				for (int i = 0; i < this.changedBlocksPerSection.length; i++) {
-					ShortSet storageChanges = this.changedBlocksPerSection[i];
-					if (storageChanges != null) {
-						int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
-						BlockChanges changes = new BlockChanges(chunk, y);
-						int minY = y << 4;
-
-						ShortIterator it = storageChanges.iterator();
-						while (it.hasNext()) {
-							short pos = it.nextShort();
-							changes.add(pos, (BlockState) volume.block(minX + (pos >> 8 & 15), minY + (pos & 15), minZ + (pos >> 4 & 15)));
-						}
-
-						changes.sendTo(packets::add);
+					for (ServerPlayer p : players) {
+						for (Packet<?> packet : packets)
+							p.connection.send(packet);
 					}
-				}
-
-				for (ServerPlayer p : getPlayers()) {
-					for (Packet<?> packet : packets)
-						p.connection.send(packet);
 				}
 			}
 
@@ -165,13 +164,13 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	}
 
 	@Shadow
-	protected abstract void broadcast(Packet<?> param0, boolean param1);
+	protected abstract void broadcast(List<ServerPlayer> list, Packet<?> packet);
 
 	@Shadow
 	public abstract void blockChanged(BlockPos pos);
 
-	private List<ServerPlayer> getPlayers() {
-		return this.playerProvider.getPlayers(this.pos, false);
+	private List<ServerPlayer> getPlayers(boolean boundaryOnly) {
+		return this.playerProvider.getPlayers(this.pos, boundaryOnly);
 	}
 
 	public void clearChanges() {
@@ -200,7 +199,7 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	}
 
 	private Stream<DynamicChunk> getDynamicChunks() {
-		return getPlayers().stream().map(p -> ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z)).filter(Objects::nonNull);
+		return getPlayers(false).stream().map(p -> ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z)).filter(Objects::nonNull);
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,7 @@
 package net.smoofyuniverse.mirage.mixin.level;
 
 import com.google.common.collect.Streams;
-import com.mojang.datafixers.util.Either;
-import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -71,8 +70,8 @@ public abstract class LevelMixin implements InternalWorld, LevelAccessor {
 			return Stream.empty();
 
 		return (Stream) Streams.stream(((ServerChunkCache) getChunkSource()).chunkMap.getChunks()).map(holder -> {
-			Either<LevelChunk, ChunkHolder.ChunkLoadingFailure> chunkOrFail = holder.getFullChunkFuture().getNow(null);
-			return chunkOrFail == null ? null : chunkOrFail.left().orElse(null);
+			ChunkResult<LevelChunk> result = holder.getFullChunkFuture().getNow(null);
+			return result == null ? null : result.orElse(null);
 		}).filter(Objects::nonNull);
 	}
 

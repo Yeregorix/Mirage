@@ -1,12 +1,8 @@
 pluginManagement {
     repositories {
         maven { url "https://repo.spongepowered.org/repository/maven-public" }
-        maven { url "https://maven.architectury.dev/" }
         gradlePluginPortal()
     }
 }
 
 rootProject.name = 'Mirage'
-
-include ':forge'
-include ':vanilla'

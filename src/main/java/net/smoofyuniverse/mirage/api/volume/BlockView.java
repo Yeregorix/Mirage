@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,9 @@
 
 package net.smoofyuniverse.mirage.api.volume;
 
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
+import org.spongepowered.api.world.schematic.Palette;
 import org.spongepowered.api.world.volume.block.BlockVolume;
 import org.spongepowered.math.vector.Vector3i;
 
@@ -225,5 +228,10 @@ public interface BlockView extends BlockVolume.Mutable, OpaqueBlockVolume {
 	 */
 	default void reobfuscateArea(Vector3i min, Vector3i max, boolean silentFail) {
 		reobfuscateArea(min.x(), min.y(), min.z(), max.x(), max.y(), max.z(), silentFail);
+	}
+
+	@Override
+	default Palette<BlockState, BlockType> blockPalette() {
+		return storage().blockPalette();
 	}
 }

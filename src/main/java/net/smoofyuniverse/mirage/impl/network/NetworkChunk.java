@@ -64,7 +64,7 @@ public class NetworkChunk implements ChunkView {
 	public final NetworkSection[] sections;
 	private final Random random = new Random();
 	private State state = State.DEOBFUSCATED;
-	private ChunkChangeListener listener;
+	private ChunkChangeListener listener, listenerCandidate;
 
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
@@ -87,7 +87,9 @@ public class NetworkChunk implements ChunkView {
 		LevelChunkSection[] internalSections = chunk.getSections();
 		this.sections = new NetworkSection[internalSections.length];
 		for (int i = 0; i < internalSections.length; i++) {
-			this.sections[i] = ((InternalSection) internalSections[i]).view();
+			NetworkSection section = ((InternalSection) internalSections[i]).view();
+			section.minY = (this.minSectionY + i) << 4;
+			this.sections[i] = section;
 		}
 	}
 
@@ -120,8 +122,12 @@ public class NetworkChunk implements ChunkView {
 		}
 	}
 
-	public void setListener(ChunkChangeListener listener) {
-		this.listener = listener;
+	public void setListener() {
+		this.listener = this.listenerCandidate;
+	}
+
+	public void setListenerCandidate(ChunkChangeListener listener) {
+		this.listenerCandidate = listener;
 	}
 
 	public CompoundTag serialize() {

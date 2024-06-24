@@ -32,7 +32,6 @@ import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
-import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
@@ -41,7 +40,7 @@ import java.util.Arrays;
 
 public class NetworkSection {
 	private final LevelChunkSection section;
-	private final int minY;
+	int minY = 0;
 
 	private PalettedContainer<BlockState> states;
 	private DataLayer dynamism;
@@ -53,7 +52,6 @@ public class NetworkSection {
 
 	public NetworkSection(LevelChunkSection section) {
 		this.section = section;
-		this.minY = section.bottomBlockY();
 
 		this.states = new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 		this.dynamism = new DataLayer();
@@ -205,14 +203,14 @@ public class NetworkSection {
 		CompoundTag tag = new CompoundTag();
 		tag.putByte("Y", (byte) (this.minY >> 4));
 
-		tag.put("BlockStates", ChunkSerializer.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow(false, Mirage.LOGGER::error));
+		tag.put("BlockStates", ChunkSerializer.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow());
 		tag.putByteArray("Dynamism", Arrays.copyOf(this.dynamism.getData(), 2048));
 
 		return tag;
 	}
 
 	public void deserialize(CompoundTag tag) {
-		this.states = ChunkSerializer.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow(false, Mirage.LOGGER::error);
+		this.states = ChunkSerializer.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow();
 		recalculateAirBlocks();
 
 		this.dynamism = new DataLayer(tag.getByteArray("Dynamism"));

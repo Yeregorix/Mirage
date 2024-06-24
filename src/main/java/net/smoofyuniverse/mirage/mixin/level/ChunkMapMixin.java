@@ -22,17 +22,14 @@
 
 package net.smoofyuniverse.mirage.mixin.level;
 
-import com.mojang.datafixers.util.Either;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.server.level.*;
-import net.minecraft.server.level.ChunkHolder.ChunkLoadingFailure;
-import net.minecraft.server.level.ChunkTaskPriorityQueueSorter.Message;
-import net.minecraft.util.thread.ProcessorHandle;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.smoofyuniverse.mirage.Mirage;
-import net.smoofyuniverse.mirage.api.volume.ChunkView.State;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
@@ -40,40 +37,29 @@ import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.NetworkWorld;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicWorld;
-import net.smoofyuniverse.mirage.mixin.chunk.ChunkStorageMixin;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Mixin(ChunkMap.class)
-public abstract class ChunkMapMixin extends ChunkStorageMixin {
+public abstract class ChunkMapMixin {
 	@Shadow
 	@Final
 	ServerLevel level;
-	@Shadow
-	@Final
-	private ProcessorHandle<Message<Runnable>> mainThreadMailbox;
-	@Shadow
-	@Final
-	private AtomicInteger tickingGenerated;
 
 	@Inject(method = "save", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/level/chunk/storage/ChunkSerializer;write(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkAccess;)Lnet/minecraft/nbt/CompoundTag;"))
-	public void beforeSerialize(ChunkAccess chunk, CallbackInfoReturnable<Boolean> cir) {
+	public void beforeChunkSerialize(ChunkAccess chunk, CallbackInfoReturnable<Boolean> cir) {
 		if (chunk instanceof InternalChunk) {
 			try {
 				InternalChunk internalChunk = (InternalChunk) chunk;
@@ -87,14 +73,14 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 		}
 	}
 
-	@Inject(method = "save", at = @At(value = "INVOKE", shift = Shift.AFTER,
-			target = "Lnet/minecraft/server/level/ChunkMap;write(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)V"))
-	public void afterWrite(ChunkAccess chunk, CallbackInfoReturnable<Boolean> cir) {
+	@Redirect(method = "save", at = @At(value = "INVOKE",
+			target = "Ljava/util/concurrent/CompletableFuture;exceptionallyAsync(Ljava/util/function/Function;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
+	public CompletableFuture<Void> onChunkWrite(CompletableFuture<Void> future, Function<Throwable, Void> fn, Executor executor, ChunkAccess chunk) {
 		if (chunk instanceof InternalChunk) {
 			ChunkPos pos = chunk.getPos();
 			NetworkWorld world = ((InternalChunk) chunk).world().view();
 
-			this.writeFuture.thenRun(() -> {
+			future.thenRun(() -> {
 				try {
 					world.savePendingChunk(pos.x, pos.z);
 				} catch (Exception e) {
@@ -102,10 +88,11 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 				}
 			});
 		}
+		return future.exceptionallyAsync(fn, executor);
 	}
 
 	@Inject(method = "move", at = @At("HEAD"))
-	public void onMove(ServerPlayer player, CallbackInfo ci) {
+	public void onPlayerMove(ServerPlayer player, CallbackInfo ci) {
 		if (((InternalWorld) this.level).isDynamismEnabled()) {
 			DynamicWorld world = ((InternalPlayer) player).getDynamicWorld();
 			if (world != null)
@@ -113,43 +100,24 @@ public abstract class ChunkMapMixin extends ChunkStorageMixin {
 		}
 	}
 
-	@Redirect(method = "prepareTickingChunk", at = @At(value = "INVOKE", target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
-	public CompletableFuture<Void> onChunkSend(CompletableFuture<Either<LevelChunk, ChunkLoadingFailure>> instance,
-											   Consumer<?> consumer, Executor executor, ChunkHolder holder) {
-		return instance.thenAcceptAsync((chunkOrFail) -> chunkOrFail.ifLeft((levelChunk) -> {
-			this.tickingGenerated.getAndIncrement();
-
-			InternalChunk chunk = (InternalChunk) levelChunk;
-			if (chunk.isViewAvailable()) {
-				NetworkChunk view = chunk.view();
-				view.obfuscate();
-
-				/*if (chunk.getView().getState() != State.OBFUSCATED)
-					return false;*/
-
-				ChunkChangeListener listener = (ChunkChangeListener) holder;
-				listener.setDynamismEnabled(view.isDynamismEnabled());
-				view.setListener(listener);
-			}
-
-			MutableObject<ClientboundLevelChunkWithLightPacket> packet = new MutableObject<>();
-			getPlayers(holder.getPos(), false).forEach(p -> playerLoadedChunk(p, packet, levelChunk));
-		}), (task) -> this.mainThreadMailbox.tell(ChunkTaskPriorityQueueSorter.message(holder, task)));
+	@Inject(method = "lambda$prepareTickingChunk$42", at = @At("HEAD"))
+	public void onChunkPrepare(ChunkHolder holder, LevelChunk levelChunk, CallbackInfo ci) {
+		InternalChunk chunk = (InternalChunk) levelChunk;
+		if (chunk.isViewAvailable()) {
+			NetworkChunk view = chunk.view();
+			ChunkChangeListener listener = (ChunkChangeListener) holder;
+			listener.setDynamismEnabled(view.isDynamismEnabled());
+			view.setListenerCandidate(listener);
+		}
 	}
 
-	@Shadow
-	public abstract List<ServerPlayer> getPlayers(ChunkPos param0, boolean param1);
-
-	@Shadow
-	protected abstract void playerLoadedChunk(ServerPlayer param0, MutableObject<ClientboundLevelChunkWithLightPacket> param1, LevelChunk param2);
-
-	@Inject(method = "playerLoadedChunk", at = @At(value = "INVOKE", shift = Shift.AFTER,
-			target = "Lnet/minecraft/server/level/ServerPlayer;trackChunk(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/network/protocol/Packet;)V"))
-	public void afterChunkSent(ServerPlayer player, MutableObject<ClientboundLevelChunkWithLightPacket> packet, LevelChunk levelChunk, CallbackInfo ci) {
+	@Inject(method = "onChunkReadyToSend", at = @At("HEAD"))
+	public void onChunkSend(LevelChunk levelChunk, CallbackInfo ci) {
 		InternalChunk chunk = (InternalChunk) levelChunk;
-		if (chunk.isViewAvailable() && chunk.view().state() != State.OBFUSCATED) {
-			ChunkPos pos = levelChunk.getPos();
-			Mirage.LOGGER.warn("Chunk {} {} has been sent without obfuscation.", pos.x, pos.z);
+		if (chunk.isViewAvailable()) {
+			NetworkChunk view = chunk.view();
+			view.obfuscate();
+			view.setListener();
 		}
 	}
 }

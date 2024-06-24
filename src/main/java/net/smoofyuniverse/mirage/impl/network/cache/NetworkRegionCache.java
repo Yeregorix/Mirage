@@ -26,6 +26,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.ExceptionCollector;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.storage.RegionFileStorage;
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.util.IOUtil;
 
@@ -47,14 +48,14 @@ public class NetworkRegionCache {
 	private final RegionFileStorage storage;
 	private long obfuscationSeed, fakeSeed;
 
-	public NetworkRegionCache(String name) {
-		this(Mirage.get().getCacheDirectory().resolve(name), name);
+	public NetworkRegionCache(RegionStorageInfo info, String name) {
+		this(info, Mirage.get().getCacheDirectory().resolve(name), name);
 	}
 
-	public NetworkRegionCache(Path directory, String name) {
+	public NetworkRegionCache(RegionStorageInfo info, Path directory, String name) {
 		this.directory = directory;
 		this.name = name;
-		this.storage = new RegionFileStorage(directory, false);
+		this.storage = new RegionFileStorage(info, directory, false);
 	}
 
 	private static boolean isRegionFile(String name) {

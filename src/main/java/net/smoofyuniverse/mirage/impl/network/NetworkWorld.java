@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.api.cache.Signature;
 import net.smoofyuniverse.mirage.api.modifier.ChunkModifier;
@@ -123,7 +124,8 @@ public class NetworkWorld implements WorldView {
 		Resolved main = cfg.main;
 		List<ConfiguredModifier> modifiers = cfg.modifiers;
 
-		if (main.enabled && ((Level) this.world).isDebug()) {
+		Level level = (Level) this.world;
+		if (main.enabled && level.isDebug()) {
 			Mirage.LOGGER.warn("Obfuscation is not available in a debug world. Obfuscation will be disabled.");
 			main = main.disable();
 		}
@@ -155,11 +157,12 @@ public class NetworkWorld implements WorldView {
 			for (ConfiguredModifier mod : modifiers)
 				b.append(modifierRegistry.valueKey(mod.modifier));
 			ResourceKey key = this.world.key();
-			b.append(key.namespace());
+			b.append(key);
 			String cacheName = key.value() + "/" + b.build();
 
 			try {
-				this.cache = new NetworkRegionCache(cacheName);
+				RegionStorageInfo info = new RegionStorageInfo(key.value(), level.dimension(), "mirage-cache");
+				this.cache = new NetworkRegionCache(info, cacheName);
 				this.cache.load();
 
 				b = Signature.builder().append(this.cache.getObfuscationSeed()).append(main.dynamism);

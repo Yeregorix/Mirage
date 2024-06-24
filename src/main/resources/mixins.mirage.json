@@ -8,16 +8,14 @@
     "block.BlockStateBaseMixin",
     "chunk.ChunkAccessMixin",
     "chunk.ChunkSerializerMixin",
-    "chunk.ChunkStorageMixin",
     "chunk.LevelChunkMixin",
     "chunk.LevelChunkSectionMixin",
     "level.ChunkHolderMixin",
     "level.ChunkMapMixin",
     "level.LevelMixin",
     "level.ServerLevelMixin",
-    "network.ClientboundLevelChunkPacketData",
-    "network.ClientboundLoginPacketMixin",
-    "network.ClientboundRespawnPacketMixin",
+    "network.ClientboundLevelChunkPacketDataMixin",
+    "network.PlayerChunkSenderMixin",
     "player.ServerPlayerMixin"
   ],
   "injectors": {

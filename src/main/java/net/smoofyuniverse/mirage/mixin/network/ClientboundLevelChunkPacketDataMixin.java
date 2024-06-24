@@ -23,14 +23,15 @@
 package net.smoofyuniverse.mirage.mixin.network;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData.class)
-public abstract class ClientboundLevelChunkPacketData {
+@Mixin(ClientboundLevelChunkPacketData.class)
+public abstract class ClientboundLevelChunkPacketDataMixin {
 
 	@Redirect(method = "extractChunkData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;write(Lnet/minecraft/network/FriendlyByteBuf;)V"))
 	private static void writeModified(LevelChunkSection section, FriendlyByteBuf buffer) {
