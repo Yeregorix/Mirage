@@ -43,8 +43,8 @@ dependencies {
     implementation 'net.smoofyuniverse:worldmap:1.3.0'
     implementation 'net.smoofyuniverse:bingo:1.1.0'
 
-    spongevanilla('org.spongepowered:spongevanilla:1.20.6-11.0.0:universal') { transitive = false }
-    spongeforge('org.spongepowered:spongeforge:1.20.6-50.0.22-11.0.0:universal') { transitive = false }
+    spongevanilla('org.spongepowered:spongevanilla:1.20.6-11.0.1-RC1707:universal') { transitive = false }
+    spongeforge('org.spongepowered:spongeforge:1.20.6-50.0.22-11.0.1-RC1707:universal') { transitive = false }
 }
 
 jar {
