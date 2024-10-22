@@ -1,9 +1,9 @@
 {
   "required": true,
-  "minVersion": "0.8",
+  "minVersion": "0.8.7",
   "package": "net.smoofyuniverse.mirage.mixin",
   "target": "@env(DEFAULT)",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_21",
   "server": [
     "block.BlockStateBaseMixin",
     "chunk.ChunkAccessMixin",

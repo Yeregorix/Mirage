@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ public abstract class BlockStateBaseMixin implements InternalBlockState {
 	public abstract Block getBlock();
 
 	@Shadow
-	public abstract boolean isSolidRender(BlockGetter param0, BlockPos param1);
+	public abstract boolean isSolidRender(BlockGetter getter, BlockPos pos);
 
 	@Override
 	public boolean isOpaque() {

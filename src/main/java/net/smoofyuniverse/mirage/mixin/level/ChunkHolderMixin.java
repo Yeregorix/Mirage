@@ -29,6 +29,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkHolder.PlayerProvider;
+import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -52,10 +53,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @Mixin(ChunkHolder.class)
-public abstract class ChunkHolderMixin implements ChunkChangeListener {
-	@Shadow
-	@Final
-	private ChunkPos pos;
+public abstract class ChunkHolderMixin extends GenerationChunkHolder implements ChunkChangeListener {
 	@Shadow
 	private boolean hasChangedSections;
 	@Shadow
@@ -78,6 +76,10 @@ public abstract class ChunkHolderMixin implements ChunkChangeListener {
 	private LevelHeightAccessor levelHeightAccessor;
 
 	private boolean dynamismEnabled;
+
+	public ChunkHolderMixin(ChunkPos pos) {
+		super(pos);
+	}
 
 	/**
 	 * @author Yeregorix

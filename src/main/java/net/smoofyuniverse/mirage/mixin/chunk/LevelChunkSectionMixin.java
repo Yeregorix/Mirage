@@ -50,7 +50,7 @@ public abstract class LevelChunkSectionMixin implements InternalSection {
 	private PalettedContainerRO<Holder<Biome>> biomes;
 
 	@Shadow
-	public abstract void write(FriendlyByteBuf param0);
+	public abstract void write(FriendlyByteBuf buffer);
 
 	@Shadow
 	public abstract int getSerializedSize();

@@ -48,7 +48,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 @Mixin(ChunkMap.class)
@@ -74,8 +73,8 @@ public abstract class ChunkMapMixin {
 	}
 
 	@Redirect(method = "save", at = @At(value = "INVOKE",
-			target = "Ljava/util/concurrent/CompletableFuture;exceptionallyAsync(Ljava/util/function/Function;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
-	public CompletableFuture<Void> onChunkWrite(CompletableFuture<Void> future, Function<Throwable, Void> fn, Executor executor, ChunkAccess chunk) {
+			target = "Ljava/util/concurrent/CompletableFuture;exceptionally(Ljava/util/function/Function;)Ljava/util/concurrent/CompletableFuture;"))
+	public CompletableFuture<Void> onChunkWrite(CompletableFuture<Void> future, Function<Throwable, Void> fn, ChunkAccess chunk) {
 		if (chunk instanceof InternalChunk) {
 			ChunkPos pos = chunk.getPos();
 			NetworkWorld world = ((InternalChunk) chunk).world().view();
@@ -88,7 +87,7 @@ public abstract class ChunkMapMixin {
 				}
 			});
 		}
-		return future.exceptionallyAsync(fn, executor);
+		return future.exceptionally(fn);
 	}
 
 	@Inject(method = "move", at = @At("HEAD"))
@@ -100,7 +99,7 @@ public abstract class ChunkMapMixin {
 		}
 	}
 
-	@Inject(method = "lambda$prepareTickingChunk$42", at = @At("HEAD"))
+	@Inject(method = "lambda$prepareTickingChunk$27", at = @At("HEAD"))
 	public void onChunkPrepare(ChunkHolder holder, LevelChunk levelChunk, CallbackInfo ci) {
 		InternalChunk chunk = (InternalChunk) levelChunk;
 		if (chunk.isViewAvailable()) {

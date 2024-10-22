@@ -31,6 +31,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunkAccess;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
@@ -44,7 +45,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ChunkSerializerMixin {
 
 	@Redirect(method = "read", at = @At(value = "NEW", target = "net/minecraft/world/level/chunk/LevelChunkSection"))
-	private static LevelChunkSection onRead_newSection(PalettedContainer<BlockState> blocks, PalettedContainerRO<Holder<Biome>> biomes, ServerLevel level, PoiManager pm, ChunkPos pos, CompoundTag tag) {
+	private static LevelChunkSection onRead_newSection(PalettedContainer<BlockState> blocks, PalettedContainerRO<Holder<Biome>> biomes,
+													   ServerLevel level, PoiManager pm, RegionStorageInfo info, ChunkPos pos, CompoundTag tag) {
 		LevelChunkSection section = new LevelChunkSection(blocks, biomes);
 		if (((InternalWorld) level).view().isEnabled())
 			((InternalSection) section).view(); // lazy-init network section before data is read
@@ -52,7 +54,7 @@ public class ChunkSerializerMixin {
 	}
 
 	@Inject(method = "read", at = @At("RETURN"))
-	private static void onRead(ServerLevel level, PoiManager pm, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
+	private static void onRead(ServerLevel level, PoiManager pm, RegionStorageInfo info, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
 		ChunkAccess chunk = cir.getReturnValue();
 		if (chunk instanceof ImposterProtoChunk)
 			chunk = ((ImposterProtoChunk) chunk).getWrapped();
