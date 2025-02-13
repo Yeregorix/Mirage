@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,6 @@
 
 package net.smoofyuniverse.mirage.mixin.block;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase;
 import net.smoofyuniverse.mirage.impl.internal.InternalBlockState;
@@ -40,14 +37,14 @@ public abstract class BlockStateBaseMixin implements InternalBlockState {
 
 	@Inject(method = "initCache", at = @At("RETURN"))
 	public void onInitCache(CallbackInfo ci) {
-		this.opaque = !getBlock().hasDynamicShape() && isSolidRender(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+		this.opaque = !getBlock().hasDynamicShape() && isSolidRender();
 	}
 
 	@Shadow
 	public abstract Block getBlock();
 
 	@Shadow
-	public abstract boolean isSolidRender(BlockGetter getter, BlockPos pos);
+	public abstract boolean isSolidRender();
 
 	@Override
 	public boolean isOpaque() {

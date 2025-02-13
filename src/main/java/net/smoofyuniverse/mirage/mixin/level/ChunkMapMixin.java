@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
@@ -57,14 +57,13 @@ public abstract class ChunkMapMixin {
 	ServerLevel level;
 
 	@Inject(method = "save", at = @At(value = "INVOKE",
-			target = "Lnet/minecraft/world/level/chunk/storage/ChunkSerializer;write(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkAccess;)Lnet/minecraft/nbt/CompoundTag;"))
+			target = "Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;copyOf(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkAccess;)Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;"))
 	public void beforeChunkSerialize(ChunkAccess chunk, CallbackInfoReturnable<Boolean> cir) {
-		if (chunk instanceof InternalChunk) {
+		if (chunk instanceof InternalChunk internalChunk) {
 			try {
-				InternalChunk internalChunk = (InternalChunk) chunk;
 				if (internalChunk.isViewAvailable()) {
 					internalChunk.view().saveToCacheLater();
-					chunk.setUnsaved(false);
+					internalChunk.setUnsaved(false);
 				}
 			} catch (Exception e) {
 				Mirage.LOGGER.error("Failed to serialize a network chunk for caching", e);
@@ -73,8 +72,8 @@ public abstract class ChunkMapMixin {
 	}
 
 	@Redirect(method = "save", at = @At(value = "INVOKE",
-			target = "Ljava/util/concurrent/CompletableFuture;exceptionally(Ljava/util/function/Function;)Ljava/util/concurrent/CompletableFuture;"))
-	public CompletableFuture<Void> onChunkWrite(CompletableFuture<Void> future, Function<Throwable, Void> fn, ChunkAccess chunk) {
+			target = "Ljava/util/concurrent/CompletableFuture;handle(Ljava/util/function/BiFunction;)Ljava/util/concurrent/CompletableFuture;"))
+	public CompletableFuture<Void> onChunkWrite(CompletableFuture<Void> future, BiFunction<Void, Throwable, Void> fn, ChunkAccess chunk) {
 		if (chunk instanceof InternalChunk) {
 			ChunkPos pos = chunk.getPos();
 			NetworkWorld world = ((InternalChunk) chunk).world().view();
@@ -87,7 +86,7 @@ public abstract class ChunkMapMixin {
 				}
 			});
 		}
-		return future.exceptionally(fn);
+		return future.handle(fn);
 	}
 
 	@Inject(method = "move", at = @At("HEAD"))
@@ -99,24 +98,16 @@ public abstract class ChunkMapMixin {
 		}
 	}
 
-	@Inject(method = "lambda$prepareTickingChunk$27", at = @At("HEAD"))
-	public void onChunkPrepare(ChunkHolder holder, LevelChunk levelChunk, CallbackInfo ci) {
-		InternalChunk chunk = (InternalChunk) levelChunk;
-		if (chunk.isViewAvailable()) {
-			NetworkChunk view = chunk.view();
-			ChunkChangeListener listener = (ChunkChangeListener) holder;
-			listener.setDynamismEnabled(view.isDynamismEnabled());
-			view.setListenerCandidate(listener);
-		}
-	}
-
 	@Inject(method = "onChunkReadyToSend", at = @At("HEAD"))
-	public void onChunkSend(LevelChunk levelChunk, CallbackInfo ci) {
+	public void onChunkSend(ChunkHolder holder, LevelChunk levelChunk, CallbackInfo ci) {
 		InternalChunk chunk = (InternalChunk) levelChunk;
 		if (chunk.isViewAvailable()) {
 			NetworkChunk view = chunk.view();
 			view.obfuscate();
-			view.setListener();
+
+			ChunkChangeListener listener = (ChunkChangeListener) holder;
+			listener.setDynamismEnabled(view.isDynamismEnabled());
+			view.setListener(listener);
 		}
 	}
 }

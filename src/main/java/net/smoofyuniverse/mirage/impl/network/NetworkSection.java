@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.minecraft.world.level.chunk.storage.SerializableChunkData;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
@@ -203,14 +203,14 @@ public class NetworkSection {
 		CompoundTag tag = new CompoundTag();
 		tag.putByte("Y", (byte) (this.minY >> 4));
 
-		tag.put("BlockStates", ChunkSerializer.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow());
+		tag.put("BlockStates", SerializableChunkData.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow());
 		tag.putByteArray("Dynamism", Arrays.copyOf(this.dynamism.getData(), 2048));
 
 		return tag;
 	}
 
 	public void deserialize(CompoundTag tag) {
-		this.states = ChunkSerializer.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow();
+		this.states = SerializableChunkData.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow();
 		recalculateAirBlocks();
 
 		this.dynamism = new DataLayer(tag.getByteArray("Dynamism"));

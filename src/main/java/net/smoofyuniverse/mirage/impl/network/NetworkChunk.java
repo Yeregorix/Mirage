@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,7 +64,7 @@ public class NetworkChunk implements ChunkView {
 	public final NetworkSection[] sections;
 	private final Random random = new Random();
 	private State state = State.DEOBFUSCATED;
-	private ChunkChangeListener listener, listenerCandidate;
+	private ChunkChangeListener listener;
 
 	public NetworkChunk(InternalChunk chunk, NetworkWorld world) {
 		this.chunk = chunk;
@@ -117,17 +117,13 @@ public class NetworkChunk implements ChunkView {
 			}
 
 			this.chunk.setCacheTime(time);
-			this.chunk.markUnsaved();
+			this.chunk.setUnsaved(true);
 			clearDirty();
 		}
 	}
 
-	public void setListener() {
-		this.listener = this.listenerCandidate;
-	}
-
-	public void setListenerCandidate(ChunkChangeListener listener) {
-		this.listenerCandidate = listener;
+	public void setListener(ChunkChangeListener listener) {
+		this.listener = listener;
 	}
 
 	public CompoundTag serialize() {
@@ -166,7 +162,7 @@ public class NetworkChunk implements ChunkView {
 			}
 
 			this.chunk.setCacheTime(time);
-			this.chunk.markUnsaved();
+			this.chunk.setUnsaved(true);
 			clearDirty();
 		}
 	}

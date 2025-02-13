@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,25 @@
  * SOFTWARE.
  */
 
-package net.smoofyuniverse.mirage.impl.internal;
+package net.smoofyuniverse.mirage.mixin.level;
 
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerChunkCache;
+import net.smoofyuniverse.mirage.impl.internal.InternalServerChunkCache;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
-public interface InternalChunkAccess extends BlockGetter {
+import java.util.Set;
 
-	long getCacheTime();
+@Mixin(ServerChunkCache.class)
+public class ServerChunkCacheMixin implements InternalServerChunkCache {
+    @Shadow
+    @Final
+    private Set<ChunkHolder> chunkHoldersToBroadcast;
 
-	void setCacheTime(long value);
-
-	void setUnsaved(boolean value);
-
-	LevelChunkSection[] getSections();
+    @Override
+    public void addChunkHolderToBroadcast(ChunkHolder holder) {
+        this.chunkHoldersToBroadcast.add(holder);
+    }
 }

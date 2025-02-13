@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@ public abstract class ChunkAccessMixin implements InternalChunkAccess {
 	protected LevelChunkSection[] sections;
 
 	@Shadow
-	protected volatile boolean unsaved;
+	private volatile boolean unsaved;
 
 	private long cacheTime;
 
@@ -56,8 +56,8 @@ public abstract class ChunkAccessMixin implements InternalChunkAccess {
 	}
 
 	@Override
-	public void markUnsaved() {
-		this.unsaved = true;
+	public void setUnsaved(boolean value) {
+		this.unsaved = value;
 	}
 
 	@Override

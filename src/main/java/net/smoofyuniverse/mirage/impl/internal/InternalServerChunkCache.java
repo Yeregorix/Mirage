@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,9 @@
 
 package net.smoofyuniverse.mirage.impl.internal;
 
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.server.level.ChunkHolder;
 
-public interface InternalChunkAccess extends BlockGetter {
+public interface InternalServerChunkCache {
 
-	long getCacheTime();
-
-	void setCacheTime(long value);
-
-	void setUnsaved(boolean value);
-
-	LevelChunkSection[] getSections();
+    void addChunkHolderToBroadcast(ChunkHolder holder);
 }

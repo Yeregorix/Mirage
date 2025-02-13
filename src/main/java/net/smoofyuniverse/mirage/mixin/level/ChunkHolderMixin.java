@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
 import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
+import net.smoofyuniverse.mirage.impl.internal.InternalServerChunkCache;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
 import net.smoofyuniverse.mirage.impl.network.change.BlockChanges;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
@@ -49,6 +50,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -169,7 +171,11 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 	protected abstract void broadcast(List<ServerPlayer> list, Packet<?> packet);
 
 	@Shadow
-	public abstract void blockChanged(BlockPos pos);
+	public abstract boolean blockChanged(BlockPos pos);
+
+	@Shadow
+	@Nullable
+	public abstract LevelChunk getTickingChunk();
 
 	private List<ServerPlayer> getPlayers(boolean boundaryOnly) {
 		return this.playerProvider.getPlayers(this.pos, boundaryOnly);
@@ -184,7 +190,10 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 
 	@Override
 	public void addChange(int x, int y, int z) {
-		blockChanged(new BlockPos(x, y, z));
+		if (blockChanged(new BlockPos(x, y, z))) {
+			LevelChunk chunk = getTickingChunk();
+			((InternalServerChunkCache) chunk.getLevel().getChunkSource()).addChunkHolderToBroadcast((ChunkHolder) (Object) this);
+		}
 	}
 
 	@Override
@@ -214,6 +223,16 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 
 	@Override
 	public void markChanged() {
+		if (this.hasChangedSections) {
+			return;
+		}
+
+		LevelChunk chunk = getTickingChunk();
+		if (chunk == null) {
+			return;
+		}
+
 		this.hasChangedSections = true;
+		((InternalServerChunkCache) chunk.getLevel().getChunkSource()).addChunkHolderToBroadcast((ChunkHolder) (Object) this);
 	}
 }

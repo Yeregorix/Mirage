@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ public final class DynamicChunk {
 		this.world = world;
 		this.storage = storage;
 		this.sections = new DynamicSection[storage.getSectionsCount()];
-		this.minSectionY = storage.getMinSection();
+		this.minSectionY = storage.getMinSectionY();
 	}
 
 	public Vector3i getRelativeCenter() {

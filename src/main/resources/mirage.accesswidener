@@ -2,7 +2,7 @@ accessWidener	v1	named
 
 accessible method net/minecraft/server/level/ChunkMap getChunks ()Ljava/lang/Iterable;
 
-accessible field net/minecraft/world/level/chunk/storage/ChunkSerializer BLOCK_STATE_CODEC Lcom/mojang/serialization/Codec;
+accessible field net/minecraft/world/level/chunk/storage/SerializableChunkData BLOCK_STATE_CODEC Lcom/mojang/serialization/Codec;
 
 accessible method net/minecraft/world/level/chunk/storage/RegionFileStorage <init> (Lnet/minecraft/world/level/chunk/storage/RegionStorageInfo;Ljava/nio/file/Path;Z)V
 accessible method net/minecraft/world/level/chunk/storage/RegionFileStorage write (Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)V
