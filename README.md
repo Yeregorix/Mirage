@@ -15,8 +15,9 @@ Mirage requires Java 21 to build.
 Commands:
 
 - `./gradlew shadowJar` constructs a jar that includes all its dependencies.
-- `./gradlew setupVanillaServer` setups a vanilla server in directory `run/vanilla`.
-- `./gradlew setupForgeServer` setups a Forge server in directory `run/forge`.
+- `./gradlew setupVanillaServer` setups a SpongeVanilla server in directory `run/vanilla`.
+- `./gradlew setupForgeServer` setups a SpongeForge server in directory `run/forge`.
+- `./gradlew setupNeoServer` setups a SpongeNeo server in directory `run/neoforge`.
 
 ## Known issues
 

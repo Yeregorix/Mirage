@@ -170,7 +170,7 @@ public class NetworkChunk implements ChunkView {
 	public void loadFromCacheNow() {
 		if (this.world.useCache()) {
 			CompoundTag tag = this.world.readFromCache(this.x, this.z);
-			if (tag != null && tag.getLong("LastUpdate") == this.chunk.getCacheTime()) {
+            if (tag != null && tag.getLongOr("LastUpdate", 0) == this.chunk.getCacheTime()) {
 				this.world.removePendingSave(this.x, this.z);
 				deserialize(tag);
 
@@ -181,9 +181,9 @@ public class NetworkChunk implements ChunkView {
 	}
 
 	public void deserialize(CompoundTag tag) {
-		for (Tag t : tag.getList("Sections", 10)) {
+        for (Tag t : tag.getListOrEmpty("Sections")) {
 			CompoundTag sectionTag = (CompoundTag) t;
-			getSection(sectionTag.getByte("Y")).deserialize(sectionTag);
+            getSection(sectionTag.getByte("Y").get()).deserialize(sectionTag);
 		}
 	}
 

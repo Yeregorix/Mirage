@@ -210,10 +210,10 @@ public class NetworkSection {
 	}
 
 	public void deserialize(CompoundTag tag) {
-		this.states = SerializableChunkData.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates")).getOrThrow();
+        this.states = SerializableChunkData.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates").get()).getOrThrow();
 		recalculateAirBlocks();
 
-		this.dynamism = new DataLayer(tag.getByteArray("Dynamism"));
+        this.dynamism = new DataLayer(tag.getByteArray("Dynamism").get());
 		recalculateDynCount();
 
 		this.dirty = true;

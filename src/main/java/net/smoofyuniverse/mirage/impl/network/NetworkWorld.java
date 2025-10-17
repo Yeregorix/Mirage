@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -277,8 +277,8 @@ public class NetworkWorld implements WorldView {
 
 		try {
 			CompoundTag tag = this.cache.read(x, z);
-			if (tag != null && new Signature(tag.getByteArray("Signature")).equals(this.signature))
-				return tag.getCompound("Level");
+            if (tag != null && new Signature(tag.getByteArray("Signature").get()).equals(this.signature))
+                return tag.getCompound("Level").get();
 		} catch (Exception e) {
 			Mirage.LOGGER.warn("Failed to read chunk {} {} from cache in world {}.", x, z, this.world.key(), e);
 		}

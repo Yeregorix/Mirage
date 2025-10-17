@@ -60,7 +60,7 @@ public class SerializableChunkDataMixin {
 	private static void onParse(LevelHeightAccessor level, RegistryAccess registry, CompoundTag tag, CallbackInfoReturnable<SerializableChunkData> cir) {
 		SerializableChunkDataMixin data = (SerializableChunkDataMixin) (Object) cir.getReturnValue();
 		if (data != null) {
-			data.cacheTime = tag.getLong("MirageCacheTime");
+            data.cacheTime = tag.getLongOr("MirageCacheTime", 0);
 		}
 	}
 
