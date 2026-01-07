@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2026 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.mixin.level;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
@@ -31,6 +32,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.smoofyuniverse.mirage.Mirage;
 import net.smoofyuniverse.mirage.impl.internal.InternalChunk;
+import net.smoofyuniverse.mirage.impl.internal.InternalChunkMap;
 import net.smoofyuniverse.mirage.impl.internal.InternalPlayer;
 import net.smoofyuniverse.mirage.impl.internal.InternalWorld;
 import net.smoofyuniverse.mirage.impl.network.NetworkChunk;
@@ -47,14 +49,18 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 @Mixin(ChunkMap.class)
-public abstract class ChunkMapMixin {
+public abstract class ChunkMapMixin implements InternalChunkMap {
 	@Shadow
 	@Final
 	ServerLevel level;
+
+	@Shadow
+	private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap;
 
 	@Inject(method = "save", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;copyOf(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkAccess;)Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;"))
@@ -109,5 +115,10 @@ public abstract class ChunkMapMixin {
 			listener.setDynamismEnabled(view.isDynamismEnabled());
 			view.setListener(listener);
 		}
+	}
+
+	@Override
+	public Collection<ChunkHolder> getVisibleChunks() {
+		return this.visibleChunkMap.values();
 	}
 }

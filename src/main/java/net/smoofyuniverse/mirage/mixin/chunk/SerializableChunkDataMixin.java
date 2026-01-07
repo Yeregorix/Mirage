@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2026 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
 package net.smoofyuniverse.mirage.mixin.chunk;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -49,7 +48,7 @@ public class SerializableChunkDataMixin {
 
 	@Redirect(method = "parse", at = @At(value = "NEW", target = "net/minecraft/world/level/chunk/LevelChunkSection"))
 	private static LevelChunkSection onParse_newSection(PalettedContainer<BlockState> blocks, PalettedContainerRO<Holder<Biome>> biomes,
-														LevelHeightAccessor level, RegistryAccess registry, CompoundTag tag) {
+														LevelHeightAccessor level, PalettedContainerFactory factory, CompoundTag tag) {
 		LevelChunkSection section = new LevelChunkSection(blocks, biomes);
 		if (level instanceof InternalWorld world && world.view().isEnabled())
 			((InternalSection) section).view(); // lazy-init network section before data is read
@@ -57,7 +56,7 @@ public class SerializableChunkDataMixin {
 	}
 
 	@Inject(method = "parse", at = @At("RETURN"))
-	private static void onParse(LevelHeightAccessor level, RegistryAccess registry, CompoundTag tag, CallbackInfoReturnable<SerializableChunkData> cir) {
+	private static void onParse(LevelHeightAccessor level, PalettedContainerFactory factory, CompoundTag tag, CallbackInfoReturnable<SerializableChunkData> cir) {
 		SerializableChunkDataMixin data = (SerializableChunkDataMixin) (Object) cir.getReturnValue();
 		if (data != null) {
             data.cacheTime = tag.getLongOr("MirageCacheTime", 0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2025 Hugo Dupanloup (Yeregorix)
+ * Copyright (c) 2018-2026 Hugo Dupanloup (Yeregorix)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.impl.network;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.FriendlyByteBuf;
@@ -31,7 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.storage.SerializableChunkData;
+import net.minecraft.world.level.chunk.Strategy;
 import net.smoofyuniverse.mirage.impl.internal.InternalSection;
 import net.smoofyuniverse.mirage.impl.network.change.ChunkChangeListener;
 import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
@@ -39,6 +40,11 @@ import net.smoofyuniverse.mirage.impl.network.dynamic.DynamicSection;
 import java.util.Arrays;
 
 public class NetworkSection {
+	// Redo PalettedContainerFactory#create but without RegistryAccess
+	private static final Strategy<BlockState> blockStatesStrategy = Strategy.createForBlockStates(Block.BLOCK_STATE_REGISTRY);
+	private static final BlockState defaultBlockState = Blocks.AIR.defaultBlockState();
+	private static final Codec<PalettedContainer<BlockState>> blockStatesContainerCodec = PalettedContainer.codecRW(BlockState.CODEC, blockStatesStrategy, defaultBlockState);
+
 	private final LevelChunkSection section;
 	int minY = 0;
 
@@ -53,7 +59,7 @@ public class NetworkSection {
 	public NetworkSection(LevelChunkSection section) {
 		this.section = section;
 
-		this.states = new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
+		this.states = new PalettedContainer<>(Blocks.AIR.defaultBlockState(), blockStatesStrategy);
 		this.dynamism = new DataLayer();
 		this.dynCount[0] = 4096;
 	}
@@ -203,14 +209,14 @@ public class NetworkSection {
 		CompoundTag tag = new CompoundTag();
 		tag.putByte("Y", (byte) (this.minY >> 4));
 
-		tag.put("BlockStates", SerializableChunkData.BLOCK_STATE_CODEC.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow());
+		tag.put("BlockStates", blockStatesContainerCodec.encodeStart(NbtOps.INSTANCE, this.states).getOrThrow());
 		tag.putByteArray("Dynamism", Arrays.copyOf(this.dynamism.getData(), 2048));
 
 		return tag;
 	}
 
 	public void deserialize(CompoundTag tag) {
-        this.states = SerializableChunkData.BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates").get()).getOrThrow();
+		this.states = blockStatesContainerCodec.parse(NbtOps.INSTANCE, tag.getCompound("BlockStates").get()).getOrThrow();
 		recalculateAirBlocks();
 
         this.dynamism = new DataLayer(tag.getByteArray("Dynamism").get());

@@ -28,14 +28,14 @@ configurations {
 }
 
 minecraft {
-    version '1.21.8'
+    version '1.21.10'
     accessWideners(file("src/main/resources/mirage.accesswidener"))
 }
 
 dependencies {
-    api 'org.spongepowered:spongeapi:16.0.0-SNAPSHOT'
+    api 'org.spongepowered:spongeapi:17.0.0-SNAPSHOT'
 
-    implementation('org.spongepowered:sponge:1.21.8-16.0.0-SNAPSHOT:dev') {
+    implementation('org.spongepowered:sponge:1.21.10-17.0.0-SNAPSHOT:dev') {
         exclude group: 'org.spongepowered', module: 'spongeapi'
     }
     implementation 'org.spongepowered:mixin:0.8.7'
@@ -45,9 +45,9 @@ dependencies {
     implementation 'net.smoofyuniverse:worldmap:1.3.0'
     implementation 'net.smoofyuniverse:bingo:1.1.0'
 
-    spongevanilla('org.spongepowered:spongevanilla:1.21.8-16.0.0-RC2390:universal') { transitive = false }
-    spongeforge('org.spongepowered:spongeforge:1.21.8-58.0.5-16.0.0-RC2390:universal') { transitive = false }
-    spongeneo('org.spongepowered:spongeneo:1.21.8-21.8.31-16.0.0-RC2390:universal') { transitive = false }
+    spongevanilla('org.spongepowered:spongevanilla:1.21.10-17.0.0-RC2492:universal') { transitive = false }
+    spongeforge('org.spongepowered:spongeforge:1.21.10-60.0.1-17.0.0-RC2492:universal') { transitive = false }
+    spongeneo('org.spongepowered:spongeneo:1.21.10-21.10.64-17.0.0-RC2492:universal') { transitive = false }
 }
 
 jar {
