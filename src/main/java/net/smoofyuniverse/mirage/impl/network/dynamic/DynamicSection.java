@@ -151,6 +151,10 @@ public final class DynamicSection {
 		return this.modified;
 	}
 
+	public boolean isCurrentEmpty() {
+		return this.currentPositions.isEmpty();
+	}
+
 	public void applyChanges() {
 		if (this.modified) {
 			this.currentPositions.clear();

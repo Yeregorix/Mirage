@@ -185,13 +185,22 @@ public class NetworkSection {
 		if (this.hasNoDynamism())
 			return;
 
-		for (int y = 0; y < 16; y++) {
-			for (int z = 0; z < 16; z++) {
-				for (int x = 0; x < 16; x++) {
-					int d = getDynamism(x, y, z);
-					if (d != 0)
-						section.add(x, y, z, d);
-				}
+		byte[] data = this.dynamism.getData();
+		for (int i = 0; i < data.length; i++) {
+			byte b = data[i];
+			if (b == 0)
+				continue;
+
+			int d0 = b & 15;
+			if (d0 != 0) {
+				int idx = i << 1;
+				section.add(idx & 15, (idx >> 8) & 15, (idx >> 4) & 15, d0);
+			}
+
+			int d1 = (b >> 4) & 15;
+			if (d1 != 0) {
+				int idx = (i << 1) | 1;
+				section.add(idx & 15, (idx >> 8) & 15, (idx >> 4) & 15, d1);
 			}
 		}
 	}

@@ -112,12 +112,16 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 						DynamicChunk dynChunk = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
 
 						for (int i = 0; i < this.changedBlocksPerSection.length; i++) {
-							int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
 							DynamicSection dynSection = dynChunk == null ? null : dynChunk.sections[i];
+							ShortSet storageChanges = this.changedBlocksPerSection[i];
+							boolean hasDynChanges = dynSection != null && dynSection.hasChanges();
+							if (storageChanges == null && !hasDynChanges)
+								continue;
+
+							int y = this.levelHeightAccessor.getSectionYFromSectionIndex(i);
 							BlockChanges changes = new BlockChanges(chunk, y);
 							int minY = y << 4;
 
-							ShortSet storageChanges = this.changedBlocksPerSection[i];
 							if (storageChanges != null) {
 								ShortIterator it = storageChanges.iterator();
 								while (it.hasNext()) {
@@ -127,7 +131,7 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 								}
 							}
 
-							if (dynSection != null) {
+							if (hasDynChanges) {
 								dynSection.getChanges(changes);
 								dynSection.applyChanges();
 							}
@@ -204,19 +208,23 @@ public abstract class ChunkHolderMixin extends GenerationChunkHolder implements 
 	@Override
 	public void updateDynamism(int x, int y, int z, int distance) {
 		if (this.dynamismEnabled) {
-			getDynamicChunks().forEach(c -> c.update(x, y, z, distance));
+			for (ServerPlayer p : getPlayers(false)) {
+				DynamicChunk c = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
+				if (c != null)
+					c.update(x, y, z, distance);
+			}
 			markChanged();
 		}
-	}
-
-	private Stream<DynamicChunk> getDynamicChunks() {
-		return getPlayers(false).stream().map(p -> ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z)).filter(Objects::nonNull);
 	}
 
 	@Override
 	public void clearDynamism() {
 		if (this.dynamismEnabled) {
-			getDynamicChunks().forEach(DynamicChunk::clear);
+			for (ServerPlayer p : getPlayers(false)) {
+				DynamicChunk c = ((InternalPlayer) p).getDynamicChunk(this.pos.x, this.pos.z);
+				if (c != null)
+					c.clear();
+			}
 			markChanged();
 		}
 	}

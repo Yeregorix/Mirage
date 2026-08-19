@@ -61,7 +61,8 @@ public class PlayerChunkSenderMixin {
             for (DynamicSection section : dynChunk.sections) {
                 if (section != null) {
                     section.applyChanges();
-                    section.getCurrent().sendTo(player);
+                    if (!section.isCurrentEmpty())
+                        section.getCurrent().sendTo(player);
                 }
             }
         }

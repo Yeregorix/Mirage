@@ -22,6 +22,7 @@
 
 package net.smoofyuniverse.mirage.impl.network.change;
 
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
@@ -90,7 +91,9 @@ public class BlockChanges {
 			p.states = new BlockState[changes];
 
 			int i = 0;
-			for (Entry<BlockState> e : this.blocks.short2ObjectEntrySet()) {
+			ObjectIterator<Entry<BlockState>> it = this.blocks.short2ObjectEntrySet().fastIterator();
+			while (it.hasNext()) {
+				Entry<BlockState> e = it.next();
 				p.positions[i] = e.getShortKey();
 				p.states[i++] = e.getValue();
 			}

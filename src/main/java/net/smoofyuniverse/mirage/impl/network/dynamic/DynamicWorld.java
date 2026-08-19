@@ -60,7 +60,7 @@ public final class DynamicWorld {
 		DynamicChunk chunk = this.chunks.get(pos);
 		if (chunk == null) {
 			chunk = new DynamicChunk(this, this.storage.opaqueChunk(x, z));
-			this.chunks.put(asLong(x, z), chunk);
+			this.chunks.put(pos, chunk);
 			chunk.updateCenter();
 		}
 		return chunk;
